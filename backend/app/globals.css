@@ -255,6 +255,8 @@
 .blog-content li > p { margin: 0; }
 .blog-content blockquote { border-left: 4px solid #ff6c0e; color: #4b5563; font-style: italic; margin: 1.5rem 0; padding: 0.25rem 0 0.25rem 1.25rem; }
 .blog-content blockquote p:last-child { margin-bottom: 0; }
+/* A quote inside a quote (left by repeated formatting) shows as one quote, not a staircase. */
+.blog-content blockquote blockquote { border-left: 0; margin: 0; padding: 0; }
 /* Links: bold, underlined orange so they read differently from orange-coloured text.
    New-tab links get a small ↗. In the editor they are also shaded, so links are easy to spot while editing. */
 .blog-content a { color: #e85d04; font-weight: 600; text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 3px; transition: color 0.15s; }

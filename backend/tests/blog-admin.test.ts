@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import test from "node:test";
-import { BLOG_CONTENT_MAX, blogPostInputSchema, countInlineImages, formatBlogValidationError, sanitizeBlogHtml } from "@/lib/blog";
+import { BLOG_CONTENT_MAX, blogPostInputSchema, countInlineImages, formatBlogValidationError, sanitizeBlogHtml, withoutBlankParagraphs } from "@/lib/blog";
 
 const projectFile = (path: string) => readFileSync(resolve(process.cwd(), path), "utf8");
 
@@ -141,4 +141,30 @@ test("links open in a new tab only when asked, and new-tab links always get rel=
 test("nofollow and sponsored links keep their rel values, with or without a new tab", () => {
   assert.equal(sanitizeBlogHtml('<a href="https://doi.org/x" rel="nofollow" title="Source">x</a>'), '<a href="https://doi.org/x" rel="nofollow" title="Source">x</a>');
   assert.equal(sanitizeBlogHtml('<a href="https://shop.com" target="_blank" rel="nofollow sponsored noopener noreferrer">x</a>'), '<a href="https://shop.com" target="_blank" rel="nofollow sponsored noopener noreferrer">x</a>');
+});
+
+test("a pasted Instagram embed quote becomes the Instagram iframe embed", () => {
+  const pasted = '<blockquote class="instagram-media" data-instgrm-permalink="https://www.instagram.com/reel/DcOkdAWKJJs/?utm_source=ig_embed"><div><a href="https://www.instagram.com/reel/DcOkdAWKJJs/?utm_source=ig_embed" target="_blank"><div>View this post on Instagram</div></a><p><a href="https://www.instagram.com/reel/DcOkdAWKJJs/">A post shared by Valencia Basket (@valenciabasketuae)</a></p></div></blockquote><script async src="//www.instagram.com/embed.js"></script>';
+  assert.equal(sanitizeBlogHtml(`<p>Intro</p>${pasted}<p>After</p>`), '<p>Intro</p><iframe src="https://www.instagram.com/reel/DcOkdAWKJJs/embed" width="400" height="480" frameborder="0" scrolling="no" allowtransparency="true"></iframe><p>After</p>');
+  assert.equal(sanitizeBlogHtml("<blockquote>A real quote from the coach</blockquote>"), "<blockquote>A real quote from the coach</blockquote>", "ordinary quotes stay quotes");
+});
+
+test("typed bullets inside lists and empty list items are removed", () => {
+  assert.equal(
+    sanitizeBlogHtml("<ul><li>- Ages: 4 to 18</li><li><span>– Where: Al Quoz</span></li><li>• Trial</li><li><br></li><li>No dash - here</li></ul>"),
+    "<ul><li>Ages: 4 to 18</li><li><span>Where: Al Quoz</span></li><li>Trial</li><li>No dash - here</li></ul>",
+  );
+  assert.equal(sanitizeBlogHtml("<p>- not a list</p>"), "<p>- not a list</p>", "only list items lose a leading dash");
+  // The shape Google Docs pastes: a paragraph inside each item, the dash in its own bold run, a blank line at the end.
+  assert.equal(
+    sanitizeBlogHtml("<ul><li><p><strong><strong>-&nbsp;</strong>Ages: </strong>4 to 18</p></li><li><p><strong><strong>-&nbsp;</strong>Website: </strong>x</p><p><br></p></li><li><p><br></p></li></ul>"),
+    "<ul><li><p><strong><strong></strong>Ages: </strong>4 to 18</p></li><li><p><strong><strong></strong>Website: </strong>x</p></li></ul>",
+  );
+});
+
+test("the live article drops empty spacer lines but keeps every paragraph with text", () => {
+  assert.equal(
+    withoutBlankParagraphs("<p>One</p><p><br></p><p></p><p><span>&nbsp;</span></p><p>Two<br></p><p><img src=\"/a.webp\" alt=\"\"></p>"),
+    "<p>One</p><p>Two<br></p><p><img src=\"/a.webp\" alt=\"\"></p>",
+  );
 });

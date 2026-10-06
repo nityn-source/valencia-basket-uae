@@ -26,7 +26,31 @@ export function replaceEmptyHeadings(html: string) {
 }
 
 export function sanitizeBlogHtml(input: string) {
-  return replaceEmptyHeadings(sanitizeTags(input));
+  return tidyLists(replaceEmptyHeadings(sanitizeTags(instagramQuotesToEmbeds(input))));
+}
+
+// Instagram's "copy embed code" is a <blockquote> of placeholder boxes plus a script we never
+// run, so a pasted post showed as a quote of links. It becomes the same iframe embed that the
+// editor's "Embed Instagram" button makes. Only quotes carrying Instagram's own caption are touched.
+const instagramQuotePattern = /<blockquote\b[^>]*>((?:(?!<\/?blockquote\b)[\s\S])*?)<\/blockquote\s*>/gi;
+
+export function instagramQuotesToEmbeds(html: string) {
+  return html.replace(instagramQuotePattern, (full, inner: string) => {
+    if (!/View this post on Instagram|A post shared by/i.test(inner)) return full;
+    const post = /https?:\/\/(?:www\.)?instagram\.com\/(p|reel|tv)\/([A-Za-z0-9_-]+)/i.exec(inner);
+    if (!post) return full;
+    return `<iframe src="https://www.instagram.com/${post[1].toLowerCase()}/${post[2]}/embed" width="400" height="480" frameborder="0" scrolling="no" allowtransparency="true"></iframe>`;
+  });
+}
+
+// Pasted lists often carry their own typed bullet ("- Ages: 4 to 18"), which showed twice once
+// lists got real bullets; empty bullets (left by Enter at the end of a list) are dropped.
+const typedBulletPattern = /(<li\b[^>]*>(?:\s|<(?:p|span|strong|b|em|i|u|font)\b[^>]*>)*)(?:[-–•*]|&#8226;|&bull;)(?:\s|&nbsp;)+/gi;
+const emptyListItemPattern = /<li\b[^>]*>(?:\s|&nbsp;|<br>|<\/?(?:p|span|strong|b|em|i|u|font)\b[^>]*>)*<\/li>/gi;
+const trailingBlankLinePattern = /(?:<p>(?:\s|&nbsp;)*<br>(?:\s|&nbsp;)*<\/p>)+(\s*<\/li>)/gi;
+
+function tidyLists(html: string) {
+  return html.replace(typedBulletPattern, "$1").replace(trailingBlankLinePattern, "$1").replace(emptyListItemPattern, "");
 }
 
 function sanitizeTags(input: string) {
@@ -120,6 +144,17 @@ function sanitizeTags(input: string) {
     const tag = rawTag.toLowerCase();
     return allowedHtmlTags.has(tag) ? `</${tag}>` : "";
   });
+}
+
+// A paragraph with no text, only spaces, <br>s and empty inline tags.
+const blankParagraphPattern = /<p\b[^>]*>(?:\s|&nbsp;|&#160;|<br>|<\/?(?:span|strong|b|em|i|u|s|font)\b[^>]*>)*<\/p>/gi;
+
+/**
+ * For the live article only: older articles used empty lines for spacing, which doubled up
+ * once paragraphs got their own spacing. The editor keeps them, so new lines can be typed in.
+ */
+export function withoutBlankParagraphs(html: string) {
+  return html.replace(blankParagraphPattern, "");
 }
 
 export function sanitizeBlogContent(input: string) {

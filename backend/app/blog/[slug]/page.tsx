@@ -7,7 +7,7 @@ import { ArrowLeft, CalendarDays, UserRound } from "lucide-react";
 import { BreadcrumbJsonLd, StructuredData } from "@/components/seo/StructuredData";
 import { blogPostStructuredData } from "@/lib/seo/structuredData";
 import { storage } from "@/lib/storage";
-import { blogPlainText, sanitizeBlogContent } from "@/lib/blog";
+import { blogPlainText, sanitizeBlogContent, withoutBlankParagraphs } from "@/lib/blog";
 import { blogAccessCookieName, isLiveBlogPost, verifyBlogAccessToken } from "@/lib/blogAccess";
 import { authorDisplayName, authorPath } from "@/lib/content/staff";
 import { getAuthorForPost, staffPhotoAlt } from "@/lib/content/staffStore";
@@ -65,7 +65,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
   const author = await getAuthorForPost(post.authorName);
   const authorName = author ? authorDisplayName(author) : post.authorName;
   const alt = await getAltResolver();
-  const safeContent = sanitizeBlogContent(post.content);
+  const safeContent = withoutBlankParagraphs(sanitizeBlogContent(post.content));
   const hasRichContent = /<[a-z][\s\S]*>/i.test(safeContent);
 
   const articleJson = post.schemaEnabled
