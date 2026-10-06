@@ -116,3 +116,29 @@ test("other validation errors name the field in plain words", () => {
   assert.equal(result.success, false);
   assert.equal(formatBlogValidationError(result.error), "Permalink: Use lowercase letters, numbers, and hyphens");
 });
+
+test("empty headings become blank lines instead of blank H2s", () => {
+  assert.equal(
+    sanitizeBlogHtml('<h2><br></h2><h2>2. NBA Basketball School</h2><h3 style="text-align:center"> &nbsp;<span><b></b></span> </h3><p>Text</p>'),
+    "<p><br></p><h2>2. NBA Basketball School</h2><p><br></p><p>Text</p>",
+  );
+  assert.equal(sanitizeBlogHtml("<h2><br>Real title</h2>"), "<h2><br>Real title</h2>", "headings with text are kept");
+  assert.equal(sanitizeBlogHtml('<h2><img src="https://example.com/a.webp" alt="x"></h2>'), '<h2><img src="https://example.com/a.webp" alt="x"></h2>', "a heading holding an image is not touched");
+});
+
+test("headings 5 and 6 are kept", () => {
+  assert.equal(sanitizeBlogHtml("<h5>Small heading</h5><h6>Smallest heading</h6>"), "<h5>Small heading</h5><h6>Smallest heading</h6>");
+});
+
+test("links open in a new tab only when asked, and new-tab links always get rel=noopener", () => {
+  assert.equal(sanitizeBlogHtml('<a href="https://example.com" target="_blank">x</a>'), '<a href="https://example.com" target="_blank" rel="noopener noreferrer">x</a>');
+  assert.equal(sanitizeBlogHtml('<a href="https://example.com" target="_blank" rel="opener">x</a>'), '<a href="https://example.com" target="_blank" rel="noopener noreferrer">x</a>');
+  assert.equal(sanitizeBlogHtml('<a href="/programs" target="_self" rel="nofollow">x</a>'), '<a href="/programs" rel="nofollow">x</a>');
+  assert.equal(sanitizeBlogHtml('<a href="https://partner.com" rel="sponsored" target="_blank">x</a>'), '<a href="https://partner.com" target="_blank" rel="sponsored noopener noreferrer">x</a>');
+  assert.equal(sanitizeBlogHtml('<a href="/programs" target="evil">x</a>'), '<a href="/programs">x</a>');
+});
+
+test("nofollow and sponsored links keep their rel values, with or without a new tab", () => {
+  assert.equal(sanitizeBlogHtml('<a href="https://doi.org/x" rel="nofollow" title="Source">x</a>'), '<a href="https://doi.org/x" rel="nofollow" title="Source">x</a>');
+  assert.equal(sanitizeBlogHtml('<a href="https://shop.com" target="_blank" rel="nofollow sponsored noopener noreferrer">x</a>'), '<a href="https://shop.com" target="_blank" rel="nofollow sponsored noopener noreferrer">x</a>');
+});

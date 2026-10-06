@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/adminAuth";
 import { storage } from "@/lib/storage";
-import { blogPostInputSchema, normalizeBlogPostInput, formatBlogValidationError } from "@/lib/blog";
+import { blogPostInputSchema, blogQuickEditSchema, normalizeBlogPostInput, formatBlogValidationError } from "@/lib/blog";
 import bcrypt from "bcryptjs";
 
 export const dynamic = "force-dynamic";
@@ -58,6 +58,41 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ error: "That slug, category, or tag already exists" }, { status: 409 });
     }
     console.error("[blog] failed to update post:", error);
+    return NextResponse.json({ error: "Failed to update blog post" }, { status: 500 });
+  }
+}
+
+/** Quick edit from the article list: change the author and/or categories without reopening the article. */
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const authError = await requireAdmin(request);
+  if (authError) return authError;
+  const id = parseId((await params).id);
+  if (!id) return NextResponse.json({ error: "Invalid blog post id" }, { status: 400 });
+
+  try {
+    const existing = await storage.getBlogPostById(id);
+    if (!existing) return NextResponse.json({ error: "Blog post not found" }, { status: 404 });
+    const { authorName, categoryNames } = blogQuickEditSchema.parse(await request.json());
+    const updated = await storage.updateBlogPost(id, {
+      ...(authorName !== undefined ? { authorName } : {}),
+      // Categories and tags are saved together, so the article's tags are passed back unchanged.
+      ...(categoryNames !== undefined
+        ? { categoryNames: [...new Set(categoryNames)], tagNames: existing.tags.map((tag) => tag.name) }
+        : {}),
+      lockModifiedDate: existing.lockModifiedDate,
+    });
+    revalidatePath("/blog");
+    revalidatePath("/blog/author/[slug]", "page");
+    revalidatePath(`/blog/${updated.slug}`);
+    return NextResponse.json(withoutPasswordHash(updated));
+  } catch (error: any) {
+    if (error?.name === "ZodError") {
+      return NextResponse.json({ error: formatBlogValidationError(error) }, { status: 400 });
+    }
+    if (error?.code === "BLOG_TAXONOMY_CONFLICT" || error?.code === "23505") {
+      return NextResponse.json({ error: error.message ?? "That category already exists" }, { status: 409 });
+    }
+    console.error("[blog] failed to quick-edit post:", error);
     return NextResponse.json({ error: "Failed to update blog post" }, { status: 500 });
   }
 }

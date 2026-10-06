@@ -5,8 +5,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlignCenter, AlignLeft, AlignRight, ArrowLeft, Bold, ChevronDown, ChevronUp,
   Code2, Expand, ImagePlus, Instagram, Italic, Link2, List, ListOrdered, Maximize2,
-  Minus, Palette, Quote, Redo2, RotateCcw, Search, Star, Trash2, Undo2, X,
-  Monitor, Smartphone,
+  Minus, Redo2, RotateCcw, Search, Star, Trash2, Undo2, X,
+  Monitor, Palette, Pencil, Smartphone, Unlink,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -15,24 +15,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { BLOG_CONTENT_MAX, countInlineImages, sanitizeBlogContent, sanitizeBlogHtml } from "@/lib/blog";
+import { BLOG_CONTENT_MAX, DEFAULT_BLOG_AUTHOR, countInlineImages, sanitizeBlogContent, sanitizeBlogHtml } from "@/lib/blog";
 import { IMAGE_LIMITS_TEXT, cleanPastedHtml, dataUrlToFile, findInlineImages, findRemoteImages, imageFileProblem, isImageOnlyHtml } from "@/lib/blogPaste";
 import type { SafeBlogPost } from "@/lib/storage";
-import { authorDisplayName, type StaffMember } from "@/lib/content/staff";
-
-/** Staff blog authors (from Admin → Staff) for the Author field suggestions. */
-function useBlogAuthorNames() {
-  const { data = [] } = useQuery<{ members: StaffMember[] }, Error, string[]>({
-    queryKey: ["admin-staff"],
-    queryFn: async () => {
-      const res = await fetch("/api/admin/staff");
-      if (!res.ok) throw new Error("Failed to load staff");
-      return res.json();
-    },
-    select: (data) => data.members.filter((member) => member.isAuthor && member.visible).map(authorDisplayName),
-  });
-  return data;
-}
+import { authorDisplayName } from "@/lib/content/staff";
+import { BlogAuthorSelect, useBlogAuthors } from "./BlogAuthorSelect";
+import { BlogColorPicker } from "./BlogColorPicker";
+import { BlogLinkDialog, EMPTY_LINK, applyLinkSettings, readLinkSettings, type LinkSettings } from "./BlogLinkDialog";
 
 type Visibility = "public" | "private" | "password";
 type Status = "draft" | "published" | "scheduled";
@@ -67,7 +56,7 @@ type BlogForm = {
 
 const emptyForm: BlogForm = {
   title: "", slug: "", excerpt: "", content: "", featuredImageSrc: "",
-  featuredImageAlt: "", authorName: "Valencia Basket Academy UAE", status: "draft",
+  featuredImageAlt: "", authorName: DEFAULT_BLOG_AUTHOR, status: "draft",
   visibility: "public", password: "", publishedAt: "", lockModifiedDate: false,
   isFeatured: false, metaTitle: "", metaDescription: "", ogTitle: "",
   ogDescription: "", ogImage: "", focusKeywords: [], noIndex: false,
@@ -191,6 +180,65 @@ function escapeAttribute(value: string) {
   return value.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
 }
 
+/** The format a point in the article is in: its heading level, "blockquote", or "p" for ordinary text and list items. */
+function blockFormatAt(editor: HTMLElement, node: Node) {
+  let quoted = false;
+  for (let current: Node | null = node; current && current !== editor; current = current.parentNode) {
+    if (!(current instanceof HTMLElement)) continue;
+    if (/^H[1-6]$/.test(current.tagName)) return current.tagName.toLowerCase();
+    if (current.tagName === "BLOCKQUOTE") quoted = true;
+  }
+  return quoted ? "blockquote" : "p";
+}
+
+/** The innermost lines (paragraphs, headings, quotes, list items) a selection touches, in order. */
+function selectedBlocks(editor: HTMLElement, range: Range) {
+  const touched = Array.from(editor.querySelectorAll<HTMLElement>("p, h1, h2, h3, h4, h5, h6, blockquote, div, li")).filter((block) => range.intersectsNode(block));
+  return touched.filter((block) => !touched.some((other) => other !== block && block.contains(other)));
+}
+
+function nodeLength(node: Node) {
+  return node.nodeType === Node.TEXT_NODE ? (node as Text).length : node.childNodes.length;
+}
+
+/** "" when a selection spans lines in different formats, so the menu shows "Mixed". */
+function selectionBlockFormat(editor: HTMLElement, range: Range) {
+  const start = blockFormatAt(editor, range.startContainer);
+  return start === blockFormatAt(editor, range.endContainer) ? start : "";
+}
+
+/** "rgb(255, 108, 14)" or "#ff6c0e" → "#ff6c0e"; anything else is returned unchanged. */
+function rgbStringToHex(value: string) {
+  const match = /^rgba?\((\d+),\s*(\d+),\s*(\d+)/i.exec(value);
+  return match ? `#${match.slice(1, 4).map((n) => Number(n).toString(16).padStart(2, "0")).join("")}` : value;
+}
+
+/** The small box under a clicked link: its address, with Edit and Remove link buttons (like WordPress). */
+function LinkPopover({ link, area, onEdit, onUnlink }: { link: HTMLAnchorElement; area: HTMLElement | null; onEdit: () => void; onUnlink: () => void }) {
+  if (!area || !link.isConnected) return null;
+  const linkBox = link.getBoundingClientRect();
+  const areaBox = area.getBoundingClientRect();
+  // Hide it while the link is scrolled out of the article box.
+  if (linkBox.bottom < areaBox.top || linkBox.top > areaBox.bottom - 24) return null;
+  const href = link.getAttribute("href") ?? "";
+  const settings = readLinkSettings(link);
+  const flags = [settings.newTab && "New tab", settings.nofollow && "nofollow", settings.sponsored && "sponsored"].filter(Boolean) as string[];
+  const left = Math.max(8, Math.min(linkBox.left - areaBox.left, areaBox.width - 340));
+  return (
+    <div
+      className="absolute z-20 flex max-w-[calc(100%-16px)] items-center gap-2 border border-gray-300 bg-white py-1.5 pl-3 pr-1.5 text-sm shadow-lg"
+      style={{ top: linkBox.bottom - areaBox.top + 6, left }}
+      onMouseDown={(event) => event.preventDefault()}
+      data-testid="link-popover"
+    >
+      <a href={href} target="_blank" rel="noopener noreferrer" className="max-w-[220px] truncate text-blue-700 underline" title={href}>{href.replace(/^https?:\/\//, "")}</a>
+      {flags.map((flag) => <span key={flag} className="shrink-0 rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-gray-600">{flag}</span>)}
+      <button type="button" onClick={onEdit} title="Edit link" aria-label="Edit link" className="flex h-7 w-7 shrink-0 items-center justify-center hover:bg-gray-100" data-testid="button-link-edit"><Pencil className="h-4 w-4" /></button>
+      <button type="button" onClick={onUnlink} title="Remove link" aria-label="Remove link" className="flex h-7 w-7 shrink-0 items-center justify-center hover:bg-gray-100" data-testid="button-link-remove"><Unlink className="h-4 w-4" /></button>
+    </div>
+  );
+}
+
 function RichEditor({ value, onChange, onBlur }: { value: string; onChange: (value: string) => void; onBlur: () => void }) {
   const [codeMode, setCodeMode] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
@@ -198,7 +246,18 @@ function RichEditor({ value, onChange, onBlur }: { value: string; onChange: (val
   const [selectedImage, setSelectedImage] = useState<HTMLImageElement | null>(null);
   const [pendingUploads, setPendingUploads] = useState(0);
   const [, forceRender] = useState(0);
+  const [blockFormat, setBlockFormat] = useState("p");
+  const [selectedLink, setSelectedLink] = useState<HTMLAnchorElement | null>(null);
+  // The Insert/edit link window: editing `target`, or adding a new link over the saved selection.
+  const [linkDialog, setLinkDialog] = useState<{ initial: LinkSettings; target: HTMLAnchorElement | null } | null>(null);
+  const linkRange = useRef<Range | null>(null);
+  const [colorPicker, setColorPicker] = useState<{ initial: string | null } | null>(null);
+  const colorRange = useRef<Range | null>(null);
+  const editorAreaRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<HTMLDivElement>(null);
+  // The last selection inside the article: the format menu takes focus when opened, so
+  // toolbar commands put this back before acting on it.
+  const savedRange = useRef<Range | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -209,11 +268,32 @@ function RichEditor({ value, onChange, onBlur }: { value: string; onChange: (val
     }
   }, [codeMode]);
 
+  // Keep the format menu in step with the line the caret (or selection) is on.
+  useEffect(() => {
+    document.execCommand("defaultParagraphSeparator", false, "p");
+    const onSelectionChange = () => {
+      const editor = editorRef.current;
+      const selection = window.getSelection();
+      if (!editor || !selection?.rangeCount) return;
+      const range = selection.getRangeAt(0);
+      if (!editor.contains(range.commonAncestorContainer)) return;
+      savedRange.current = range.cloneRange();
+      setBlockFormat(selectionBlockFormat(editor, range));
+      // The link bar opens while the caret is inside a link, or the selection covers one.
+      const start = range.startContainer instanceof Element ? range.startContainer : range.startContainer.parentElement;
+      const link = start?.closest("a") ?? (range.collapsed ? null : Array.from(editor.querySelectorAll("a")).find((anchor) => range.intersectsNode(anchor)));
+      markSelectedLink(link && editor.contains(link) ? link : null);
+    };
+    document.addEventListener("selectionchange", onSelectionChange);
+    return () => document.removeEventListener("selectionchange", onSelectionChange);
+  }, []);
+
   // The selection outline is an editor-only marker; it must never be saved.
   const readHtml = () => {
     if (!editorRef.current) return "";
     const clone = editorRef.current.cloneNode(true) as HTMLDivElement;
     clone.querySelectorAll("[data-editor-selected]").forEach((node) => node.removeAttribute("data-editor-selected"));
+    clone.querySelectorAll("[data-editor-link]").forEach((node) => node.removeAttribute("data-editor-link"));
     return clone.innerHTML;
   };
   const emit = () => onChange(readHtml());
@@ -224,6 +304,20 @@ function RichEditor({ value, onChange, onBlur }: { value: string; onChange: (val
     setSelectedImage(image);
   };
 
+  // Like the image outline, data-editor-link only marks the link being edited and is never saved.
+  const markSelectedLink = (link: HTMLAnchorElement | null) => {
+    editorRef.current?.querySelectorAll("[data-editor-link]").forEach((node) => node !== link && node.removeAttribute("data-editor-link"));
+    link?.setAttribute("data-editor-link", "true");
+    setSelectedLink(link);
+  };
+
+  const removeLink = () => {
+    if (!selectedLink?.isConnected) return markSelectedLink(null);
+    selectedLink.replaceWith(...Array.from(selectedLink.childNodes));
+    markSelectedLink(null);
+    emit();
+  };
+
   const updateSelectedImage = (attribute: "data-size" | "data-align" | "alt", next: string) => {
     if (!selectedImage?.isConnected) return selectImage(null);
     selectedImage.setAttribute(attribute, next);
@@ -231,9 +325,123 @@ function RichEditor({ value, onChange, onBlur }: { value: string; onChange: (val
     emit();
   };
 
+  /** Focuses the article and puts back the last selection in it, if focus had moved elsewhere. */
+  const restoreSelection = () => {
+    const editor = editorRef.current;
+    const selection = window.getSelection();
+    if (!editor || !selection) return null;
+    // Checked before focusing: focusing the editor from another field puts a fresh caret at its start.
+    const inEditor = !!selection.rangeCount && editor.contains(selection.getRangeAt(0).commonAncestorContainer);
+    editor.focus({ preventScroll: true });
+    if (!inEditor && savedRange.current && editor.contains(savedRange.current.commonAncestorContainer)) {
+      selection.removeAllRanges();
+      selection.addRange(savedRange.current);
+    }
+    return selection.rangeCount && editor.contains(selection.getRangeAt(0).commonAncestorContainer) ? selection.getRangeAt(0) : null;
+  };
+
   const command = (name: string, argument?: string) => {
-    editorRef.current?.focus();
+    const editor = editorRef.current;
+    if (!editor) return;
+    restoreSelection();
     document.execCommand(name, false, argument);
+    const selection = window.getSelection();
+    if (selection?.rangeCount) setBlockFormat(selectionBlockFormat(editor, selection.getRangeAt(0)));
+    emit();
+  };
+
+  // Bullets and numbering are done here rather than with execCommand, which in Chrome nests
+  // the list inside the paragraph (<p><ul>…</ul></p>) and loses the caret. Each selected line
+  // becomes a list item; pressing the same button again turns the items back into paragraphs,
+  // and the other button switches between bullets and numbers.
+  const toggleList = (kind: "ul" | "ol") => {
+    const editor = editorRef.current;
+    let range = restoreSelection();
+    if (!editor || !range) return;
+    if (!selectedBlocks(editor, range).length) {
+      document.execCommand("formatBlock", false, "<p>");
+      range = window.getSelection()?.rangeCount ? window.getSelection()!.getRangeAt(0) : null;
+      if (!range) return;
+    }
+    const blocks = selectedBlocks(editor, range);
+    if (!blocks.length) return;
+    const { startContainer, startOffset, endContainer, endOffset } = range;
+    const tag = kind.toUpperCase();
+    let caretFallback: HTMLElement = blocks[blocks.length - 1];
+
+    if (blocks.every((block) => block.tagName === "LI" && block.parentElement?.tagName === tag)) {
+      for (const item of blocks) {
+        const list = item.parentElement!;
+        const paragraph = document.createElement("p");
+        paragraph.append(...Array.from(item.childNodes));
+        if (!paragraph.childNodes.length) paragraph.appendChild(document.createElement("br"));
+        if (item === list.firstElementChild) list.before(paragraph);
+        else if (item === list.lastElementChild) list.after(paragraph);
+        else {
+          const rest = list.cloneNode(false) as HTMLElement;
+          while (item.nextSibling) rest.appendChild(item.nextSibling);
+          list.after(paragraph);
+          paragraph.after(rest);
+        }
+        item.remove();
+        if (!list.children.length) list.remove();
+        caretFallback = paragraph;
+      }
+    } else {
+      const lists = new Set<HTMLElement>();
+      let created: HTMLElement | null = null;
+      for (const block of blocks) {
+        if (block.tagName === "LI") {
+          if (block.parentElement) lists.add(block.parentElement);
+          continue;
+        }
+        if (!created) {
+          created = document.createElement(kind);
+          block.before(created);
+        }
+        const item = document.createElement("li");
+        item.append(...Array.from(block.childNodes));
+        if (!item.childNodes.length) item.appendChild(document.createElement("br"));
+        created.appendChild(item);
+        block.remove();
+        caretFallback = item;
+      }
+      if (created) lists.add(created);
+      for (const list of lists) {
+        let current = list;
+        if (current.tagName !== tag) {
+          const replacement = document.createElement(kind);
+          replacement.append(...Array.from(current.childNodes));
+          current.replaceWith(replacement);
+          current = replacement;
+        }
+        // Join with a list of the same kind directly above or below.
+        const previous = current.previousElementSibling;
+        if (previous?.tagName === tag) {
+          previous.append(...Array.from(current.childNodes));
+          current.remove();
+          current = previous as HTMLElement;
+        }
+        const next = current.nextElementSibling;
+        if (next?.tagName === tag) {
+          current.append(...Array.from(next.childNodes));
+          next.remove();
+        }
+      }
+    }
+
+    const selection = window.getSelection()!;
+    const caret = document.createRange();
+    if (editor.contains(startContainer) && editor.contains(endContainer) && startContainer.isConnected && endContainer.isConnected) {
+      caret.setStart(startContainer, Math.min(startOffset, nodeLength(startContainer)));
+      caret.setEnd(endContainer, Math.min(endOffset, nodeLength(endContainer)));
+    } else {
+      caret.selectNodeContents(caretFallback);
+      caret.collapse(false);
+    }
+    selection.removeAllRanges();
+    selection.addRange(caret);
+    setBlockFormat(selectionBlockFormat(editor, caret));
     emit();
   };
 
@@ -253,9 +461,99 @@ function RichEditor({ value, onChange, onBlur }: { value: string; onChange: (val
     }
   };
 
+  // Insert link: edits the link under the caret, otherwise opens the window for a new link
+  // over the current selection (kept aside, since the window takes focus).
   const insertLink = () => {
-    const url = window.prompt("Enter an HTTPS, mailto, site, or anchor URL");
-    if (url && /^(?:https?:\/\/|mailto:|\/|#)/i.test(url)) command("createLink", url);
+    const range = restoreSelection();
+    if (selectedLink?.isConnected) return editLink(selectedLink);
+    linkRange.current = range?.cloneRange() ?? null;
+    setLinkDialog({ initial: EMPTY_LINK, target: null });
+  };
+
+  const editLink = (link: HTMLAnchorElement) => setLinkDialog({ initial: readLinkSettings(link), target: link });
+
+  const submitLink = (settings: LinkSettings) => {
+    const editor = editorRef.current;
+    const target = linkDialog?.target;
+    setLinkDialog(null);
+    if (!editor) return;
+    if (target) {
+      if (target.isConnected) applyLinkSettings(target, settings);
+      markSelectedLink(target.isConnected ? target : null);
+      return emit();
+    }
+    const range = linkRange.current;
+    if (!range || !editor.contains(range.commonAncestorContainer)) return;
+    editor.focus({ preventScroll: true });
+    const selection = window.getSelection()!;
+    selection.removeAllRanges();
+    selection.addRange(range);
+    let created: HTMLAnchorElement[];
+    if (range.collapsed) {
+      // Nothing selected: the link title (or the address) becomes the link text.
+      const link = document.createElement("a");
+      link.textContent = settings.title || settings.href;
+      range.insertNode(link);
+      range.setStartAfter(link);
+      range.collapse(true);
+      selection.removeAllRanges();
+      selection.addRange(range);
+      created = [link];
+    } else {
+      // createLink can split a selection across lines into several <a>s; a placeholder finds them all.
+      const placeholder = `#editor-new-link-${Date.now()}`;
+      document.execCommand("createLink", false, placeholder);
+      created = Array.from(editor.querySelectorAll<HTMLAnchorElement>(`a[href="${placeholder}"]`));
+    }
+    created.forEach((link) => applyLinkSettings(link, settings));
+    markSelectedLink(created[0] ?? null);
+    emit();
+  };
+
+  // Text colour: the picker starts on the colour already under the caret, if any.
+  const openColorPicker = () => {
+    const range = restoreSelection();
+    colorRange.current = range?.cloneRange() ?? null;
+    const start = range && (range.startContainer instanceof Element ? range.startContainer : range.startContainer.parentElement);
+    const colored = start?.closest<HTMLElement>("font[color], [style*='color']");
+    const initial = colored && editorRef.current?.contains(colored) ? colored.getAttribute("color") ?? colored.style.color : null;
+    setColorPicker({ initial: initial && rgbStringToHex(initial) });
+  };
+
+  // The picker has its own inputs, so colour goes onto the selection it was opened on.
+  const selectColorRange = () => {
+    const editor = editorRef.current;
+    const range = colorRange.current;
+    if (!editor || !range || !editor.contains(range.commonAncestorContainer)) return restoreSelection();
+    editor.focus({ preventScroll: true });
+    const selection = window.getSelection()!;
+    selection.removeAllRanges();
+    selection.addRange(range);
+    return range;
+  };
+
+  const applyColor = (hex: string) => {
+    setColorPicker(null);
+    if (!selectColorRange()) return;
+    document.execCommand("foreColor", false, hex);
+    emit();
+  };
+
+  // Removes text colour from the selection (and from colour wrappers around it); bold, links etc. stay.
+  const removeColor = () => {
+    setColorPicker(null);
+    const editor = editorRef.current;
+    const range = selectColorRange();
+    if (!editor || !range) return;
+    const colored = Array.from(editor.querySelectorAll<HTMLElement>("font[color], [style*='color']")).filter((node) => range.intersectsNode(node));
+    for (const node of colored) {
+      if (node.tagName === "FONT") node.replaceWith(...Array.from(node.childNodes));
+      else {
+        node.style.removeProperty("color");
+        if (!node.getAttribute("style")?.trim()) node.removeAttribute("style");
+      }
+    }
+    emit();
   };
 
   const insertImage = () => fileInputRef.current?.click();
@@ -340,6 +638,70 @@ function RichEditor({ value, onChange, onBlur }: { value: string; onChange: (val
     }
   }
 
+  // Enter starts a plain paragraph, like Google Docs: the new line does not carry on the
+  // previous line's heading, quote, alignment, colour or bold. Enter at the start of a heading
+  // adds a blank paragraph above it; Enter in the middle of a line splits it as usual, and
+  // lists keep their own Enter (new bullet, or leave the list on an empty bullet).
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (event.key !== "Enter" || event.shiftKey || event.nativeEvent.isComposing) return;
+    const editor = editorRef.current;
+    const selection = window.getSelection();
+    if (!editor || !selection?.rangeCount || !selection.isCollapsed) return;
+    const range = selection.getRangeAt(0);
+    let block: Node | null = range.startContainer;
+    while (block && block !== editor && !(block instanceof HTMLElement && /^(?:H[1-6]|P|BLOCKQUOTE|DIV|LI)$/.test(block.tagName))) block = block.parentNode;
+    if (!(block instanceof HTMLElement) || block === editor || block.tagName === "LI" || block.closest("li")) return;
+
+    const side = (edge: "before" | "after") => {
+      const part = document.createRange();
+      part.selectNodeContents(block);
+      if (edge === "before") part.setEnd(range.startContainer, range.startOffset);
+      else part.setStart(range.startContainer, range.startOffset);
+      return !part.toString().replace(/\u00a0/g, " ").trim() && !part.cloneContents().querySelector("img, iframe");
+    };
+    const atStart = side("before");
+    const atEnd = side("after");
+    const isParagraph = block.tagName === "P" || block.tagName === "DIV";
+    if (!atEnd && (isParagraph || !atStart)) return; // middle of a line (or start of a paragraph): split as usual
+
+    event.preventDefault();
+    const blankParagraph = () => {
+      const paragraph = document.createElement("p");
+      paragraph.appendChild(document.createElement("br"));
+      return paragraph;
+    };
+    let caretTarget: HTMLElement | null = null;
+    const quote = block.parentElement?.closest("blockquote");
+    if (isParagraph && atStart && atEnd && quote && editor.contains(quote)) {
+      // An empty line inside a quote: leave the quote, like an empty bullet leaves a list.
+      block.remove();
+      caretTarget = blankParagraph();
+      quote.after(caretTarget);
+    } else if (isParagraph) {
+      caretTarget = blankParagraph();
+      block.after(caretTarget);
+    } else if (atStart && atEnd) {
+      // An empty heading or quote line: turn it into a paragraph, then start a new one below.
+      const replacement = blankParagraph();
+      block.replaceWith(replacement);
+      caretTarget = blankParagraph();
+      replacement.after(caretTarget);
+    } else if (atEnd) {
+      caretTarget = blankParagraph();
+      block.after(caretTarget);
+    } else {
+      block.before(blankParagraph());
+    }
+    if (caretTarget) {
+      const caret = document.createRange();
+      caret.setStart(caretTarget, 0);
+      caret.collapse(true);
+      selection.removeAllRanges();
+      selection.addRange(caret);
+    }
+    emit();
+  };
+
   const handlePaste = (event: React.ClipboardEvent<HTMLDivElement>) => {
     const html = event.clipboardData.getData("text/html");
     const files = Array.from(event.clipboardData.files);
@@ -351,7 +713,7 @@ function RichEditor({ value, onChange, onBlur }: { value: string; onChange: (val
     }
     if (!html) return; // plain text: the browser's own paste is fine
     event.preventDefault();
-    editorRef.current?.focus();
+    editorRef.current?.focus({ preventScroll: true });
     document.execCommand("insertHTML", false, sanitizeBlogHtml(cleanPastedHtml(html)));
     emit();
     void uploadInlineEditorImages({ includeRemote: true });
@@ -380,7 +742,7 @@ function RichEditor({ value, onChange, onBlur }: { value: string; onChange: (val
     }
     const [, type, code] = match;
     const html = `<iframe src="https://www.instagram.com/${type}/${code}/embed" width="400" height="480" frameborder="0" scrolling="no" allowtransparency="true"></iframe>`;
-    editorRef.current?.focus();
+    editorRef.current?.focus({ preventScroll: true });
     document.execCommand("insertHTML", false, html);
     emit();
   };
@@ -391,38 +753,42 @@ function RichEditor({ value, onChange, onBlur }: { value: string; onChange: (val
     </button>
   );
 
+  // The article scrolls inside this box, so the toolbars above it stay in view while editing long posts.
+  // Drag the bottom-right corner to make the box taller or shorter.
   return (
-    <div className={fullscreen ? "fixed inset-0 z-50 flex flex-col bg-white p-4" : "border border-gray-300 bg-white"}>
-      <div className="sticky top-0 z-10 flex flex-wrap items-center border-b bg-gray-50">
+    <div className={fullscreen ? "fixed inset-0 z-50 flex flex-col bg-white p-4" : "flex h-[75vh] min-h-[420px] resize-y flex-col overflow-hidden border border-gray-300 bg-white"} data-testid="article-editor">
+      <div className="z-10 flex shrink-0 flex-wrap items-center border-b bg-gray-50">
         <button type="button" onClick={insertImage} disabled={uploading || pendingUploads > 0} className="flex h-8 items-center gap-1 border-r px-2 text-xs font-bold disabled:opacity-50"><ImagePlus className="h-4 w-4" /> {uploading || pendingUploads > 0 ? "Uploading…" : "Add Media"}</button>
         <input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/webp,image/gif" className="hidden" onChange={(event) => { handleImageFileSelected(event.target.files?.[0]); event.target.value = ""; }} />
         <button type="button" onClick={insertInstagram} className="flex h-8 items-center gap-1 border-r px-2 text-xs font-bold"><Instagram className="h-4 w-4" /> Embed Instagram</button>
-        <select aria-label="Block format" className="h-8 border-r bg-white px-2 text-xs" defaultValue="p" onChange={(event) => command("formatBlock", event.target.value)}>
-          <option value="p">Paragraph</option><option value="h1">Heading 1</option><option value="h2">Heading 2</option><option value="h3">Heading 3</option><option value="h4">Heading 4</option><option value="blockquote">Quote</option>
+        <select aria-label="Block format" className="h-8 border-r bg-white px-2 text-xs" value={blockFormat} onChange={(event) => { setBlockFormat(event.target.value); command("formatBlock", `<${event.target.value}>`); }}>
+          <option value="" disabled>Mixed</option>
+          <option value="p">Paragraph</option><option value="h1">Heading 1</option><option value="h2">Heading 2</option><option value="h3">Heading 3</option><option value="h4">Heading 4</option><option value="h5">Heading 5</option><option value="h6">Heading 6</option><option value="blockquote">Quote</option>
         </select>
         {toolbarButton("Bold", <Bold className="h-4 w-4" />, () => command("bold"))}
         {toolbarButton("Italic", <Italic className="h-4 w-4" />, () => command("italic"))}
-        {toolbarButton("Bullet list", <List className="h-4 w-4" />, () => command("insertUnorderedList"))}
-        {toolbarButton("Numbered list", <ListOrdered className="h-4 w-4" />, () => command("insertOrderedList"))}
-        {toolbarButton("Blockquote", <Quote className="h-4 w-4" />, () => command("formatBlock", "blockquote"))}
+        {toolbarButton("Bullet list", <List className="h-4 w-4" />, () => toggleList("ul"))}
+        {toolbarButton("Numbered list", <ListOrdered className="h-4 w-4" />, () => toggleList("ol"))}
         {toolbarButton("Align left", <AlignLeft className="h-4 w-4" />, () => command("justifyLeft"))}
         {toolbarButton("Align center", <AlignCenter className="h-4 w-4" />, () => command("justifyCenter"))}
         {toolbarButton("Align right", <AlignRight className="h-4 w-4" />, () => command("justifyRight"))}
         {toolbarButton("Insert link", <Link2 className="h-4 w-4" />, insertLink)}
-        {toolbarButton("Text color", <Palette className="h-4 w-4" />, () => { const color = window.prompt("Enter a color name or hex value", "#ff6c0e"); if (color) command("foreColor", color); })}
-        {toolbarButton("Special character", <Star className="h-4 w-4" />, () => { const character = window.prompt("Enter a special character", "★"); if (character) command("insertText", character); })}
+        <span className="relative">
+          {toolbarButton("Text colour", <Palette className="h-4 w-4" />, () => (colorPicker ? setColorPicker(null) : openColorPicker()))}
+          {colorPicker && <BlogColorPicker initial={colorPicker.initial} onApply={applyColor} onRemove={removeColor} onClose={() => setColorPicker(null)} />}
+        </span>
         {toolbarButton("Undo", <Undo2 className="h-4 w-4" />, () => command("undo"))}
         {toolbarButton("Redo", <Redo2 className="h-4 w-4" />, () => command("redo"))}
         <button type="button" onClick={switchMode} className={`ml-auto flex h-8 items-center gap-1 border-l px-2 text-xs font-bold ${codeMode ? "bg-black text-white" : ""}`}><Code2 className="h-4 w-4" /> {codeMode ? "Visual" : "Code"}</button>
         <button type="button" onClick={() => setFullscreen((value) => !value)} className="flex h-8 items-center border-l px-2" title="Fullscreen"><Maximize2 className="h-4 w-4" /></button>
       </div>
       {pendingUploads > 0 && (
-        <div className="border-b bg-orange-50 px-3 py-2 text-xs font-semibold text-orange-800" data-testid="pasted-image-upload">
+        <div className="shrink-0 border-b bg-orange-50 px-3 py-2 text-xs font-semibold text-orange-800" data-testid="pasted-image-upload">
           Uploading {pendingUploads} pasted image{pendingUploads === 1 ? "" : "s"}… Please wait before saving.
         </div>
       )}
       {!codeMode && selectedImage && (
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b bg-orange-50 px-3 py-2 text-xs" data-testid="image-toolbar">
+        <div className="flex shrink-0 flex-wrap items-center gap-x-4 gap-y-2 border-b bg-orange-50 px-3 py-2 text-xs" data-testid="image-toolbar">
           <span className="font-bold uppercase text-gray-600">Image</span>
           <div className="flex items-center gap-1">
             <span className="text-gray-500">Size</span>
@@ -461,15 +827,18 @@ function RichEditor({ value, onChange, onBlur }: { value: string; onChange: (val
         </div>
       )}
       {codeMode ? (
-        <Textarea aria-label="Article HTML code" className="min-h-[420px] flex-1 resize-y rounded-none border-0 font-mono focus-visible:ring-0" value={value} onChange={(event) => onChange(event.target.value)} onBlur={onBlur} />
+        <Textarea aria-label="Article HTML code" className="min-h-0 flex-1 resize-none overflow-y-auto rounded-none border-0 font-mono focus-visible:ring-0" value={value} onChange={(event) => onChange(event.target.value)} onBlur={onBlur} />
       ) : (
+        <div ref={editorAreaRef} className="relative flex min-h-0 flex-1 flex-col">
         <div
           ref={editorRef}
           contentEditable
           suppressContentEditableWarning
           aria-label="Article content"
-          className="prose blog-content min-h-[420px] max-w-none flex-1 resize-y overflow-auto p-5 outline-none"
+          className="prose blog-content min-h-0 max-w-none flex-1 overflow-y-auto p-5 text-lg leading-8 text-gray-700 outline-none"
           onClick={(event) => selectImage(event.target instanceof HTMLImageElement ? event.target : null)}
+          onScroll={() => selectedLink && forceRender((count) => count + 1)}
+          onKeyDown={handleKeyDown}
           onPaste={handlePaste}
           onDrop={handleDrop}
           onInput={() => {
@@ -478,7 +847,16 @@ function RichEditor({ value, onChange, onBlur }: { value: string; onChange: (val
           }}
           onBlur={onBlur}
         />
+        {selectedLink && !selectedImage && <LinkPopover link={selectedLink} area={editorAreaRef.current} onEdit={() => editLink(selectedLink)} onUnlink={removeLink} />}
+        </div>
       )}
+      <BlogLinkDialog
+        open={!!linkDialog}
+        isNew={!linkDialog?.target}
+        initial={linkDialog?.initial ?? EMPTY_LINK}
+        onCancel={() => setLinkDialog(null)}
+        onSubmit={submitLink}
+      />
     </div>
   );
 }
@@ -492,7 +870,7 @@ export function BlogEditor({ post, adminName, onClose, onSaved, onDelete }: {
 }) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const authorNames = useBlogAuthorNames();
+  const authorNames = useBlogAuthors().map(authorDisplayName);
   const [form, setForm] = useState<BlogForm>(() => fromPost(post));
   const [slugTouched, setSlugTouched] = useState(!!post);
   const [editingSlug, setEditingSlug] = useState(false);
@@ -766,8 +1144,8 @@ export function BlogEditor({ post, adminName, onClose, onSaved, onDelete }: {
             <details className="mt-4"><summary className="cursor-pointer text-sm text-primary">Choose from the most used tags</summary><div className="mt-2 flex flex-wrap gap-2">{(taxonomy.data?.tags ?? []).slice(0, 15).map((tag) => <button key={tag.id} className="text-xs underline" onClick={() => updateField("tagNames", [...new Set([...form.tagNames, tag.name])])}>{tag.name}</button>)}</div></details>
           </Panel>
 
-          <Panel title="Post settings" defaultOpen={false}>
-            <div className="space-y-3"><div><Label>Author</Label><Input list="blog-author-options" value={form.authorName} onChange={(event) => updateField("authorName", event.target.value)} data-testid="input-author" /><datalist id="blog-author-options">{["Valencia Basket Academy UAE", ...authorNames].map((name) => <option key={name} value={name} />)}</datalist>{authorNames.length > 0 && <p className="mt-1 text-xs text-gray-500">Pick {authorNames.join(" or ")} to link the article to their author page.</p>}</div><label className="flex items-center gap-2 text-sm"><Checkbox checked={form.isFeatured} onCheckedChange={(value) => updateField("isFeatured", value === true)} /> Feature this article</label></div>
+          <Panel title="Post settings">
+            <div className="space-y-3"><div><Label>Author</Label><BlogAuthorSelect value={form.authorName} onChange={(name) => updateField("authorName", name)} className="mt-1 h-10 w-full border border-gray-300 bg-white px-3 text-sm" aria-label="Author" data-testid="input-author" />{authorNames.length > 0 && <p className="mt-1 text-xs text-gray-500">Pick {authorNames.join(" or ")} to link the article to their author page.</p>}</div><label className="flex items-center gap-2 text-sm"><Checkbox checked={form.isFeatured} onCheckedChange={(value) => updateField("isFeatured", value === true)} /> Feature this article</label></div>
           </Panel>
         </aside>
       </div>

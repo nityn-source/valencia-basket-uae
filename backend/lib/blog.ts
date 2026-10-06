@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 const allowedHtmlTags = new Set([
-  "p", "br", "strong", "b", "em", "i", "u", "s", "h1", "h2", "h3", "h4",
+  "p", "br", "strong", "b", "em", "i", "u", "s", "h1", "h2", "h3", "h4", "h5", "h6",
   "blockquote", "ul", "ol", "li", "a", "span", "font", "img", "hr", "div", "iframe",
   // Tables keep their structure; widths, colours and borders from the source are dropped
   // (the site's own table style applies instead).
@@ -16,7 +16,20 @@ export const BLOG_CONTENT_MAX = 200_000;
 // Only Instagram's own no-JS embed endpoint is ever allowed as an iframe src.
 const instagramEmbedPattern = /^https:\/\/(?:www\.)?instagram\.com\/(?:p|reel|tv)\/[A-Za-z0-9_-]+\/embed(?:\/captioned)?\/?(?:\?[^\s"'<>]*)?$/i;
 
+// A heading with no text: pressing Enter while "Heading 2" is on leaves <h2><br></h2>,
+// which SEO tools report as a blank H2. Matched after sanitising, so only simple tags remain.
+const emptyHeadingPattern = /<h([1-6])(?:\s[^>]*)?>(?:\s|&nbsp;|&#160;|<br>|<\/?(?:span|strong|b|em|i|u|s|font)(?:\s[^>]*)?>)*<\/h\1>/gi;
+
+/** Empty headings become a plain blank line, so the spacing stays but no blank heading is left. */
+export function replaceEmptyHeadings(html: string) {
+  return html.replace(emptyHeadingPattern, "<p><br></p>");
+}
+
 export function sanitizeBlogHtml(input: string) {
+  return replaceEmptyHeadings(sanitizeTags(input));
+}
+
+function sanitizeTags(input: string) {
   let html = input
     .replace(/<!--[\s\S]*?-->/g, "")
     .replace(/<(script|style|object|embed|form|textarea|button|svg|math|template)\b[^>]*>[\s\S]*?<\/\1\s*>/gi, "")
@@ -70,7 +83,17 @@ export function sanitizeBlogHtml(input: string) {
         if (/^[a-z0-9]+$/i.test(value)) attributes.push(`${name}="${value}"`);
         continue;
       }
-      if (name === "alt" || name === "title" || name === "target" || name === "rel") {
+      if (name === "target" || name === "rel") {
+        // Links choose same tab or new tab; a new-tab link always gets noopener/noreferrer below.
+        // rel keeps only the SEO hints an editor may set (nofollow, sponsored, ugc).
+        if (tag === "a" && name === "target" && value === "_blank") attributes.push('target="_blank"');
+        if (tag === "a" && name === "rel") {
+          const hints = value.toLowerCase().split(/\s+/).filter((token) => /^(?:nofollow|sponsored|ugc)$/.test(token));
+          if (hints.length) attributes.push(`rel="${hints.join(" ")}"`);
+        }
+        continue;
+      }
+      if (name === "alt" || name === "title") {
         attributes.push(`${name}="${value.replace(/"/g, "&quot;")}"`);
         continue;
       }
@@ -87,6 +110,11 @@ export function sanitizeBlogHtml(input: string) {
       }
     }
     if (tag === "iframe" && !attributes.some((attr) => attr.startsWith("src="))) return "";
+    if (attributes.includes('target="_blank"')) {
+      const relIndex = attributes.findIndex((attr) => attr.startsWith("rel="));
+      const hints = relIndex >= 0 ? attributes.splice(relIndex, 1)[0].slice(5, -1).split(" ") : [];
+      attributes.push(`rel="${[...hints, "noopener", "noreferrer"].join(" ")}"`);
+    }
     return `<${tag}${attributes.length ? ` ${attributes.join(" ")}` : ""}>`;
   }).replace(/<\/([a-z0-9]+)\s*>/gi, (full, rawTag: string) => {
     const tag = rawTag.toLowerCase();
@@ -216,6 +244,14 @@ export function normalizeBlogPostInput(input: z.infer<typeof blogPostInputSchema
     tagNames: [...new Set(input.tagNames.map((name) => name.trim()).filter(Boolean))],
   };
 }
+
+export const DEFAULT_BLOG_AUTHOR = "Valencia Basket Academy UAE";
+
+/** Quick edits from the article list: author and/or categories, nothing else. */
+export const blogQuickEditSchema = z.object({
+  authorName: z.string().trim().min(2).max(120).optional(),
+  categoryNames: z.array(z.string().trim().min(1).max(80)).min(1, "Select at least one category").max(20).optional(),
+}).refine((value) => value.authorName !== undefined || value.categoryNames !== undefined, "Nothing to update");
 
 export function splitBlogNames(value: string) {
   return [...new Set(value.split(",").map((name) => name.trim()).filter(Boolean))];

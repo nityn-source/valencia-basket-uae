@@ -73,7 +73,7 @@ export default async function BlogAuthorPage({ params }: { params: Promise<{ slu
             </div>
           ) : (
             <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-              {posts.map((post) => <BlogPostCard key={post.id} post={post} />)}
+              {posts.map((post) => <BlogPostCard key={post.id} post={post} author={author} />)}
             </div>
           )}
         </div>

@@ -5,6 +5,8 @@ import { BreadcrumbJsonLd } from "@/components/seo/StructuredData";
 import { storage } from "@/lib/storage";
 import { BlogPostCard } from "@/components/blog/BlogPostCard";
 import { getContent } from "@/lib/content/pageContent";
+import { matchAuthor } from "@/lib/content/staff";
+import { getBlogAuthors } from "@/lib/content/staffStore";
 
 export const revalidate = 60;
 
@@ -18,6 +20,7 @@ export default async function BlogPage() {
     return [];
   });
   const heroSubtext = await getContent("blog.hero.subtext");
+  const authors = await getBlogAuthors().catch(() => []);
 
   return (
     <>
@@ -54,7 +57,7 @@ export default async function BlogPage() {
           ) : (
             <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
               {posts.map((post) => (
-                <BlogPostCard key={post.id} post={post} />
+                <BlogPostCard key={post.id} post={post} author={matchAuthor(authors, post.authorName)} />
               ))}
             </div>
           )}

@@ -3,7 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { cookies } from "next/headers";
-import { ArrowLeft, CalendarDays } from "lucide-react";
+import { ArrowLeft, CalendarDays, UserRound } from "lucide-react";
 import { BreadcrumbJsonLd, StructuredData } from "@/components/seo/StructuredData";
 import { blogPostStructuredData } from "@/lib/seo/structuredData";
 import { storage } from "@/lib/storage";
@@ -90,19 +90,24 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
             <Link href="/blog" className="mb-6 inline-flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-gray-400 hover:text-primary">
               <ArrowLeft className="h-4 w-4" /> Back to Blog
             </Link>
-            <div className="mb-5 flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-primary">
-              <CalendarDays className="h-4 w-4" />
-              {post.publishedAt ? new Date(post.publishedAt).toLocaleDateString("en-AE", { year: "numeric", month: "long", day: "numeric" }) : ""}
+            <div className="mb-5 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm font-bold uppercase tracking-widest text-primary">
+              {post.publishedAt && (
+                <span className="flex items-center gap-2">
+                  <CalendarDays className="h-4 w-4" />
+                  {new Date(post.publishedAt).toLocaleDateString("en-AE", { year: "numeric", month: "long", day: "numeric" })}
+                </span>
+              )}
+              <span className="flex items-center gap-2 text-gray-400" data-testid="article-author">
+                <UserRound className="h-4 w-4" />
+                By{" "}
+                {author ? <Link href={authorPath(author.slug)} className="text-white underline-offset-4 hover:text-primary hover:underline">{authorName}</Link> : post.authorName}
+              </span>
             </div>
             <h1 className="text-4xl font-black uppercase leading-tight tracking-tight md:text-6xl">{post.title}</h1>
             {post.excerpt && <p className="mt-6 max-w-3xl text-xl leading-relaxed text-gray-400">{post.excerpt}</p>}
-            <p className="mt-6 text-sm font-bold uppercase tracking-wider text-gray-400">
-              By {author ? <Link href={authorPath(author.slug)} className="text-white hover:text-primary">{authorName}</Link> : post.authorName}
-            </p>
           </div>
         </header>
         <div className="container mx-auto max-w-4xl px-4 py-12 md:px-6 md:py-20">
-          {post.featuredImageSrc && <img src={post.featuredImageSrc} alt={post.featuredImageAlt ?? post.title} className="mb-12 max-h-[32rem] w-full rounded object-cover" />}
           {hasRichContent ? (
             <div className="prose blog-content max-w-none text-lg leading-8 text-gray-700" dangerouslySetInnerHTML={{ __html: safeContent }} />
           ) : (
