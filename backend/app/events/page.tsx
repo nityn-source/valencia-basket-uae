@@ -9,7 +9,7 @@ import type { Event } from "@shared/schema";
 import { buildPageMetadata } from "@/lib/seo/resolve";
 import { getStructuredData } from "@/lib/seo/structuredDataResolve";
 import { StructuredData } from "@/components/seo/StructuredData";
-import { getContent } from "@/lib/content/pageContent";
+import { getContentGetter } from "@/lib/content/pageContent";
 
 export const revalidate = 60;
 
@@ -17,7 +17,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return buildPageMetadata("/events");
 }
 
-function EventCard({ event, past = false }: { event: Event; past?: boolean }) {
+function EventCard({ event, past = false, buttonLabel, completedLabel }: { event: Event; past?: boolean; buttonLabel: string; completedLabel: string }) {
   return (
     <Link href={`/events/${event.slug}`} data-testid={`link-event-${event.slug}`}>
       <div className={`flex flex-col md:flex-row bg-white border border-gray-100 shadow-sm overflow-hidden group hover:shadow-xl transition-shadow duration-300 cursor-pointer ${past ? "opacity-80" : ""}`}>
@@ -29,7 +29,7 @@ function EventCard({ event, past = false }: { event: Event; past?: boolean }) {
                   className={`object-cover transition-transform duration-700 group-hover:scale-110 ${past ? "grayscale" : ""}`}
               />
               <div className="absolute top-4 left-4 bg-white/90 backdrop-blur px-3 py-1 text-xs font-bold uppercase tracking-widest text-black">
-                  {past ? "Completed" : event.status}
+                  {past ? completedLabel : event.status}
               </div>
           </div>
           <div className="p-8 md:w-2/3 flex flex-col justify-center items-start">
@@ -57,7 +57,7 @@ function EventCard({ event, past = false }: { event: Event; past?: boolean }) {
               </p>
 
               <Button disabled={event.status === "Sold Out"} variant={past ? "outline" : "default"} className="uppercase font-bold tracking-wider rounded-none px-8" data-testid={`button-view-event-${event.slug}`}>
-                  View Event Details
+                  {buttonLabel}
               </Button>
           </div>
       </div>
@@ -68,7 +68,7 @@ function EventCard({ event, past = false }: { event: Event; past?: boolean }) {
 export default async function Events() {
   const events = await storage.getAllEvents();
   const schema = await getStructuredData("/events", "Events");
-  const introText = await getContent("events.intro");
+  const c = await getContentGetter();
 
   const upcoming = events.filter((e) => !isPastEvent(e.endDate));
   const past = events
@@ -80,9 +80,9 @@ export default async function Events() {
       <StructuredData data={schema} />
       <div className="bg-black text-white py-20">
         <div className="container mx-auto px-4 md:px-6 text-center">
-          <h1 className="text-5xl md:text-7xl font-black uppercase tracking-tighter mb-6">Events &amp; Camps</h1>
+          <h1 className="text-5xl md:text-7xl font-black uppercase tracking-tighter mb-6">{c("events.hero.title")}</h1>
           <p className="text-xl text-gray-400 max-w-2xl mx-auto">
-            {introText}
+            {c("events.intro")}
           </p>
         </div>
       </div>
@@ -91,12 +91,12 @@ export default async function Events() {
         {upcoming.length > 0 ? (
           <div className="space-y-12">
               {upcoming.map((event) => (
-                  <EventCard key={event.id} event={event} />
+                  <EventCard key={event.id} event={event} buttonLabel={c("events.card.button")} completedLabel={c("events.card.completed")} />
               ))}
           </div>
         ) : (
           <p className="text-center text-lg text-gray-500" data-testid="text-no-upcoming-events">
-            No upcoming events at the moment. Check back soon!
+            {c("events.no-upcoming")}
           </p>
         )}
 
@@ -104,23 +104,23 @@ export default async function Events() {
           <div className="mt-24">
             <div className="flex items-center gap-3 mb-12">
               <div className="h-8 w-1 bg-gray-300"></div>
-              <h2 className="text-3xl md:text-4xl font-black uppercase tracking-tight text-gray-500">Past Events</h2>
+              <h2 className="text-3xl md:text-4xl font-black uppercase tracking-tight text-gray-500">{c("events.past.heading")}</h2>
             </div>
             <div className="space-y-12">
                 {past.map((event) => (
-                    <EventCard key={event.id} event={event} past />
+                    <EventCard key={event.id} event={event} past buttonLabel={c("events.card.button")} completedLabel={c("events.card.completed")} />
                 ))}
             </div>
           </div>
         )}
 
         <div className="mt-20 p-12 bg-primary text-white text-center">
-            <h2 className="text-3xl font-black uppercase mb-4">Host a Clinic?</h2>
+            <h2 className="text-3xl font-black uppercase mb-4">{c("events.clinic.title")}</h2>
             <p className="text-xl opacity-90 mb-8 max-w-2xl mx-auto">
-                Schools and organizations can request bespoke basketball clinics delivered by our expert staff.
+                {c("events.clinic.text")}
             </p>
             <Button variant="outline" className="border-white text-white hover:bg-white hover:text-primary uppercase font-bold tracking-wider rounded-none px-8" data-testid="button-contact-clinic">
-                Contact Us
+                {c("events.clinic.button")}
             </Button>
         </div>
       </div>

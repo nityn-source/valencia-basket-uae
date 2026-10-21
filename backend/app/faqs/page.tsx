@@ -3,6 +3,7 @@ import Link from "next/link";
 import { FAQContent } from "./FAQContent";
 import { buildPageMetadata } from "@/lib/seo/resolve";
 import { BreadcrumbJsonLd } from "@/components/seo/StructuredData";
+import { getVisibleFaqs } from "@/lib/content/faqStore";
 
 export const revalidate = 60;
 
@@ -12,6 +13,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 
 export default async function FAQsPage() {
+  const faqs = await getVisibleFaqs();
   return (
     <>
       <BreadcrumbJsonLd path="/faqs" label="FAQs" />
@@ -32,7 +34,7 @@ export default async function FAQsPage() {
       {/* FAQ body */}
       <div className="bg-white py-14 md:py-20">
         <div className="container mx-auto px-4 md:px-6 max-w-3xl">
-          <FAQContent />
+          <FAQContent items={faqs} />
 
           {/* Still have a question CTA */}
           <div className="mt-16 p-8 bg-gray-50 border-l-4 border-primary">

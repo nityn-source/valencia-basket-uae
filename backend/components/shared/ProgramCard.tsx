@@ -8,9 +8,10 @@ interface ProgramCardProps {
   image: string;
   imageAlt: string;
   href: string;
+  buttonLabel?: string;
 }
 
-export function ProgramCard({ title, age, description, image, imageAlt, href }: ProgramCardProps) {
+export function ProgramCard({ title, age, description, image, imageAlt, href, buttonLabel = "Learn More" }: ProgramCardProps) {
   return (
     <Link href={href} className="block">
       <div className="group relative h-[420px] overflow-hidden bg-black cursor-pointer">
@@ -50,7 +51,7 @@ export function ProgramCard({ title, age, description, image, imageAlt, href }: 
 
           {/* Learn More — always visible, 44px min touch target */}
           <span className="inline-flex items-center gap-2 bg-primary text-white text-xs font-bold uppercase tracking-widest px-5 min-h-[44px] transition-colors duration-200 group-hover:bg-orange-600">
-            LEARN MORE <span aria-hidden="true">→</span>
+            {buttonLabel} <span aria-hidden="true">→</span>
           </span>
         </div>
       </div>

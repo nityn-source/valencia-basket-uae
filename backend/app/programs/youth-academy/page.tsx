@@ -12,7 +12,8 @@ import { ArrowRight, Target, Shield, TrendingUp, Trophy, Check } from "lucide-re
 import { buildPageMetadata, getAltResolver } from "@/lib/seo/resolve";
 import { getStructuredData } from "@/lib/seo/structuredDataResolve";
 import { StructuredData } from "@/components/seo/StructuredData";
-import { getContent } from "@/lib/content/pageContent";
+import { getContentGetter } from "@/lib/content/pageContent";
+import { RichTitle } from "@/components/shared/RichTitle";
 
 export const revalidate = 60;
 
@@ -20,49 +21,32 @@ export async function generateMetadata(): Promise<Metadata> {
   return buildPageMetadata("/programs/youth-academy");
 }
 
-const pillars = [
-  {
-    icon: Target,
-    title: "Technical Mastery",
-    points: ["Shooting form & mechanics", "Dribbling under pressure", "Finishing at the rim", "Footwork & spacing"],
-  },
-  {
-    icon: Shield,
-    title: "Defensive Excellence",
-    points: ["Defensive footwork", "On-ball & help defense", "Transition defense", "Reading offensive actions"],
-  },
-  {
-    icon: TrendingUp,
-    title: "Tactical Development",
-    points: ["Half-court offense sets", "Pick-and-roll concepts", "Defensive schemes", "Fast break execution"],
-  },
-  {
-    icon: Trophy,
-    title: "Competition",
-    points: [
-      "Competitive leagues",
-      "Internal tournaments",
-      // HIDDEN — add league/competition details once confirmed
-      "Performance reviews",
-    ],
-  },
-];
+const pillarIcons = [Target, Shield, TrendingUp, Trophy];
+const pillarPointCounts = [4, 4, 4, 3];
 
-const focusAreas = [
-  { icon: Target,     title: "Technical Mastery",    desc: "Shooting mechanics, dribbling under pressure, finishing at the rim, with high-repetition skill work and immediate coach feedback." },
-  { icon: Shield,     title: "Defensive Excellence", desc: "Footwork, on-ball and help defense, transition defense, and reading offensive actions at game speed." },
-  { icon: TrendingUp, title: "Tactical Development", desc: "Half-court offense, pick-and-roll concepts, defensive schemes, and fast break execution applied in real game situations." },
-  { icon: Trophy,     title: "Competition",          desc: "Competitive leagues, internal tournaments, and structured 5v5 scrimmages to test development under real pressure." },
-];
+const focusIcons = [Target, Shield, TrendingUp, Trophy];
 
 export default async function YouthAcademy() {
   const alt = await getAltResolver();
   const schema = await getStructuredData("/programs/youth-academy", "Youth Academy");
-  const heroSubtext = await getContent("youth-academy.hero.subtext");
-  const heroImage = await getContent("program.youth-academy.image");
-  const aboutParagraph1 = await getContent("youth-academy.about.paragraph1");
-  const aboutParagraph2 = await getContent("youth-academy.about.paragraph2");
-  const ctaSubtext = await getContent("youth-academy.cta.subtext");
+  const c = await getContentGetter();
+  const heroImage = c("program.youth-academy.image");
+  const sessionImage = c("youth-academy.session.image");
+  const pillars = pillarIcons.map((icon, i) => ({
+    icon,
+    title: c(`youth-academy.pillar${i + 1}.title`),
+    points: Array.from({ length: pillarPointCounts[i] }, (_, n) => c(`youth-academy.pillar${i + 1}.point${n + 1}`)),
+  }));
+  const focusAreas = focusIcons.map((icon, i) => ({
+    icon,
+    title: c(`youth-academy.focus${i + 1}.title`),
+    desc: c(`youth-academy.focus${i + 1}.desc`),
+  }));
+  const steps = Array.from({ length: 5 }, (_, i) => ({
+    step: String(i + 1).padStart(2, "0"),
+    title: c(`youth-academy.step${i + 1}.title`),
+    desc: c(`youth-academy.step${i + 1}.desc`),
+  }));
   return (
     <>
       <StructuredData data={schema} />
@@ -70,18 +54,18 @@ export default async function YouthAcademy() {
       <div className="bg-black text-white py-24">
         <div className="container mx-auto px-4 md:px-6 text-center">
           <span className="inline-block rounded-full bg-primary text-white px-4 py-1.5 font-bold uppercase text-xs tracking-widest mb-6">
-            Ages 11–18 Years
+            {c("youth-academy.hero.badge")}
           </span>
           <h1 className="text-5xl md:text-7xl font-black uppercase tracking-tighter mb-6">
-            Youth <span className="text-primary">Academy</span> Program
+            <RichTitle text={c("youth-academy.hero.title")} />
           </h1>
           <p className="text-xl text-gray-400 max-w-2xl mx-auto mb-10">
-            {heroSubtext}
+            {c("youth-academy.hero.subtext")}
           </p>
           <div className="flex justify-center">
             <Link href="/#book-trial">
               <Button size="lg" className="uppercase font-bold tracking-wider rounded-none h-14 px-10 text-base">
-                Book a Free Trial <ArrowRight className="ml-2 h-5 w-5" />
+                {c("youth-academy.hero.button")} <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </Link>
           </div>
@@ -108,20 +92,20 @@ export default async function YouthAcademy() {
             </div>
             {/* content RIGHT — mobile: stacks second */}
             <div className="order-2">
-              <span className="text-primary font-bold uppercase tracking-widest text-sm mb-4 block">The Program</span>
+              <span className="text-primary font-bold uppercase tracking-widest text-sm mb-4 block">{c("youth-academy.about.eyebrow")}</span>
               <h2 className="text-4xl md:text-5xl font-black uppercase tracking-tighter mb-6">
-                Serious Development.<br /><span className="text-primary">Real Pathways.</span>
+                <RichTitle text={c("youth-academy.about.title")} />
               </h2>
               <p className="text-gray-600 leading-relaxed text-lg mb-6">
-                {aboutParagraph1}
+                {c("youth-academy.about.paragraph1")}
               </p>
               <p className="text-gray-600 leading-relaxed text-lg mb-8">
-                {aboutParagraph2}
+                {c("youth-academy.about.paragraph2")}
               </p>
               {/* Lever 2: tighter stat tiles, less padding */}
               <div className="grid grid-cols-2 gap-3">                <div className="bg-gray-50 border-l-4 border-primary px-3 py-2">
-                  <span className="block text-xs font-bold uppercase text-gray-400 mb-0.5">Session Length</span>
-                  <span className="font-bold text-gray-900 text-sm">90 mins</span>
+                  <span className="block text-xs font-bold uppercase text-gray-400 mb-0.5">{c("youth-academy.stat.session.label")}</span>
+                  <span className="font-bold text-gray-900 text-sm">{c("youth-academy.stat.session.value")}</span>
                 </div>
                 
                 {/* HIDDEN — un-hide and replace value once coach-to-player ratio is confirmed */}
@@ -132,8 +116,8 @@ export default async function YouthAcademy() {
                   </div>
                 )}
                 <div className="bg-gray-50 border-l-4 border-primary px-3 py-2">
-                  <span className="block text-xs font-bold uppercase text-gray-400 mb-0.5">Venue</span>
-                  <span className="font-bold text-gray-900 text-sm">AllSports Arena, Al Quoz</span>
+                  <span className="block text-xs font-bold uppercase text-gray-400 mb-0.5">{c("youth-academy.stat.venue.label")}</span>
+                  <span className="font-bold text-gray-900 text-sm">{c("youth-academy.stat.venue.value")}</span>
                 </div>
               </div>
             </div>
@@ -146,10 +130,10 @@ export default async function YouthAcademy() {
         <div className="container mx-auto px-4 md:px-6">
           <div className="text-center mb-12">
             <span className="inline-block rounded-full bg-primary text-white px-4 py-1.5 font-bold uppercase text-xs tracking-widest mb-4">
-              Training Pillars
+              {c("youth-academy.pillars.badge")}
             </span>
             <h2 className="text-4xl md:text-5xl font-black uppercase tracking-tighter">
-              How We Develop Players
+              {c("youth-academy.pillars.title")}
             </h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
@@ -178,9 +162,9 @@ export default async function YouthAcademy() {
         <div className="container mx-auto px-4 md:px-6">
           <div className="text-center mb-12">
             <span className="inline-block rounded-full bg-primary text-white px-4 py-1.5 font-bold uppercase text-xs tracking-widest mb-4">
-              What We Cover
+              {c("youth-academy.focus.badge")}
             </span>
-            <h2 className="text-4xl md:text-5xl font-black uppercase tracking-tighter">Focus Areas</h2>
+            <h2 className="text-4xl md:text-5xl font-black uppercase tracking-tighter">{c("youth-academy.focus.title")}</h2>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
             {focusAreas.map(({ icon: Icon, title, desc }) => (
@@ -203,18 +187,12 @@ export default async function YouthAcademy() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
             {/* steps LEFT — mobile: stacks first */}
             <div className="order-1">
-              <span className="text-primary font-bold uppercase tracking-widest text-sm mb-4 block">Session Structure</span>
+              <span className="text-primary font-bold uppercase tracking-widest text-sm mb-4 block">{c("youth-academy.session.eyebrow")}</span>
               <h2 className="text-4xl md:text-5xl font-black uppercase tracking-tighter mb-8">
-                What a Session Looks Like
+                {c("youth-academy.session.title")}
               </h2>
               <div className="space-y-5">
-                {[
-                  { step: "01", title: "Activation",      desc: "Dynamic warm-up: mobility, activation drills, and mental focus before training begins." },
-                  { step: "02", title: "Technical Block", desc: "High-repetition individual skill work, including shooting form, ball-handling series, or footwork patterns, with immediate coach feedback." },
-                  { step: "03", title: "Tactical Work",   desc: "Small-group and team drills applying the session's concept in game-realistic scenarios." },
-                  { step: "04", title: "Competition",     desc: "5v5 scrimmage or structured game situations, applying everything under competitive pressure." },
-                  { step: "05", title: "Review",          desc: "Coach-led debrief on key moments, individual notes, and targets for the next session." },
-                ].map(({ step, title, desc }) => (
+                {steps.map(({ step, title, desc }) => (
                   <div key={step} className="flex gap-5">
                     <span className="text-primary font-black text-xl leading-none shrink-0 w-8">{step}</span>
                     <div>
@@ -227,7 +205,7 @@ export default async function YouthAcademy() {
             </div>
             {/* image RIGHT — mobile: stacks second */}
             <div className="order-2 aspect-[3/4] w-full relative">
-              <Image src="/images/youth-program.jpeg" alt={alt("youth-academy.session")} fill className="object-cover" />
+              <Image src={sessionImage} alt={alt("youth-academy.session")} fill className="object-cover" />
             </div>
           </div>
         </div>
@@ -237,20 +215,20 @@ export default async function YouthAcademy() {
       <section className="bg-primary py-16 text-white text-center">
         <div className="container mx-auto px-4 md:px-6">
           <h2 className="text-4xl md:text-5xl font-black uppercase tracking-tighter mb-4">
-            Ready to Level Up?
+            {c("youth-academy.cta.title")}
           </h2>
           <p className="text-xl mb-8 max-w-xl mx-auto opacity-90">
-            {ctaSubtext}
+            {c("youth-academy.cta.subtext")}
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/#book-trial">
               <Button size="lg" className="bg-black text-white hover:bg-white hover:text-primary uppercase font-bold tracking-wider rounded-none h-14 px-10 text-base border-0">
-                Book a Free Trial <ArrowRight className="ml-2 h-5 w-5" />
+                {c("youth-academy.cta.button")} <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </Link>
             <Link href="/contact">
               <Button size="lg" variant="outline" className="border-white text-white hover:bg-white hover:text-primary uppercase font-bold tracking-wider rounded-none h-14 px-10 text-base">
-                Ask a Question
+                {c("youth-academy.cta.button2")}
               </Button>
             </Link>
           </div>

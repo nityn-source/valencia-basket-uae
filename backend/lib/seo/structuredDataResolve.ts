@@ -6,13 +6,19 @@ import {
   breadcrumbStructuredDataRegistry,
   breadcrumbs,
   contactStructuredData,
-  faqStructuredData,
+  buildFaqStructuredData,
   SITE,
+  ORGANIZATION_ID,
+  WEBSITE_ID,
   authorSchema,
 } from "./structuredData";
 import { getCoachStructuredEntries } from "./coaches";
 import { AUTHOR_SLUGS, authorDisplayName, authorPath, matchAuthor, type StaffMember } from "@/lib/content/staff";
 import { getAuthorBySlug, getBlogAuthors } from "@/lib/content/staffStore";
+import { getVisibleFaqs } from "@/lib/content/faqStore";
+import { getContent } from "@/lib/content/pageContent";
+import { getPageDefaults } from "./registry";
+import { getSeoOverrides, mergeSeo } from "./resolve";
 
 export const getStructuredDataOverrides = cache(async () => {
   try {
@@ -59,30 +65,70 @@ export function getEventStructuredData(event: {
  */
 export const AUTO_SCHEMA_PATHS = new Set(["/blog", ...AUTHOR_SLUGS.map(authorPath)]);
 
-async function blogListingSchema(): Promise<Record<string, unknown>> {
+/**
+ * Blog home page schema: the page itself (CollectionPage), the Blog it lists,
+ * and the breadcrumb, linked by @id. The post list is read from the database
+ * on every render, so a newly published article appears here with no edit.
+ */
+async function blogListingSchema(): Promise<Record<string, unknown>[]> {
   const posts = (await storage.getPublishedBlogPosts()).filter(
     (post) => post.visibility === "public" && !post.noIndex && post.schemaEnabled,
   );
   const authors = await getBlogAuthors();
-  const iso = (value: Date | string | null) => (value ? new Date(value).toISOString() : undefined);
+  // Calendar date as the academy sees it (Dubai time), so a late-evening post keeps its date.
+  const dubaiDay = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Dubai", year: "numeric", month: "2-digit", day: "2-digit" });
+  const day = (value: Date | string | null) => (value ? dubaiDay.format(new Date(value)) : undefined);
   // Legacy posts may hold base64 data URIs; never inline those into schema.
   const imageUrl = (src: string | null) =>
     src?.startsWith("https://") ? src : src?.startsWith("/") ? `${SITE}${src}` : undefined;
-  return {
-    "@context": "https://schema.org",
-    "@type": "Blog",
-    name: "The Valencia Basket UAE Blog",
-    url: `${SITE}/blog`,
-    blogPost: posts.map((post) => ({
-      "@type": "BlogPosting",
-      headline: post.title,
-      url: `${SITE}/blog/${post.slug}`,
-      datePublished: iso(post.publishedAt),
-      dateModified: iso(post.updatedAt) ?? iso(post.publishedAt),
-      image: imageUrl(post.featuredImageSrc),
-      author: authorSchema(post.authorName, matchAuthor(authors, post.authorName)),
-    })),
-  };
+  const defaults = getPageDefaults("/blog");
+  const seo = defaults ? mergeSeo(defaults, (await getSeoOverrides()).get("/blog")) : undefined;
+  const url = `${SITE}/blog`;
+  const publisher = { "@type": "Organization", "@id": ORGANIZATION_ID };
+  return [
+    {
+      "@context": "https://schema.org",
+      "@type": "CollectionPage",
+      "@id": `${url}#webpage`,
+      url,
+      name: seo?.title ?? "Basketball Academy Blog | Valencia Basket UAE",
+      description: seo?.description,
+      isPartOf: { "@type": "WebSite", "@id": WEBSITE_ID },
+      about: publisher,
+      mainEntity: { "@type": "Blog", "@id": `${url}#blog` },
+      inLanguage: "en-AE",
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "Blog",
+      "@id": `${url}#blog`,
+      name: "The Valencia Basket UAE Blog",
+      description: await getContent("blog.hero.subtext"),
+      url,
+      publisher,
+      inLanguage: "en-AE",
+      blogPost: posts.map((post) => ({
+        "@type": "BlogPosting",
+        "@id": `${SITE}/blog/${post.slug}#article`,
+        headline: post.title,
+        url: `${SITE}/blog/${post.slug}`,
+        datePublished: day(post.publishedAt),
+        dateModified: day(post.updatedAt) ?? day(post.publishedAt),
+        image: imageUrl(post.featuredImageSrc),
+        author: authorSchema(post.authorName, matchAuthor(authors, post.authorName)),
+        publisher,
+      })),
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "@id": `${url}#breadcrumb`,
+      itemListElement: [
+        { "@type": "ListItem", position: 1, name: "Home", item: `${SITE}/` },
+        { "@type": "ListItem", position: 2, name: "Blog", item: url },
+      ],
+    },
+  ];
 }
 
 /** Profile page for a blog author: their Person entity plus their public articles. */
@@ -155,13 +201,13 @@ async function computeDefaultPageSchema(path: string, label?: string): Promise<R
     return withBreadcrumb([...staticEntries, ...coaches]);
   }
   if (path === "/faqs") {
-    return withBreadcrumb([...staticEntries, faqStructuredData as unknown as Record<string, unknown>]);
+    return withBreadcrumb([...staticEntries, buildFaqStructuredData(await getVisibleFaqs()) as unknown as Record<string, unknown>]);
   }
   if (path === "/contact") {
     return withBreadcrumb([...staticEntries, contactStructuredData as unknown as Record<string, unknown>]);
   }
   if (path === "/blog") {
-    return withBreadcrumb([...staticEntries, await blogListingSchema()]);
+    return [...staticEntries, ...(await blogListingSchema())];
   }
   const authorSlugMatch = /^\/blog\/author\/([^/]+)$/.exec(path);
   if (authorSlugMatch) {

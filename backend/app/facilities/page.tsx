@@ -18,7 +18,7 @@ import type { Metadata } from "next";
 import { buildPageMetadata, getAltResolver } from "@/lib/seo/resolve";
 import { getStructuredData } from "@/lib/seo/structuredDataResolve";
 import { StructuredData } from "@/components/seo/StructuredData";
-import { getContent } from "@/lib/content/pageContent";
+import { getContentGetter } from "@/lib/content/pageContent";
 
 export const revalidate = 60;
 
@@ -33,26 +33,11 @@ const SHOW_ARENA_GALLERY = false;
 const MAPS_URL = "https://www.google.com/maps/search/?api=1&query=AllSports+Arena+Al+Quoz+Dubai";
 const MAPS_EMBED_URL = "https://www.google.com/maps?q=AllSports+Arena+Al+Quoz+Dubai&output=embed";
 
-const features = [
-  { Icon: CircleDot, label: "FIBA-Standard Indoor Courts" },
-  { Icon: Wind, label: "Air-Conditioned & Climate-Controlled" },
-  { Icon: Users, label: "Parent Viewing Area" },
-  { Icon: DoorOpen, label: "Changing Rooms" },
-  { Icon: Car, label: "Free On-Site Parking" },
-  { Icon: Package, label: "Equipment Provided" },
-  { Icon: HeartPulse, label: "First-Aid & Safety" },
-  { Icon: Dumbbell, label: "Warm-Up & Conditioning Space" },
-];
+const featureIcons = [CircleDot, Wind, Users, DoorOpen, Car, Package, HeartPulse, Dumbbell];
 
-// TODO: confirm real travel times with the academy before publishing final numbers.
-const travelTimes = [
-  { zone: "Dubai Marina", minutes: 20 },
-  { zone: "JLT", minutes: 20 },
-  { zone: "Downtown", minutes: 15 },
-  { zone: "New Dubai", minutes: 20 },
-  { zone: "Arabian Ranches", minutes: 20 },
-  { zone: "Mirdif", minutes: 25 },
-];
+// Stable test ids for the tiles and chips (they don't change when the text is edited).
+const featureIds = ["fiba-standard-indoor-courts", "air-conditioned-climate-controlled", "parent-viewing-area", "changing-rooms", "free-on-site-parking", "equipment-provided", "first-aid-safety", "warm-up-conditioning-space"];
+const travelIds = ["dubai-marina", "jlt", "downtown", "new-dubai", "arabian-ranches", "mirdif"];
 
 /** On-brand placeholder tile for venue/session photos — replace with real images later. */
 function PhotoPlaceholder({ label }: { label: string }) {
@@ -81,20 +66,16 @@ function PhotoPlaceholder({ label }: { label: string }) {
 export default async function Facilities() {
   const alt = await getAltResolver();
   const schema = await getStructuredData("/facilities", "Facilities");
-  const introText = await getContent("facilities.intro");
-  const whatsInsideDesc = await getContent("facilities.whats-inside.description");
-  const travelBandDesc = await getContent("facilities.travel-band.description");
-  const gettingHereDesc1 = await getContent("facilities.getting-here.description1");
-  const gettingHereDesc2 = await getContent("facilities.getting-here.description2");
-  const whyVenueDesc = await getContent("facilities.why-venue.description");
-  const closingCtaDesc = await getContent("facilities.closing-cta.description");
+  const c = await getContentGetter();
+  const features = featureIcons.map((Icon, i) => ({ Icon, id: featureIds[i], label: c(`facilities.feature${i + 1}.label`) }));
+  const travelTimes = travelIds.map((id, i) => ({ id, zone: c(`facilities.travel${i + 1}.zone`), minutes: c(`facilities.travel${i + 1}.minutes`) }));
   const arenaAlts = {
     "facilities.arena-render": alt("facilities.arena-render"),
     "facilities.arena-courts": alt("facilities.arena-courts"),
   };
   const arenaSrcs = {
-    "facilities.arena-render": await getContent("facilities.image.arena-render"),
-    "facilities.arena-courts": await getContent("facilities.image.arena-courts"),
+    "facilities.arena-render": c("facilities.image.arena-render"),
+    "facilities.arena-courts": c("facilities.image.arena-courts"),
   };
   return (
     <>
@@ -103,13 +84,13 @@ export default async function Facilities() {
       <div className="bg-black text-white py-20">
         <div className="container mx-auto px-4 md:px-6 text-center">
           <span className="inline-block rounded-full bg-primary text-white px-4 py-1.5 font-bold uppercase text-xs tracking-widest mb-6" data-testid="badge-main-venue">
-            Our Home Venue: Al Quoz, Dubai
+            {c("facilities.hero.badge")}
           </span>
           <h1 className="text-5xl md:text-7xl font-black uppercase tracking-tighter mb-6" data-testid="text-facilities-title">
-            AllSports Arena
+            {c("facilities.hero.title")}
           </h1>
           <p className="text-xl text-gray-400 max-w-2xl mx-auto">
-            {introText}
+            {c("facilities.intro")}
           </p>
         </div>
       </div>
@@ -122,16 +103,16 @@ export default async function Facilities() {
 
       {/* ============ WHAT'S INSIDE ============ */}
       <div className="container mx-auto px-4 md:px-6 py-20">
-        <h2 className="text-3xl md:text-5xl font-black uppercase tracking-tighter mb-4 text-center">What&apos;s Inside</h2>
+        <h2 className="text-3xl md:text-5xl font-black uppercase tracking-tighter mb-4 text-center">{c("facilities.whats-inside.title")}</h2>
         <p className="text-gray-500 text-center max-w-2xl mx-auto mb-12">
-          {whatsInsideDesc}
+          {c("facilities.whats-inside.description")}
         </p>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-          {features.map(({ Icon, label }) => (
+          {features.map(({ Icon, id, label }) => (
             <div
-              key={label}
+              key={id}
               className="border border-gray-200 bg-white p-6 flex flex-col items-center text-center gap-4 hover:border-primary transition-colors"
-              data-testid={`tile-feature-${label.toLowerCase().replace(/[^a-z]+/g, "-")}`}
+              data-testid={`tile-feature-${id}`}
             >
               <Icon className="h-8 w-8 text-primary" aria-hidden="true" />
               <span className="font-bold uppercase text-xs md:text-sm tracking-wider text-gray-800">{label}</span>
@@ -144,17 +125,17 @@ export default async function Facilities() {
       <div className="bg-black text-white py-16">
         <div className="container mx-auto px-4 md:px-6 text-center">
           <h2 className="text-3xl md:text-4xl font-black uppercase tracking-tighter mb-3">
-            Under 25 Minutes From Most of Dubai
+            {c("facilities.travel-band.title")}
           </h2>
           <p className="text-gray-400 mb-10 max-w-2xl mx-auto">
-            {travelBandDesc}
+            {c("facilities.travel-band.description")}
           </p>
           <div className="flex flex-wrap justify-center gap-3">
-            {travelTimes.map(({ zone, minutes }) => (
+            {travelTimes.map(({ id, zone, minutes }) => (
               <span
-                key={zone}
+                key={id}
                 className="border border-white/20 bg-white/5 px-5 py-2.5 uppercase text-xs md:text-sm font-bold tracking-wider"
-                data-testid={`chip-travel-${zone.toLowerCase().replace(/[^a-z]+/g, "-")}`}
+                data-testid={`chip-travel-${id}`}
               >
                 {zone} <span className="text-primary ml-1">~{minutes} min</span>
               </span>
@@ -178,14 +159,14 @@ export default async function Facilities() {
           </div>
           <div>
             <div className="flex items-center gap-2 text-primary font-bold uppercase tracking-widest text-sm mb-4">
-              <MapPin className="h-4 w-4" /> Getting Here
+              <MapPin className="h-4 w-4" /> {c("facilities.getting-here.eyebrow")}
             </div>
-            <h2 className="text-3xl md:text-4xl font-black uppercase tracking-tighter mb-6">Find Us in Al Quoz</h2>
+            <h2 className="text-3xl md:text-4xl font-black uppercase tracking-tighter mb-6">{c("facilities.getting-here.title")}</h2>
             <p className="text-gray-600 text-lg leading-relaxed mb-4">
-              {gettingHereDesc1}
+              {c("facilities.getting-here.description1")}
             </p>
             <p className="text-gray-600 text-lg leading-relaxed mb-8">
-              {gettingHereDesc2}
+              {c("facilities.getting-here.description2")}
             </p>
             <a
               href={MAPS_URL}
@@ -195,7 +176,7 @@ export default async function Facilities() {
               data-testid="link-open-maps"
               className="inline-flex items-center gap-2 bg-primary text-white px-8 py-3.5 font-bold uppercase tracking-wider text-sm hover:bg-black transition-colors"
             >
-              Open in Google Maps <ExternalLink className="h-4 w-4" />
+              {c("facilities.getting-here.button")} <ExternalLink className="h-4 w-4" />
             </a>
           </div>
         </div>
@@ -204,9 +185,9 @@ export default async function Facilities() {
       {/* ============ WHY THIS VENUE ============ */}
       <div className="bg-primary text-white py-20">
         <div className="container mx-auto px-4 md:px-6 max-w-3xl text-center">
-          <h2 className="text-3xl md:text-4xl font-black uppercase tracking-tighter mb-6">One Home, One Standard</h2>
+          <h2 className="text-3xl md:text-4xl font-black uppercase tracking-tighter mb-6">{c("facilities.why-venue.title")}</h2>
           <p className="text-lg md:text-xl leading-relaxed text-white/90">
-            {whyVenueDesc}
+            {c("facilities.why-venue.description")}
           </p>
         </div>
       </div>
@@ -233,16 +214,16 @@ export default async function Facilities() {
       {/* ============ CLOSING CTA ============ */}
       <div className="bg-black text-white py-20">
         <div className="container mx-auto px-4 md:px-6 text-center">
-          <h2 className="text-4xl md:text-6xl font-black uppercase tracking-tighter mb-6">Come See It Yourself</h2>
+          <h2 className="text-4xl md:text-6xl font-black uppercase tracking-tighter mb-6">{c("facilities.closing-cta.title")}</h2>
           <p className="text-xl text-gray-400 max-w-xl mx-auto mb-10">
-            {closingCtaDesc}
+            {c("facilities.closing-cta.description")}
           </p>
           <Link
             href="/#book-trial"
             data-testid="button-facilities-cta"
             className="inline-block bg-primary text-white px-10 py-4 font-bold uppercase tracking-wider hover:bg-white hover:text-black transition-colors"
           >
-            Book a Free Trial
+            {c("facilities.closing-cta.button")}
           </Link>
         </div>
       </div>

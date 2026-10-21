@@ -18,6 +18,8 @@ import {
   type PageContentOverride,
   type StaffMemberRow,
   type InsertStaffMemberRow,
+  type FaqItemRow,
+  type InsertFaqItemRow,
   type BlogPost,
   type BlogCategory,
   type BlogTag,
@@ -34,6 +36,7 @@ import {
   seoSchemaOverrides,
   pageContentOverrides,
   staffMembers,
+  faqItems,
   blogPosts,
   blogCategories,
   blogTags,
@@ -170,6 +173,14 @@ export interface IStorage {
   updateStaffMember(id: number, changes: Partial<InsertStaffMemberRow>): Promise<StaffMemberRow | undefined>;
   deleteStaffMember(id: number): Promise<void>;
   reorderStaffMembers(section: string, ids: number[]): Promise<void>;
+
+  getFaqItems(): Promise<FaqItemRow[]>;
+  getFaqItemById(id: number): Promise<FaqItemRow | undefined>;
+  seedFaqItems(rows: InsertFaqItemRow[]): Promise<void>;
+  createFaqItem(row: InsertFaqItemRow): Promise<FaqItemRow>;
+  updateFaqItem(id: number, changes: Partial<InsertFaqItemRow>): Promise<FaqItemRow | undefined>;
+  deleteFaqItem(id: number): Promise<void>;
+  reorderFaqItems(section: string, ids: number[]): Promise<void>;
 
   getAllSeoImageAltFiles(): Promise<SeoImageAlt[]>;
   getAllSeoImageAlts(): Promise<SeoImageAlt[]>;
@@ -528,6 +539,42 @@ export class DatabaseStorage implements IStorage {
       for (const [index, id] of ids.entries()) {
         await tx.update(staffMembers).set({ sortOrder: index, updatedAt: new Date() })
           .where(and(eq(staffMembers.id, id), eq(staffMembers.section, section)));
+      }
+    });
+  }
+
+  async getFaqItems(): Promise<FaqItemRow[]> {
+    return db.select().from(faqItems).orderBy(asc(faqItems.sortOrder), asc(faqItems.id));
+  }
+
+  async getFaqItemById(id: number): Promise<FaqItemRow | undefined> {
+    const [row] = await db.select().from(faqItems).where(eq(faqItems.id, id));
+    return row;
+  }
+
+  async seedFaqItems(rows: InsertFaqItemRow[]): Promise<void> {
+    if (rows.length) await db.insert(faqItems).values(rows).onConflictDoNothing({ target: faqItems.slug });
+  }
+
+  async createFaqItem(row: InsertFaqItemRow): Promise<FaqItemRow> {
+    const [created] = await db.insert(faqItems).values(row).returning();
+    return created;
+  }
+
+  async updateFaqItem(id: number, changes: Partial<InsertFaqItemRow>): Promise<FaqItemRow | undefined> {
+    const [updated] = await db.update(faqItems).set({ ...changes, updatedAt: new Date() }).where(eq(faqItems.id, id)).returning();
+    return updated;
+  }
+
+  async deleteFaqItem(id: number): Promise<void> {
+    await db.delete(faqItems).where(eq(faqItems.id, id));
+  }
+
+  async reorderFaqItems(section: string, ids: number[]): Promise<void> {
+    await db.transaction(async (tx) => {
+      for (const [index, id] of ids.entries()) {
+        await tx.update(faqItems).set({ sortOrder: index, updatedAt: new Date() })
+          .where(and(eq(faqItems.id, id), eq(faqItems.section, section)));
       }
     });
   }

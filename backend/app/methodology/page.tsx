@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import type { Metadata } from "next";
 import { buildPageMetadata, getAltResolver } from "@/lib/seo/resolve";
 import { BreadcrumbJsonLd } from "@/components/seo/StructuredData";
-import { getContent } from "@/lib/content/pageContent";
+import { getContentGetter } from "@/lib/content/pageContent";
 
 export const revalidate = 60;
 
@@ -16,76 +16,27 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function Methodology() {
   const alt = await getAltResolver();
-  const heroSubtext = await getContent("methodology.hero.subtext");
-  const howWeTrainDescription = await getContent("methodology.how-we-train.description");
-  const howWeTrainParagraph = await getContent("methodology.how-we-train.paragraph");
-  const tacticalDescription = await getContent("methodology.tactical.description");
-  const longTermDescription = await getContent("methodology.long-term.description");
-  const ctaSubtext = await getContent("methodology.cta.subtext");
-  const methodologyImage = await getContent("methodology.image");
-  const trainingMethods = [
-    {
-      number: "01",
-      title: "0v0 Learning",
-      desc: "No defender, so players focus entirely on technique and execution. Players build confidence and mechanical precision without pressure.",
-    },
-    {
-      number: "02",
-      title: "Conditioned Drills",
-      desc: "Defenders or attackers operate with specific handicaps depending on the objective, creating targeted learning environments.",
-    },
-    {
-      number: "03",
-      title: "Real 1v1 Situations",
-      desc: "Full-speed game situations where improvement and learning can be clearly applied and observed in a competitive context.",
-    },
-  ];
+  const c = await getContentGetter();
+  const methodologyImage = c("methodology.image");
+  const trainingMethods = [1, 2, 3].map((n) => ({
+    number: c(`methodology.method${n}.number`),
+    title: c(`methodology.method${n}.title`),
+    desc: c(`methodology.method${n}.desc`),
+  }));
 
-  const tacticalPrinciples = [
-    {
-      icon: Zap,
-      title: "Play Fast",
-      desc: "High pace in running, passing, penetration, and 1v1 situations. Modern professional basketball, including the EuroLeague and NBA, is becoming faster and more free-flowing. Playing at high tempo is fundamental to our identity.",
-    },
-    {
-      icon: Crosshair,
-      title: "Master Spacing",
-      desc: "Knowing where the space is, why it exists, and how to move without the ball to help the ball-handler gain advantages. We work extensively with 2v2 and 3v3 situations to improve understanding of space and off-ball movement.",
-    },
-    {
-      icon: Target,
-      title: "Long-Range Shooting",
-      desc: "We encourage players to shoot when open and confident. When a shot is taken, we attack the offensive rebound with full commitment, giving ourselves as many chances as possible to score.",
-    },
-    {
-      icon: TrendingUp,
-      title: "Offensive Rebounding",
-      desc: "Our final tactical rule is to always look for extra opportunities to attack the basket. Full commitment on every shot attempt to generate second chances.",
-    },
-  ];
+  const tacticalIcons = [Zap, Crosshair, Target, TrendingUp];
+  const tacticalPrinciples = tacticalIcons.map((icon, i) => ({
+    icon,
+    title: c(`methodology.tactical${i + 1}.title`),
+    desc: c(`methodology.tactical${i + 1}.desc`),
+  }));
 
-  const developmentPrinciples = [
-    {
-      icon: Clock,
-      title: "Technical Before Tactical",
-      desc: "Younger players focus more on technical skills, while older players progressively work on tactical concepts. There is no sense in rushing tactical learning if players haven&apos;t developed ball-handling, shooting, finishing, or passing skills.",
-    },
-    {
-      icon: Target,
-      title: "Spacing Before Complexity",
-      desc: "In tactical learning, spacing always comes first, teaching players how to cut and move without the ball. Only later do we introduce screens, hand-offs, and more complex actions. There is no perfect age; there is a process that must be respected.",
-    },
-    {
-      icon: Users,
-      title: "Team First, Always",
-      desc: "Basketball is a team sport, so players must act like a team both on and off the court. Sharing the ball, competing together, and encouraging players to take actions and make decisions are key parts of our environment.",
-    },
-    {
-      icon: Shield,
-      title: "Compete With Purpose",
-      desc: "Being competitive and giving maximum energy is non-negotiable. Winning is the result of good work, not the only objective. We compete, but never at the cost of player development or by rushing processes that may be harmful long-term.",
-    },
-  ];
+  const developmentIcons = [Clock, Target, Users, Shield];
+  const developmentPrinciples = developmentIcons.map((icon, i) => ({
+    icon,
+    title: c(`methodology.dev${i + 1}.title`),
+    desc: c(`methodology.dev${i + 1}.desc`),
+  }));
 
   return (
     <>
@@ -93,10 +44,10 @@ export default async function Methodology() {
       <div className="bg-black text-white py-20 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-1/2 h-full bg-primary/10 -skew-x-12 translate-x-1/4" />
         <div className="container mx-auto px-4 md:px-6 text-center relative z-10">
-          <span className="text-primary font-bold uppercase tracking-widest text-sm mb-4 block">The Valencia Way</span>
-          <h1 className="text-5xl md:text-7xl font-black uppercase tracking-tighter mb-6">Our Methodology</h1>
+          <span className="text-primary font-bold uppercase tracking-widest text-sm mb-4 block">{c("methodology.hero.eyebrow")}</span>
+          <h1 className="text-5xl md:text-7xl font-black uppercase tracking-tighter mb-6">{c("methodology.hero.title")}</h1>
           <p className="text-xl text-gray-400 max-w-3xl mx-auto">
-            {heroSubtext}
+            {c("methodology.hero.subtext")}
           </p>
         </div>
       </div>
@@ -106,12 +57,12 @@ export default async function Methodology() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
             <div>
               <SectionHeader
-                title="Basketball Methodology"
-                subtitle="How We Train"
-                description={howWeTrainDescription}
+                title={c("methodology.how-we-train.title")}
+                subtitle={c("methodology.how-we-train.subtitle")}
+                description={c("methodology.how-we-train.description")}
               />
               <p className="text-gray-600 leading-relaxed mt-6">
-                {howWeTrainParagraph}
+                {c("methodology.how-we-train.paragraph")}
               </p>
             </div>
 
@@ -135,9 +86,9 @@ export default async function Methodology() {
       <section className="py-20 md:py-28 bg-neutral-900 text-white">
         <div className="container mx-auto px-4 md:px-6">
           <SectionHeader
-            title="Tactical Learning"
-            subtitle="Our Philosophy"
-            description={tacticalDescription}
+            title={c("methodology.tactical.title")}
+            subtitle={c("methodology.tactical.subtitle")}
+            description={c("methodology.tactical.description")}
             centered
             dark
           />
@@ -168,16 +119,16 @@ export default async function Methodology() {
                   className="object-cover transition-all duration-700 shadow-2xl"
                 />
                 <div className="absolute -bottom-4 -right-4 bg-primary text-white px-6 py-3 font-black uppercase text-sm tracking-wider z-10">
-                  Long-Term Vision
+                  {c("methodology.long-term.badge")}
                 </div>
               </div>
             </div>
 
             <div className="order-1 lg:order-2">
               <SectionHeader
-                title="Long-Term Development"
-                subtitle="No Shortcuts"
-                description={longTermDescription}
+                title={c("methodology.long-term.title")}
+                subtitle={c("methodology.long-term.subtitle")}
+                description={c("methodology.long-term.description")}
               />
 
               <div className="space-y-8 mt-8">
@@ -200,13 +151,13 @@ export default async function Methodology() {
 
       <section className="bg-primary py-16">
         <div className="container mx-auto px-4 md:px-6 text-center">
-          <h2 className="text-3xl md:text-4xl font-black uppercase text-white mb-4">Experience the Methodology</h2>
+          <h2 className="text-3xl md:text-4xl font-black uppercase text-white mb-4">{c("methodology.cta.title")}</h2>
           <p className="text-white/80 max-w-xl mx-auto mb-8 text-lg">
-            {ctaSubtext}
+            {c("methodology.cta.subtext")}
           </p>
           <Link href="/#book-trial">
             <Button size="lg" className="uppercase font-bold tracking-wider rounded-none bg-black text-white hover:bg-white hover:text-primary border-0 h-14 px-10">
-              Book a Free Trial <ArrowRight className="ml-2 h-5 w-5" />
+              {c("methodology.cta.button")} <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
           </Link>
         </div>

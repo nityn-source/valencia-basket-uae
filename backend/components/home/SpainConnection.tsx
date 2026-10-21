@@ -3,13 +3,28 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
+import { RichTitle } from "@/components/shared/RichTitle";
 
 // Quadratic bezier: Valencia (upper-left) → Dubai (lower-right)
 // Control point pulled well above centre line for a clear upward arc
 const PATH = "M 80 90 Q 240 5 395 185";
 const ARC_LENGTH = 450; // approximate bezier path length
 
-export function SpainConnection() {
+export function SpainConnection({
+  eyebrow = "The Spain Connection",
+  title = "Born in Valencia.\nBuilt in Dubai.",
+  text = "A direct connection to Spain's basketball methodology. Our players train the same system, right here in Dubai.",
+  linkText = "Read about our methodology",
+  label1 = "VALENCIA",
+  label2 = "DUBAI",
+}: {
+  eyebrow?: string;
+  title?: string;
+  text?: string;
+  linkText?: string;
+  label1?: string;
+  label2?: string;
+}) {
   const sectionRef = useRef<HTMLElement>(null);
   const [visible, setVisible] = useState(false);
 
@@ -43,26 +58,25 @@ export function SpainConnection() {
               className="block text-[11px] font-bold uppercase tracking-[0.22em] mb-5"
               style={{ color: "#FF6C0E" }}
             >
-              The Spain Connection
+              {eyebrow}
             </span>
             <h2
               className="text-4xl md:text-5xl xl:text-[3.5rem] font-black uppercase tracking-tighter leading-none text-white mb-6"
             >
-              Born in Valencia.<br />Built in Dubai.
+              <RichTitle text={title} />
             </h2>
             <p
               className="text-[17px] leading-relaxed mb-8"
               style={{ color: "rgba(255,255,255,0.62)" }}
             >
-              A direct connection to Spain&apos;s basketball methodology. Our players train the same
-              system, right here in Dubai.
+              {text}
             </p>
             <Link
               href="/methodology"
               className="inline-flex items-center gap-1.5 font-semibold underline underline-offset-4 transition-colors text-[15px] hover:opacity-75"
               style={{ color: "#FF6C0E" }}
             >
-              Read about our methodology <ArrowRight className="h-4 w-4" />
+              {linkText} <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
 
@@ -140,7 +154,7 @@ export function SpainConnection() {
                   fontFamily: "inherit",
                 }}
               >
-                VALENCIA
+                {label1}
               </text>
 
               {/* ── Dubai dot (lower-right) ── */}
@@ -172,7 +186,7 @@ export function SpainConnection() {
                   fontFamily: "inherit",
                 }}
               >
-                DUBAI
+                {label2}
               </text>
             </svg>
           </div>

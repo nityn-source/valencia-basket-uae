@@ -5,7 +5,7 @@ import type { Metadata } from "next";
 import { buildPageMetadata, getAltResolver } from "@/lib/seo/resolve";
 import { getStructuredData } from "@/lib/seo/structuredDataResolve";
 import { StructuredData } from "@/components/seo/StructuredData";
-import { getContent } from "@/lib/content/pageContent";
+import { getContentGetter } from "@/lib/content/pageContent";
 import { authorPath, type StaffMember, type StaffSection } from "@/lib/content/staff";
 import { getVisibleStaff, staffPhotoAlt, staffSocialLinks } from "@/lib/content/staffStore";
 import { SocialIcons } from "@/components/SocialIcons";
@@ -27,7 +27,11 @@ function PhotoPlaceholder({ name }: { name: string }) {
 function DirectorCard({
   person,
   imageAlt,
+  eyebrow,
+  linkLabel,
 }: {
+  eyebrow: string;
+  linkLabel: string;
   person: TeamMember;
   imageAlt: string;
 }) {
@@ -50,14 +54,14 @@ function DirectorCard({
       </div>
       {/* Content */}
       <div className="flex flex-col justify-center px-8 py-8 md:py-10">
-        <span className="text-primary font-bold uppercase tracking-widest text-xs mb-3 block">Leadership</span>
+        <span className="text-primary font-bold uppercase tracking-widest text-xs mb-3 block">{eyebrow}</span>
         <h3 className="text-3xl md:text-4xl font-black uppercase leading-none mb-2">{person.name}</h3>
         <p className="text-primary font-bold uppercase text-xs tracking-widest mb-5">{person.role}</p>
         <SocialIcons links={person.socials} personName={person.name} className="mb-5" />
         <p className="text-sm md:text-base text-gray-600 leading-relaxed max-w-xl">{person.bio}</p>
         {person.href && (
           <Link href={person.href} className="mt-5 self-start text-sm font-bold uppercase tracking-wider text-primary hover:underline">
-            Articles &amp; full bio →
+            {linkLabel}
           </Link>
         )}
       </div>
@@ -109,7 +113,7 @@ function CoachCard({
 export default async function Coaches() {
   const alt = await getAltResolver();
   const schema = await getStructuredData("/coaches", "Coaches");
-  const heroSubtext = await getContent("staff.hero.subtext");
+  const c = await getContentGetter();
   const staff = (await getVisibleStaff()).map((member): TeamMember => ({
     ...member,
     socials: staffSocialLinks(member),
@@ -128,10 +132,10 @@ export default async function Coaches() {
       <StructuredData data={schema} />
       <div className="bg-black text-white py-20">
         <div className="container mx-auto px-4 md:px-6 text-center">
-          <span className="text-primary font-bold uppercase tracking-widest text-sm mb-4 block">The People Behind the Program</span>
-          <h1 className="text-5xl md:text-7xl font-black uppercase tracking-tighter mb-6">Our Team</h1>
+          <span className="text-primary font-bold uppercase tracking-widest text-sm mb-4 block">{c("staff.hero.eyebrow")}</span>
+          <h1 className="text-5xl md:text-7xl font-black uppercase tracking-tighter mb-6">{c("staff.hero.title")}</h1>
           <p className="text-xl text-gray-400 max-w-2xl mx-auto">
-            {heroSubtext}
+            {c("staff.hero.subtext")}
           </p>
         </div>
       </div>
@@ -139,10 +143,10 @@ export default async function Coaches() {
       {/* Director */}
       {leadership.length > 0 && (
         <div className="container mx-auto px-4 md:px-6 pt-20 pb-12">
-          <h2 className="text-3xl md:text-4xl font-black uppercase tracking-tighter mb-8">Leadership</h2>
+          <h2 className="text-3xl md:text-4xl font-black uppercase tracking-tighter mb-8">{c("staff.section.leadership")}</h2>
           <div className="space-y-6">
             {leadership.map((person) => (
-              <DirectorCard key={person.slug} person={person} imageAlt={photoAlt(person)} />
+              <DirectorCard key={person.slug} person={person} imageAlt={photoAlt(person)} eyebrow={c("staff.section.leadership-card")} linkLabel={c("staff.section.leadership-link")} />
             ))}
           </div>
         </div>
@@ -152,7 +156,7 @@ export default async function Coaches() {
       {managementTeam.length > 0 && (
         <div className="container mx-auto px-4 md:px-6 pb-16">
           <div className="border-t border-gray-200 pt-16">
-            <h2 className="text-3xl md:text-4xl font-black uppercase tracking-tighter mb-10">Management &amp; Operations</h2>
+            <h2 className="text-3xl md:text-4xl font-black uppercase tracking-tighter mb-10">{c("staff.section.management")}</h2>
             <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8">
               {managementTeam.map((person) => (
                 <CoachCard
@@ -171,7 +175,7 @@ export default async function Coaches() {
       {coachingTeam.length > 0 && (
         <div className="container mx-auto px-4 md:px-6 pb-16">
           <div className="border-t border-gray-200 pt-16">
-            <h2 className="text-3xl md:text-4xl font-black uppercase tracking-tighter mb-10">Coaching Staff</h2>
+            <h2 className="text-3xl md:text-4xl font-black uppercase tracking-tighter mb-10">{c("staff.section.coaching")}</h2>
             <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8">
               {coachingTeam.map((person) => (
                 <CoachCard
@@ -190,8 +194,8 @@ export default async function Coaches() {
       {alumniTeam.length > 0 && (
         <div className="container mx-auto px-4 md:px-6 pb-20">
           <div className="border-t border-gray-200 pt-16">
-            <h2 className="text-3xl md:text-4xl font-black uppercase tracking-tighter mb-2">Alumni Coaches</h2>
-            <p className="text-gray-500 text-sm mb-10">Former coaches who contributed to the academy&apos;s foundation and growth.</p>
+            <h2 className="text-3xl md:text-4xl font-black uppercase tracking-tighter mb-2">{c("staff.section.alumni")}</h2>
+            <p className="text-gray-500 text-sm mb-10">{c("staff.section.alumni-text")}</p>
             <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8">
               {alumniTeam.map((person) => (
                 <CoachCard
@@ -208,13 +212,13 @@ export default async function Coaches() {
 
       <div className="bg-primary py-20 text-center">
         <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-black uppercase mb-6 text-white">Join the Team</h2>
+          <h2 className="text-3xl font-black uppercase mb-6 text-white">{c("staff.join.title")}</h2>
           <p className="text-white/80 max-w-xl mx-auto mb-8">
-            We are always looking for passionate, qualified professionals to join our expanding academy.
+            {c("staff.join.text")}
           </p>
           <Link href="mailto:info@valenciabasket.ae">
             <Button variant="outline" className="uppercase font-bold tracking-wider rounded-none border-white text-white hover:bg-white hover:text-primary">
-              Get in Touch
+              {c("staff.join.button")}
             </Button>
           </Link>
         </div>

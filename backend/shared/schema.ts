@@ -711,3 +711,23 @@ export const staffMembers = pgTable("staff_members", {
 
 export type StaffMemberRow = typeof staffMembers.$inferSelect;
 export type InsertStaffMemberRow = typeof staffMembers.$inferInsert;
+
+/**
+ * FAQ page questions, edited in Admin → FAQs. Filled from lib/content/faq.ts
+ * defaults the first time the admin FAQs tab loads; until then the site uses
+ * the defaults. `answer` is plain text with light formatting (see faq.ts).
+ */
+export const faqItems = pgTable("faq_items", {
+  id: serial("id").primaryKey(),
+  slug: text("slug").notNull().unique(),
+  section: text("section").notNull(),
+  question: text("question").notNull(),
+  answer: text("answer").notNull(),
+  sortOrder: integer("sort_order").notNull().default(0),
+  visible: boolean("visible").notNull().default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export type FaqItemRow = typeof faqItems.$inferSelect;
+export type InsertFaqItemRow = typeof faqItems.$inferInsert;

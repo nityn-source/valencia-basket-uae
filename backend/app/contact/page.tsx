@@ -5,6 +5,7 @@ import { TikTokIcon } from "@/components/shared/TikTokIcon";
 import { BookTrialForm } from "@/components/home/BookTrialForm";
 import { buildPageMetadata } from "@/lib/seo/resolve";
 import { BreadcrumbJsonLd } from "@/components/seo/StructuredData";
+import { getContentGetter } from "@/lib/content/pageContent";
 
 export const revalidate = 60;
 
@@ -46,6 +47,12 @@ const infoRows = [
 ];
 
 export default async function Contact() {
+  const c = await getContentGetter();
+  const infoLabels: Record<string, string> = {
+    "link-contact-whatsapp": c("contact.info.whatsapp-label"),
+    "link-contact-email": c("contact.info.email-label"),
+    "link-contact-venue": c("contact.info.venue-label"),
+  };
   return (
     <>
       <BreadcrumbJsonLd path="/contact" label="Contact" />
@@ -54,11 +61,11 @@ export default async function Contact() {
       <div className="bg-black text-white py-20">
         <div className="container mx-auto px-4 md:px-6 text-center">
           <span className="inline-block bg-primary text-white text-xs font-bold uppercase tracking-widest py-1.5 px-4 rounded-full mb-6">
-            Get in Touch
+            {c("contact.hero.badge")}
           </span>
-          <h1 className="text-4xl md:text-6xl font-black uppercase tracking-tighter mb-4">Contact Us</h1>
+          <h1 className="text-4xl md:text-6xl font-black uppercase tracking-tighter mb-4">{c("contact.hero.title")}</h1>
           <p className="text-lg md:text-xl text-gray-400 max-w-2xl mx-auto">
-            Questions about programs, trials, or partnerships? We&apos;re here to help.
+            {c("contact.hero.subtext")}
           </p>
         </div>
       </div>
@@ -68,7 +75,7 @@ export default async function Contact() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-14 items-start">
           {/* Contact info — dark panel (first on mobile) */}
           <div className="bg-black text-white p-8 md:p-10">
-            <h2 className="text-2xl font-black uppercase tracking-tighter mb-8">Contact Information</h2>
+            <h2 className="text-2xl font-black uppercase tracking-tighter mb-8">{c("contact.info.heading")}</h2>
 
             <ul className="space-y-6 mb-10">
               {infoRows.map(({ Icon, label, value, href, external, testid }) => (
@@ -84,7 +91,7 @@ export default async function Contact() {
                     </span>
                     <span>
                       <span className="block text-xs font-bold uppercase tracking-widest text-gray-400 mb-1">
-                        {label}
+                        {infoLabels[testid] ?? label}
                       </span>
                       <span className="block text-base font-medium group-hover:text-primary transition-colors">
                         {value}
@@ -97,7 +104,7 @@ export default async function Contact() {
 
             <div className="mb-10">
               <span className="block text-xs font-bold uppercase tracking-widest text-gray-400 mb-4">
-                Follow Us
+                {c("contact.info.follow")}
               </span>
               <div className="flex items-center gap-3">
                 <a
@@ -166,7 +173,7 @@ export default async function Contact() {
           </div>
 
           {/* General enquiry form — white panel */}
-          <BookTrialForm sourcePage="contact" />
+          <BookTrialForm sourcePage="contact" heading={c("contact.form.heading")} subheading={c("contact.form.subheading")} submitLabel={c("contact.form.submit")} />
         </div>
       </div>
     </>

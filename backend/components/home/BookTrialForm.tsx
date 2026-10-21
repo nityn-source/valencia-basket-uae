@@ -89,7 +89,17 @@ const labelClass = "uppercase text-xs font-bold tracking-wider";
 const inputClass = "rounded-none border-gray-300 focus:border-primary";
 const selectClass = "rounded-none border-gray-300 focus:ring-primary";
 
-export function BookTrialForm({ sourcePage = "home" }: { sourcePage?: string }) {
+export function BookTrialForm({
+  sourcePage = "home",
+  heading = "Book Your Free Trial",
+  subheading = "Experience the Valencia Basket methodology firsthand.",
+  submitLabel = "Submit Request",
+}: {
+  sourcePage?: string;
+  heading?: string;
+  subheading?: string;
+  submitLabel?: string;
+}) {
   const { toast } = useToast();
   const router = useRouter();
   const [emailSuggestion, setEmailSuggestion] = useState<string | null>(null);
@@ -186,8 +196,8 @@ export function BookTrialForm({ sourcePage = "home" }: { sourcePage?: string }) 
   return (
     <div className="bg-white p-8 md:p-12 shadow-2xl border-t-4 border-primary">
       <div className="mb-8">
-        <h3 className="text-2xl font-black uppercase mb-2">Book Your Free Trial</h3>
-        <p className="text-gray-500 text-sm">Experience the Valencia Basket methodology firsthand.</p>
+        <h3 className="text-2xl font-black uppercase mb-2">{heading}</h3>
+        <p className="text-gray-500 text-sm">{subheading}</p>
       </div>
 
       <Form {...form}>
@@ -452,7 +462,7 @@ export function BookTrialForm({ sourcePage = "home" }: { sourcePage?: string }) 
             disabled={createBookingMutation.isPending}
             data-testid="button-submit-trial"
           >
-            {createBookingMutation.isPending ? "Submitting..." : "Submit Request"}
+            {createBookingMutation.isPending ? "Submitting..." : submitLabel}
           </Button>
         </form>
       </Form>

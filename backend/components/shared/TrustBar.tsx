@@ -1,13 +1,10 @@
 import { Shield, Award, Users, Activity, Star } from "lucide-react";
+import { getContentGetter } from "@/lib/content/pageContent";
 
-export function TrustBar() {
-  const items = [
-    { icon: Award, text: "Spanish Curriculum" },
-    { icon: Users, text: "UEFA Qualified Coaches" },
-    { icon: Activity, text: "Long-Term Player Pathway" },
-    { icon: Shield, text: "Safe Environment" },
-    { icon: Star, text: "High Performance Support" },
-  ];
+export async function TrustBar() {
+  const c = await getContentGetter();
+  const icons = [Award, Users, Activity, Shield, Star];
+  const items = icons.map((icon, i) => ({ icon, text: c(`home.trust${i + 1}.text`) }));
 
   return (
     <div className="bg-neutral-900 border-b border-neutral-800 py-8">

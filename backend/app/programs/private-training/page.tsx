@@ -5,7 +5,7 @@ import { Check, Clock, User } from "lucide-react";
 import type { Metadata } from "next";
 import { buildPageMetadata, getAltResolver } from "@/lib/seo/resolve";
 import { BreadcrumbJsonLd } from "@/components/seo/StructuredData";
-import { getContent } from "@/lib/content/pageContent";
+import { getContentGetter } from "@/lib/content/pageContent";
 
 export const revalidate = 60;
 
@@ -15,30 +15,28 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function PrivateTraining() {
   const alt = await getAltResolver();
-  const heroSubtext = await getContent("private-training.hero.subtext");
-  const heroImage = await getContent("program.private-training.image");
-  const aboutParagraph = await getContent("private-training.about.paragraph");
-  const formatDescription = await getContent("private-training.format.description");
-  const availabilityDescription = await getContent("private-training.availability.description");
-  const weekdaysHours = await getContent("private-training.schedule.weekdays");
-  const saturdayHours = await getContent("private-training.schedule.saturday");
-  const benefits = [
-    "Personalized correction of shooting mechanics",
-    "Detailed video analysis feedback",
-    "High-repetition skill drills",
-    "Game situational reads and decision making",
-    "Confidence building in a focused environment"
-  ];
-
+  const c = await getContentGetter();
+  const heroImage = c("program.private-training.image");
+  const benefits = [1, 2, 3, 4, 5].map((n) => c(`private-training.benefit${n}`));
+  const formats = [1, 2, 3, 4].map((n) => ({
+    ratio: c(`private-training.format${n}.ratio`),
+    label: c(`private-training.format${n}.label`),
+    desc: c(`private-training.format${n}.desc`),
+  }));
+  const coaches = [1, 2].map((n) => ({
+    name: c(`private-training.coach${n}.name`),
+    role: c(`private-training.coach${n}.role`),
+    bio: c(`private-training.coach${n}.bio`),
+  }));
 
   return (
     <>
       <BreadcrumbJsonLd path="/programs/private-training" label="Private Training" />
       <div className="bg-black text-white py-20">
         <div className="container mx-auto px-4 md:px-6 text-center">
-          <h1 className="text-5xl md:text-7xl font-black uppercase tracking-tighter mb-6">Private Training</h1>
+          <h1 className="text-5xl md:text-7xl font-black uppercase tracking-tighter mb-6">{c("private-training.hero.title")}</h1>
           <p className="text-xl text-gray-400 max-w-2xl mx-auto">
-            {heroSubtext}
+            {c("private-training.hero.subtext")}
           </p>
         </div>
       </div>
@@ -47,10 +45,10 @@ export default async function PrivateTraining() {
         
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 mb-20 items-center">
           <div>
-            <span className="text-[#FF6C0E] font-bold uppercase tracking-widest text-sm mb-2 block">Why Private Training?</span>
-            <h2 className="text-4xl font-black uppercase mb-6">The Fast Track to Mastery</h2>
+            <span className="text-[#FF6C0E] font-bold uppercase tracking-widest text-sm mb-2 block">{c("private-training.about.eyebrow")}</span>
+            <h2 className="text-4xl font-black uppercase mb-6">{c("private-training.about.title")}</h2>
             <p className="text-gray-600 text-lg mb-8 leading-relaxed">
-              {aboutParagraph}
+              {c("private-training.about.paragraph")}
             </p>
             <ul className="space-y-4">
               {benefits.map((benefit, i) => (
@@ -79,37 +77,16 @@ export default async function PrivateTraining() {
         <div className="mb-20">
           <div className="text-center mb-10">
             <span className="text-[#FF6C0E] font-bold uppercase tracking-widest text-sm mb-2 block">
-              Training Options
+              {c("private-training.format.eyebrow")}
             </span>
-            <h2 className="text-4xl font-black uppercase mb-4">Choose Your Format</h2>
+            <h2 className="text-4xl font-black uppercase mb-4">{c("private-training.format.title")}</h2>
             <p className="text-gray-500 max-w-xl mx-auto">
-              {formatDescription}
+              {c("private-training.format.description")}
             </p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[
-              {
-                ratio: "1:1",
-                label: "One-to-One",
-                desc: "Fully personalised, undivided coaching. The fastest route to individual development.",
-              },
-              {
-                ratio: "2:1",
-                label: "Pairs",
-                desc: "Train with a partner or friend. Shared focus with plenty of individual attention.",
-              },
-              {
-                ratio: "3:1",
-                label: "Small Group",
-                desc: "A small group balancing personal coaching with competitive, game-like reps.",
-              },
-              {
-                ratio: "4:1",
-                label: "Group",
-                desc: "Train alongside peers with focused coaching, great for skill work in a team-style setting.",
-              },
-            ].map(({ ratio, label, desc }) => (
+            {formats.map(({ ratio, label, desc }) => (
               <div
                 key={ratio}
                 className="bg-white border border-gray-200 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 p-6 flex flex-col group"
@@ -140,11 +117,11 @@ export default async function PrivateTraining() {
 
           {/* Enquiry nudge */}
           <p className="text-center text-sm text-gray-400 mt-6">
-            Not sure which format suits you?{" "}
+            {c("private-training.format.nudge.before")}{" "}
             <a href="/contact" className="text-[#FF6C0E] font-medium hover:underline">
-              Get in touch
+              {c("private-training.format.nudge.link")}
             </a>{" "}
-            and we&apos;ll recommend the right option.
+            {c("private-training.format.nudge.after")}
           </p>
         </div>
 
@@ -152,42 +129,39 @@ export default async function PrivateTraining() {
            <div className="flex flex-col md:flex-row gap-12 items-start">
               <div className="flex-1">
                  <h2 className="text-3xl font-black uppercase mb-6 flex items-center gap-3">
-                   <Clock className="h-8 w-8 text-[#FF6C0E]" /> Weekly Availability
+                   <Clock className="h-8 w-8 text-[#FF6C0E]" /> {c("private-training.availability.title")}
                  </h2>
                  <p className="text-gray-600 mb-6">
-                   {availabilityDescription}
+                   {c("private-training.availability.description")}
                  </p>
                  <div className="space-y-4">
                     <div className="flex justify-between items-center border-b border-gray-200 pb-3">
-                       <span className="font-bold text-gray-900">Weekdays (Sun - Thu)</span>
-                       <span className="text-gray-600">{weekdaysHours}</span>
+                       <span className="font-bold text-gray-900">{c("private-training.schedule.weekdays.label")}</span>
+                       <span className="text-gray-600">{c("private-training.schedule.weekdays")}</span>
                     </div>
                     <div className="flex justify-between items-center border-b border-gray-200 pb-3">
-                       <span className="font-bold text-gray-900">Saturday</span>
-                       <span className="text-gray-600">{saturdayHours}</span>
+                       <span className="font-bold text-gray-900">{c("private-training.schedule.saturday.label")}</span>
+                       <span className="text-gray-600">{c("private-training.schedule.saturday")}</span>
                     </div>
                     <div className="flex justify-between items-center border-b border-gray-200 pb-3">
-                       <span className="font-bold text-gray-900">Friday</span>
-                       <span className="text-gray-600 text-red-500 font-bold uppercase text-xs">Closed</span>
+                       <span className="font-bold text-gray-900">{c("private-training.schedule.friday.label")}</span>
+                       <span className="text-gray-600 text-red-500 font-bold uppercase text-xs">{c("private-training.schedule.friday")}</span>
                     </div>
                  </div>
               </div>
               
               <div className="flex-1">
                  <h2 className="text-3xl font-black uppercase mb-6 flex items-center gap-3">
-                   <User className="h-8 w-8 text-[#FF6C0E]" /> Specialist Coaches
+                   <User className="h-8 w-8 text-[#FF6C0E]" /> {c("private-training.coaches.title")}
                  </h2>
                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="bg-white p-4 shadow-sm border border-gray-200">
-                       <h4 className="font-black uppercase text-lg">Miguel Torres</h4>
-                       <span className="text-xs text-[#FF6C0E] font-bold uppercase block mb-2">Shooting Specialist</span>
-                       <p className="text-xs text-gray-500">Former ACB pro player with expert biomechanical knowledge.</p>
-                    </div>
-                    <div className="bg-white p-4 shadow-sm border border-gray-200">
-                       <h4 className="font-black uppercase text-lg">Sarah Jenkins</h4>
-                       <span className="text-xs text-[#FF6C0E] font-bold uppercase block mb-2">Skill &amp; Performance</span>
-                       <p className="text-xs text-gray-500">Combines ball handling work with athletic movement.</p>
-                    </div>
+                    {coaches.map((coach) => (
+                      <div key={coach.name} className="bg-white p-4 shadow-sm border border-gray-200">
+                        <h4 className="font-black uppercase text-lg">{coach.name}</h4>
+                        <span className="text-xs text-[#FF6C0E] font-bold uppercase block mb-2">{coach.role}</span>
+                        <p className="text-xs text-gray-500">{coach.bio}</p>
+                      </div>
+                    ))}
                  </div>
               </div>
            </div>

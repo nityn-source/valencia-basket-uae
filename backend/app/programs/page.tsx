@@ -6,7 +6,7 @@ import Image from "next/image";
 import type { Metadata } from "next";
 import { buildPageMetadata, getAltResolver } from "@/lib/seo/resolve";
 import { BreadcrumbJsonLd } from "@/components/seo/StructuredData";
-import { getContent } from "@/lib/content/pageContent";
+import { getContentGetter } from "@/lib/content/pageContent";
 
 export const revalidate = 60;
 
@@ -16,68 +16,50 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function Programs() {
   const alt = await getAltResolver();
-  const introText = await getContent("programs.intro");
-  const futureBallersDesc = await getContent("programs.future-ballers.description");
-  const futureBallersImage = await getContent("program.future-ballers.image");
-  const miniBasketDesc = await getContent("programs.mini-basket.description");
-  const miniBasketImage = await getContent("program.mini-basket.image");
-  const youthAcademyDesc = await getContent("programs.youth-academy.description");
-  const youthAcademyImage = await getContent("program.youth-academy.image");
-  const eliteDesc = await getContent("programs.elite.description");
-  const eliteImage = await getContent("program.elite.image");
-  const privateTrainingDesc = await getContent("programs.private-training.description");
-  const privateTrainingImage = await getContent("program.private-training.image");
-  const notSureDesc = await getContent("programs.not-sure.description");
-  const programs = [
+  const c = await getContentGetter();
+  const futureBallersImage = c("program.future-ballers.image");
+  const miniBasketImage = c("program.mini-basket.image");
+  const youthAcademyImage = c("program.youth-academy.image");
+  const eliteImage = c("program.elite.image");
+  const programDefs = [
     {
       id: "future-ballers",
-      title: "Future Ballers (Kids)",
-      age: "4-6 Years",
-      focus: "First Steps & Fun",
-      desc: futureBallersDesc,
-      schedule: "Mon/Wed 4:00 PM",
-      features: ["Motor skill development", "Coordination & balance games", "First contact with the ball", "Fun-based drills"],
+      slug: "future-ballers",
       image: futureBallersImage,
       imageKey: "programs.future-ballers",
       detailHref: "/programs/future-ballers",
     },
     {
       id: "mini",
-      title: "Mini Basket",
-      age: "7-10 Years",
-      focus: "Fundamentals & Fun",
-      desc: miniBasketDesc,
-      schedule: "Mon/Wed 5:00 PM",
-      features: ["Ball handling foundations", "Basic rules of the game", "Teamwork introduction", "Fun-based drills"],
+      slug: "mini-basket",
       image: miniBasketImage,
       imageKey: "programs.mini-basket",
       detailHref: "/programs/mini-basket",
     },
     {
       id: "youth",
-      title: "Youth Academy",
-      age: "11-18 Years",
-      focus: "Skill, Tactics & Competition",
-      desc: youthAcademyDesc,
-      schedule: "Sun/Tue/Thu 5:00 PM",
-      features: ["Shooting & ball handling mastery", "Advanced tactics", "Physical conditioning", "Competitive leagues"],
+      slug: "youth-academy",
       image: youthAcademyImage,
       imageKey: "programs.youth-academy",
       detailHref: "/programs/youth-academy",
     },
     {
       id: "elite",
-      title: "Elite / Select",
-      age: "Invitation Only",
-      focus: "High Performance",
-      desc: eliteDesc,
-      schedule: "Daily Training",
-      features: ["Individual Performance Plans", "Strength & Conditioning", "International Tournaments", "Scouting Exposure"],
+      slug: "elite",
       image: eliteImage,
       imageKey: "programs.elite",
       detailHref: "",
-    }
+    },
   ];
+  const programs = programDefs.map(({ slug, ...def }) => ({
+    ...def,
+    title: c(`programs.${slug}.title`),
+    age: c(`programs.${slug}.age`),
+    focus: c(`programs.${slug}.focus`),
+    desc: c(`programs.${slug}.description`),
+    features: [1, 2, 3, 4].map((n) => c(`programs.${slug}.feature${n}`)),
+  }));
+  const privateTrainingImage = c("program.private-training.image");
 
   return (
     <>
@@ -85,11 +67,11 @@ export default async function Programs() {
       <div className="bg-black text-white py-20">
         <div className="container mx-auto px-4 md:px-6 text-center">
           <h1 className="text-5xl md:text-7xl font-black uppercase tracking-tighter mb-6">
-            <span className="block">Basketball Programs</span>
-            <span className="block">For Kids &amp; Youth</span>
+            <span className="block">{c("programs.hero.line1")}</span>
+            <span className="block">{c("programs.hero.line2")}</span>
           </h1>
           <p className="text-xl text-gray-400 max-w-2xl mx-auto">
-            {introText}
+            {c("programs.intro")}
           </p>
         </div>
       </div>
@@ -120,7 +102,7 @@ export default async function Programs() {
                 </p>
                 
                 <div className="mb-8">
-                  <h4 className="font-bold uppercase text-sm mb-4 border-b pb-2">Key Focus Areas</h4>
+                  <h4 className="font-bold uppercase text-sm mb-4 border-b pb-2">{c("programs.focus-heading")}</h4>
                   <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {program.features.map((feat, i) => (
                       <li key={i} className="flex items-center gap-2 text-sm font-medium text-gray-700">
@@ -134,13 +116,13 @@ export default async function Programs() {
                    {program.detailHref ? (
                      <Link href={program.detailHref}>
                       <Button className="rounded-none uppercase font-bold tracking-wider h-auto py-3">
-                        Learn More <ArrowRight className="ml-2 h-4 w-4" />
+                        {c("programs.learn-more")} <ArrowRight className="ml-2 h-4 w-4" />
                       </Button>
                      </Link>
                    ) : (
                      <Link href="/#book-trial">
                       <Button className="rounded-none uppercase font-bold tracking-wider h-auto py-3">
-                        Book Trial <ArrowRight className="ml-2 h-4 w-4" />
+                        {c("programs.book-trial")} <ArrowRight className="ml-2 h-4 w-4" />
                       </Button>
                      </Link>
                    )}
@@ -157,35 +139,28 @@ export default async function Programs() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div>
               <div className="inline-block py-1 px-3 bg-primary text-white rounded-full text-xs font-bold uppercase tracking-widest mb-4">
-                Personalized Development
+                {c("programs.private-training.badge")}
               </div>
-              <h2 className="text-5xl font-black uppercase mb-4">Private Training</h2>
-              <h3 className="text-xl font-bold text-primary mb-6">1-on-1 &amp; Small Group Sessions</h3>
+              <h2 className="text-5xl font-black uppercase mb-4">{c("programs.private-training.title")}</h2>
+              <h3 className="text-xl font-bold text-primary mb-6">{c("programs.private-training.subtitle")}</h3>
               <p className="text-gray-600 mb-8 leading-relaxed text-lg">
-                {privateTrainingDesc}
+                {c("programs.private-training.description")}
               </p>
               
               <div className="mb-8">
-                <h4 className="font-bold uppercase text-sm mb-4 border-b pb-2">Training Options</h4>
+                <h4 className="font-bold uppercase text-sm mb-4 border-b pb-2">{c("programs.private-training.options-heading")}</h4>
                 <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <li className="flex items-center gap-2 text-sm font-medium text-gray-700">
-                    <Check className="h-4 w-4 text-primary" /> 1-on-1 Elite Sessions
-                  </li>
-                  <li className="flex items-center gap-2 text-sm font-medium text-gray-700">
-                    <Check className="h-4 w-4 text-primary" /> 4-on-1 Small Group
-                  </li>
-                  <li className="flex items-center gap-2 text-sm font-medium text-gray-700">
-                    <Check className="h-4 w-4 text-primary" /> Shooting Mechanics
-                  </li>
-                  <li className="flex items-center gap-2 text-sm font-medium text-gray-700">
-                    <Check className="h-4 w-4 text-primary" /> Video Analysis
-                  </li>
+                  {[1, 2, 3, 4].map((n) => (
+                    <li key={n} className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                      <Check className="h-4 w-4 text-primary" /> {c(`programs.private-training.option${n}`)}
+                    </li>
+                  ))}
                 </ul>
               </div>
 
               <Link href="/programs/private-training">
                 <Button className="rounded-none uppercase font-bold tracking-wider h-auto py-4 px-8 text-lg">
-                  View Training Options <ArrowRight className="ml-2 h-5 w-5" />
+                  {c("programs.private-training.button")} <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
               </Link>
             </div>
@@ -207,11 +182,11 @@ export default async function Programs() {
 
       <section className="bg-primary py-20 text-white text-center">
         <div className="container mx-auto px-4">
-           <h2 className="text-4xl font-black uppercase mb-6">Not sure which level?</h2>
-           <p className="text-xl mb-8 max-w-2xl mx-auto opacity-90">{notSureDesc}</p>
+           <h2 className="text-4xl font-black uppercase mb-6">{c("programs.not-sure.title")}</h2>
+           <p className="text-xl mb-8 max-w-2xl mx-auto opacity-90">{c("programs.not-sure.description")}</p>
            <Link href="/#book-trial">
               <Button size="lg" variant="outline" className="border-white text-white hover:bg-white hover:text-primary uppercase font-bold tracking-wider rounded-none px-10 h-14 text-lg">
-                Book Assessment
+                {c("programs.not-sure.button")}
               </Button>
            </Link>
         </div>

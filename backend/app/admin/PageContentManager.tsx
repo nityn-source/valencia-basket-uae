@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ExternalLink } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { IMAGE_LIMITS_TEXT, imageFileProblem } from "@/lib/blogPaste";
+import { FaqManager } from "./FaqManager";
 
 interface ContentRow {
   key: string;
@@ -132,11 +133,18 @@ const PAGE_INFO: Record<string, { url: string; menu: "Main pages" | "Program pag
   Location: { url: "/facilities", menu: "Main pages" },
   Methodology: { url: "/methodology", menu: "Main pages" },
   Admissions: { url: "/admissions", menu: "Main pages" },
+  Contact: { url: "/contact", menu: "Main pages" },
+  Staff: { url: "/coaches", menu: "Main pages" },
+  "Events & Camps": { url: "/events", menu: "Main pages" },
+  Blog: { url: "/blog", menu: "Main pages" },
+  FAQs: { url: "/faqs", menu: "Main pages" },
   "Future Ballers": { url: "/programs/future-ballers", menu: "Program pages" },
   "Mini Basket": { url: "/programs/mini-basket", menu: "Program pages" },
   "Youth Academy": { url: "/programs/youth-academy", menu: "Program pages" },
   "Private Training": { url: "/programs/private-training", menu: "Program pages" },
 };
+/** Not a list of fields: its questions are edited in the FAQ manager. */
+const FAQ_PAGE = "FAQs";
 const MENUS = ["Main pages", "Program pages"] as const;
 const sectionId = (page: string, section: string) => `content-${page}-${section}`.toLowerCase().replace(/[^a-z0-9]+/g, "-");
 
@@ -221,15 +229,14 @@ export function PageContentManager() {
     group.push(row);
     groups.set(row.page, group);
   }
-  const pages = [...groups.keys()];
-  const current = selected && groups.has(selected) ? selected : pages[0];
+  const order = Object.keys(PAGE_INFO);
+  const pages = [...groups.keys(), FAQ_PAGE].sort((a, b) => order.indexOf(a) - order.indexOf(b));
+  const current = selected && pages.includes(selected) ? selected : pages[0];
   const menuOf = (page: string) => PAGE_INFO[page]?.menu ?? "Main pages";
   const choose = (page: string) => {
     setSelected(page);
     window.scrollTo({ top: document.getElementById("page-content-manager")?.offsetTop ?? 0, behavior: "smooth" });
   };
-
-  if (!current) return <div className="py-12 text-center text-gray-500">No editable page content.</div>;
 
   return (
     <div className="space-y-4" id="page-content-manager" data-testid="page-content-manager">
@@ -246,7 +253,7 @@ export function PageContentManager() {
         {MENUS.map((menu) => (
           <optgroup key={menu} label={menu}>
             {pages.filter((page) => menuOf(page) === menu).map((page) => (
-              <option key={page} value={page}>{page} ({groups.get(page)!.length} fields)</option>
+              <option key={page} value={page}>{page === FAQ_PAGE ? page : `${page} (${groups.get(page)!.length} fields)`}</option>
             ))}
           </optgroup>
         ))}
@@ -272,7 +279,7 @@ export function PageContentManager() {
                     }`}
                   >
                     <span>{page}</span>
-                    <span className="text-xs text-gray-400">{groups.get(page)!.length}</span>
+                    {page !== FAQ_PAGE && <span className="text-xs text-gray-400">{groups.get(page)!.length}</span>}
                   </button>
                 ))}
               </div>
@@ -280,7 +287,19 @@ export function PageContentManager() {
           })}
         </nav>
 
-        <PageFields key={current} page={current} fields={groups.get(current)!} />
+        {current === FAQ_PAGE ? (
+          <div className="min-w-0" data-testid={`content-page-${FAQ_PAGE}`}>
+            <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2 border-b border-gray-200 pb-2">
+              <h2 className="text-lg font-black uppercase tracking-tight">FAQs</h2>
+              <a href="/faqs" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs font-semibold text-[#FF6C0E] hover:underline">
+                View page /faqs <ExternalLink className="h-3 w-3" />
+              </a>
+            </div>
+            <FaqManager />
+          </div>
+        ) : (
+          <PageFields key={current} page={current} fields={groups.get(current)!} />
+        )}
       </div>
     </div>
   );

@@ -4,7 +4,7 @@ import { buildPageMetadata } from "@/lib/seo/resolve";
 import { BreadcrumbJsonLd } from "@/components/seo/StructuredData";
 import { storage } from "@/lib/storage";
 import { BlogPostCard } from "@/components/blog/BlogPostCard";
-import { getContent } from "@/lib/content/pageContent";
+import { getContentGetter } from "@/lib/content/pageContent";
 import { matchAuthor } from "@/lib/content/staff";
 import { getBlogAuthors } from "@/lib/content/staffStore";
 
@@ -19,7 +19,7 @@ export default async function BlogPage() {
     console.error("[blog] failed to load public posts:", error);
     return [];
   });
-  const heroSubtext = await getContent("blog.hero.subtext");
+  const c = await getContentGetter();
   const authors = await getBlogAuthors().catch(() => []);
 
   return (
@@ -32,13 +32,13 @@ export default async function BlogPage() {
           <div className="max-w-4xl">
             <span className="inline-flex items-center gap-2 text-primary font-bold uppercase tracking-widest text-sm mb-5">
               <BookOpen className="h-4 w-4" />
-              From the Academy
+              {c("blog.hero.eyebrow")}
             </span>
             <h1 className="text-5xl md:text-7xl font-black uppercase tracking-tighter leading-[0.95] mb-7">
-              The Valencia Basket UAE Blog
+              {c("blog.hero.title")}
             </h1>
             <p className="text-xl md:text-2xl text-gray-400 max-w-2xl leading-relaxed">
-              {heroSubtext}
+              {c("blog.hero.subtext")}
             </p>
           </div>
         </div>
@@ -48,10 +48,10 @@ export default async function BlogPage() {
         <div className="container mx-auto px-4 md:px-6">
           {posts.length === 0 ? (
             <div className="mx-auto max-w-3xl border-l-4 border-primary bg-gray-50 p-8 md:p-12">
-              <p className="mb-3 text-sm font-bold uppercase tracking-widest text-primary">No published articles</p>
-              <h2 className="mb-5 text-3xl font-black uppercase tracking-tight">Stories from the court are on the way</h2>
+              <p className="mb-3 text-sm font-bold uppercase tracking-widest text-primary">{c("blog.empty.eyebrow")}</p>
+              <h2 className="mb-5 text-3xl font-black uppercase tracking-tight">{c("blog.empty.title")}</h2>
               <p className="max-w-2xl text-lg leading-relaxed text-gray-600">
-                Approved articles will appear here once they are published by the academy team.
+                {c("blog.empty.text")}
               </p>
             </div>
           ) : (

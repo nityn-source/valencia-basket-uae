@@ -21,6 +21,7 @@ const PAGE_PATHS: Record<string, string[]> = {
   Programs: ["/", "/programs", ...PROGRAM_DETAIL_PAGES],
   Location: ["/facilities"],
   Staff: ["/coaches"],
+  Contact: ["/contact"],
   Methodology: ["/methodology"],
   Admissions: ["/admissions"],
   "Events & Camps": ["/events"],
@@ -30,8 +31,6 @@ const PAGE_PATHS: Record<string, string[]> = {
   "Private Training": ["/programs/private-training"],
 };
 
-/** Edited at the top of their own admin tab (Staff, Events, Blog), not in Page Content. */
-const OWN_TAB_PAGES = new Set(["Staff", "Events & Camps", "Blog"]);
 
 export async function GET(request: NextRequest) {
   const error = await requireAdmin(request);
@@ -42,7 +41,7 @@ export async function GET(request: NextRequest) {
   const onlyKey = request.nextUrl.searchParams.get("key");
   const fields = onlyKey
     ? CONTENT_FIELDS.filter((field) => field.key === onlyKey)
-    : CONTENT_FIELDS.filter((field) => !OWN_TAB_PAGES.has(field.page));
+    : CONTENT_FIELDS;
   const rows = fields.map((field) => {
     const row = overrides.get(field.key);
     return {

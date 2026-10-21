@@ -76,6 +76,12 @@ test("blog home page lists only public, indexable, schema-enabled articles and i
     assert.equal(blog.blogPost[0].image, "https://cdn.example.com/a.jpg");
     assert.equal(blog.blogPost[1].image, undefined, "data URIs must never be inlined into schema");
     assert.equal(blog.blogPost[0].url, "https://valenciabasket.ae/blog/listed");
+    assert.equal(blog.blogPost[0]["@id"], "https://valenciabasket.ae/blog/listed#article");
+    assert.equal(blog.blogPost[0].datePublished, "2026-09-01");
+    assert.deepEqual(result.map((item) => item["@type"]), ["CollectionPage", "Blog", "BreadcrumbList"]);
+    assert.equal(result[0]["@id"], "https://valenciabasket.ae/blog#webpage");
+    assert.deepEqual(result[0].mainEntity, { "@type": "Blog", "@id": "https://valenciabasket.ae/blog#blog" });
+    assert.equal(result[2]["@id"], "https://valenciabasket.ae/blog#breadcrumb");
   } finally {
     storage.getPublishedBlogPosts = originalPosts;
     storage.getAllSeoSchemaOverrides = originalOverrides;

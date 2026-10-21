@@ -11,7 +11,8 @@ import { ArrowRight, Star, Heart, Zap, Users, Check } from "lucide-react";
 import { buildPageMetadata, getAltResolver } from "@/lib/seo/resolve";
 import { getStructuredData } from "@/lib/seo/structuredDataResolve";
 import { StructuredData } from "@/components/seo/StructuredData";
-import { getContent } from "@/lib/content/pageContent";
+import { getContentGetter } from "@/lib/content/pageContent";
+import { RichTitle } from "@/components/shared/RichTitle";
 
 export const revalidate = 60;
 
@@ -19,44 +20,31 @@ export async function generateMetadata(): Promise<Metadata> {
   return buildPageMetadata("/programs/future-ballers");
 }
 
-const pillars = [
-  {
-    icon: Zap,
-    title: "Movement & Coordination",
-    points: ["Running & jumping drills", "Balance and body awareness", "Hand-eye coordination games", "Spatial awareness activities"],
-  },
-  {
-    icon: Star,
-    title: "Confidence Building",
-    points: ["Celebrating every effort", "Low-pressure environment", "Positive reinforcement", "Personal-best targets"],
-  },
-  {
-    icon: Heart,
-    title: "Fun-First Approach",
-    points: ["Games over repetitive drills", "Laughter-led sessions", "Excitement on arrival", "A love for the ball"],
-  },
-  {
-    icon: Users,
-    title: "Team & Social Play",
-    points: ["Taking turns and sharing", "Listening to the coach", "Celebrating teammates", "Partner and group games"],
-  },
-];
+const pillarIcons = [Zap, Star, Heart, Users];
 
-const focusAreas = [
-  { icon: Zap,   title: "Motor Skills",  desc: "Running, jumping, and throwing drills that develop fundamental physical coordination." },
-  { icon: Heart, title: "Confidence",    desc: "Low-pressure, encouraging environment where every child succeeds and grows." },
-  { icon: Star,  title: "Ball Feel",     desc: "First contact with a basketball, dribbling, rolling, catching at a pace that's just right." },
-  { icon: Users, title: "Social Play",   desc: "Learning to share, take turns, and play alongside others. Teamwork begins here." },
-];
+const focusIcons = [Zap, Heart, Star, Users];
 
 export default async function FutureBallers() {
   const alt = await getAltResolver();
   const schema = await getStructuredData("/programs/future-ballers", "Future Ballers");
-  const heroSubtext = await getContent("future-ballers.hero.subtext");
-  const heroImage = await getContent("program.future-ballers.image");
-  const aboutParagraph1 = await getContent("future-ballers.about.paragraph1");
-  const aboutParagraph2 = await getContent("future-ballers.about.paragraph2");
-  const ctaSubtext = await getContent("future-ballers.cta.subtext");
+  const c = await getContentGetter();
+  const heroImage = c("program.future-ballers.image");
+  const sessionImage = c("future-ballers.session.image");
+  const pillars = pillarIcons.map((icon, i) => ({
+    icon,
+    title: c(`future-ballers.pillar${i + 1}.title`),
+    points: [1, 2, 3, 4].map((n) => c(`future-ballers.pillar${i + 1}.point${n}`)),
+  }));
+  const focusAreas = focusIcons.map((icon, i) => ({
+    icon,
+    title: c(`future-ballers.focus${i + 1}.title`),
+    desc: c(`future-ballers.focus${i + 1}.desc`),
+  }));
+  const steps = Array.from({ length: 4 }, (_, i) => ({
+    step: String(i + 1).padStart(2, "0"),
+    title: c(`future-ballers.step${i + 1}.title`),
+    desc: c(`future-ballers.step${i + 1}.desc`),
+  }));
   return (
     <>
       <StructuredData data={schema} />
@@ -67,18 +55,18 @@ export default async function FutureBallers() {
         <div className="absolute top-1/2 left-1/4 w-32 h-32 rounded-full bg-primary/5 pointer-events-none" />
         <div className="container mx-auto px-4 md:px-6 text-center relative z-10">
           <span className="inline-block rounded-full bg-primary text-white px-4 py-1.5 font-bold uppercase text-xs tracking-widest mb-6">
-            Ages 4–6 Years
+            {c("future-ballers.hero.badge")}
           </span>
           <h1 className="text-5xl md:text-7xl font-black uppercase tracking-tighter mb-6">
-            Future <span className="text-primary">Ballers</span> Program
+            <RichTitle text={c("future-ballers.hero.title")} />
           </h1>
           <p className="text-xl text-gray-400 max-w-2xl mx-auto mb-10">
-            {heroSubtext}
+            {c("future-ballers.hero.subtext")}
           </p>
           <div className="flex justify-center">
             <Link href="/#book-trial">
               <Button size="lg" className="uppercase font-bold tracking-wider rounded-none h-14 px-10 text-base">
-                Book a Free Trial <ArrowRight className="ml-2 h-5 w-5" />
+                {c("future-ballers.hero.button")} <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </Link>
           </div>
@@ -104,20 +92,20 @@ export default async function FutureBallers() {
             </div>
             {/* content RIGHT — mobile: stacks second */}
             <div className="order-2">
-              <span className="text-primary font-bold uppercase tracking-widest text-sm mb-4 block">About the Program</span>
+              <span className="text-primary font-bold uppercase tracking-widest text-sm mb-4 block">{c("future-ballers.about.eyebrow")}</span>
               <h2 className="text-4xl md:text-5xl font-black uppercase tracking-tighter mb-6">
-                First Steps. <span className="text-primary">Big Fun.</span>
+                <RichTitle text={c("future-ballers.about.title")} />
               </h2>
               <p className="text-gray-600 leading-relaxed text-lg mb-6">
-                {aboutParagraph1}
+                {c("future-ballers.about.paragraph1")}
               </p>
               <p className="text-gray-600 leading-relaxed text-lg mb-8">
-                {aboutParagraph2}
+                {c("future-ballers.about.paragraph2")}
               </p>
               {/* Lever 2: more padding, orange borders */}
               <div className="grid grid-cols-2 gap-4">                <div className="bg-gray-50 border-l-4 border-primary px-4 py-3">
-                  <span className="block text-xs font-bold uppercase text-gray-400 mb-1">Session Length</span>
-                  <span className="font-bold text-gray-900">90 mins</span>
+                  <span className="block text-xs font-bold uppercase text-gray-400 mb-1">{c("future-ballers.stat.session.label")}</span>
+                  <span className="font-bold text-gray-900">{c("future-ballers.stat.session.value")}</span>
                 </div>
                 
                 {/* HIDDEN — un-hide and replace value once coach-to-player ratio is confirmed */}
@@ -128,8 +116,8 @@ export default async function FutureBallers() {
                   </div>
                 )}
                 <div className="bg-gray-50 border-l-4 border-primary px-4 py-3">
-                  <span className="block text-xs font-bold uppercase text-gray-400 mb-1">Venue</span>
-                  <span className="font-bold text-gray-900">AllSports Arena, Al Quoz</span>
+                  <span className="block text-xs font-bold uppercase text-gray-400 mb-1">{c("future-ballers.stat.venue.label")}</span>
+                  <span className="font-bold text-gray-900">{c("future-ballers.stat.venue.value")}</span>
                 </div>
               </div>
             </div>
@@ -142,10 +130,10 @@ export default async function FutureBallers() {
         <div className="container mx-auto px-4 md:px-6">
           <div className="text-center mb-14">
             <span className="inline-block rounded-full bg-primary text-white px-4 py-1.5 font-bold uppercase text-xs tracking-widest mb-4">
-              Training Pillars
+              {c("future-ballers.pillars.badge")}
             </span>
             <h2 className="text-4xl md:text-5xl font-black uppercase tracking-tighter">
-              How We Develop Players
+              {c("future-ballers.pillars.title")}
             </h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -174,10 +162,10 @@ export default async function FutureBallers() {
         <div className="container mx-auto px-4 md:px-6">
           <div className="text-center mb-16">
             <span className="inline-block rounded-full bg-primary text-white px-4 py-1.5 font-bold uppercase text-xs tracking-widest mb-4">
-              What They Learn
+              {c("future-ballers.focus.badge")}
             </span>
-            <h2 className="text-4xl md:text-5xl font-black uppercase tracking-tighter">Focus Areas</h2>
-            <p className="text-gray-500 mt-4 max-w-xl mx-auto">Every session is built around what kids aged 4 to 6 actually enjoy, so they leave wanting to come back.</p>
+            <h2 className="text-4xl md:text-5xl font-black uppercase tracking-tighter">{c("future-ballers.focus.title")}</h2>
+            <p className="text-gray-500 mt-4 max-w-xl mx-auto">{c("future-ballers.focus.subtext")}</p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {focusAreas.map(({ icon: Icon, title, desc }) => (
@@ -199,17 +187,12 @@ export default async function FutureBallers() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
             {/* steps LEFT — mobile: stacks first */}
             <div className="order-1">
-              <span className="text-primary font-bold uppercase tracking-widest text-sm mb-4 block">Session Structure</span>
+              <span className="text-primary font-bold uppercase tracking-widest text-sm mb-4 block">{c("future-ballers.session.eyebrow")}</span>
               <h2 className="text-4xl md:text-5xl font-black uppercase tracking-tighter mb-8">
-                What a Session Looks Like
+                {c("future-ballers.session.title")}
               </h2>
               <div className="space-y-6">
-                {[
-                  { step: "01", title: "Warm-Up Games",           desc: "Active movement games to get hearts pumping and muscles ready, every child arrives excited." },
-                  { step: "02", title: "Skill Circuit",            desc: "Short, focused stations introducing one concept at a time: dribbling, passing, or shooting basics." },
-                  { step: "03", title: "Coached Play",             desc: "Small-sided games where coaches apply the skill in a fun, guided context." },
-                  { step: "04", title: "Cool-Down & Celebration",  desc: "A calm close with a fun team ritual, every child leaves feeling proud and energised." },
-                ].map(({ step, title, desc }) => (
+                {steps.map(({ step, title, desc }) => (
                   <div key={step} className="flex gap-5">
                     <span className="text-primary font-black text-2xl leading-none shrink-0 w-8">{step}</span>
                     <div>
@@ -222,7 +205,7 @@ export default async function FutureBallers() {
             </div>
             {/* image RIGHT — mobile: stacks second */}
             <div className="order-2 aspect-[3/4] w-full relative">
-              <Image src="/images/mini-basket-team.jpg" alt={alt("future-ballers.session")} fill className="object-cover" />
+              <Image src={sessionImage} alt={alt("future-ballers.session")} fill className="object-cover" />
             </div>
           </div>
         </div>
@@ -232,20 +215,20 @@ export default async function FutureBallers() {
       <section className="bg-primary py-24 text-white text-center">
         <div className="container mx-auto px-4 md:px-6">
           <h2 className="text-4xl md:text-5xl font-black uppercase tracking-tighter mb-4">
-            Ready to See Them Smile?
+            {c("future-ballers.cta.title")}
           </h2>
           <p className="text-xl mb-10 max-w-xl mx-auto opacity-90">
-            {ctaSubtext}
+            {c("future-ballers.cta.subtext")}
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/#book-trial">
               <Button size="lg" className="bg-black text-white hover:bg-white hover:text-primary uppercase font-bold tracking-wider rounded-none h-14 px-10 text-base border-0">
-                Book a Free Trial <ArrowRight className="ml-2 h-5 w-5" />
+                {c("future-ballers.cta.button")} <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </Link>
             <Link href="/contact">
               <Button size="lg" variant="outline" className="border-white text-white hover:bg-white hover:text-primary uppercase font-bold tracking-wider rounded-none h-14 px-10 text-base">
-                Ask a Question
+                {c("future-ballers.cta.button2")}
               </Button>
             </Link>
           </div>
