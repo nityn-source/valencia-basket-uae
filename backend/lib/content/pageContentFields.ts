@@ -616,7 +616,6 @@ export const HOME_FIELDS: ContentField[] = [
     ["home.hero.subtext", "Hero subtext", "area", "Join Valencia Basketball Academy in Dubai and follow an elite player development pathway inspired by L'Alqueria del Basket. Excellence, culture, and high performance for youth and kids.", 220],
     ["home.hero.button1", "Main button text", "text", "Book a Free Trial"],
     ["home.hero.button2", "Second button text", "text", "View Programs"],
-    ["home.hero.scroll", "\"Scroll\" hint under the hero", "text", "Scroll", 20],
   ]),
   {
     key: "home.hero.image",
@@ -628,7 +627,7 @@ export const HOME_FIELDS: ContentField[] = [
   },
   ...fieldsFor("Home", "Trust bar", [
     ["home.trust1.text", "Item 1", "text", "Spanish Curriculum", 50],
-    ["home.trust2.text", "Item 2", "text", "UEFA Qualified Coaches", 50],
+    ["home.trust2.text", "Item 2", "text", "FIBA Qualified Coaches", 50],
     ["home.trust3.text", "Item 3", "text", "Long-Term Player Pathway", 50],
     ["home.trust4.text", "Item 4", "text", "Safe Environment", 50],
     ["home.trust5.text", "Item 5", "text", "High Performance Support", 50],

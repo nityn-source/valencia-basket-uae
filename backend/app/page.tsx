@@ -60,7 +60,6 @@ export default async function Home() {
         line2={c("home.hero.line2")}
         primaryButton={c("home.hero.button1")}
         secondaryButton={c("home.hero.button2")}
-        scrollLabel={c("home.hero.scroll")}
       />
 
       <Reveal><TrustBar /></Reveal>

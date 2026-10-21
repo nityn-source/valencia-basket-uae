@@ -11,7 +11,6 @@ export function Hero({
   line2 = "*Academy* UAE",
   primaryButton = "Book a Free Trial",
   secondaryButton = "View Programs",
-  scrollLabel = "Scroll",
   imageAlt = "Valencia Basket UAE Action",
   subtext = "Join Valencia Basketball Academy in Dubai and follow an elite player development pathway inspired by L'Alqueria del Basket. Excellence, culture, and high performance for youth and kids.",
   imageSrc = "/images/hero-players-2.jpg",
@@ -21,7 +20,6 @@ export function Hero({
   line2?: string;
   primaryButton?: string;
   secondaryButton?: string;
-  scrollLabel?: string;
   imageAlt?: string;
   subtext?: string;
   imageSrc?: string;
@@ -72,11 +70,6 @@ export function Hero({
             </Link>
           </div>
         </div>
-      </div>
-
-      <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2 animate-fade-in-delayed">
-        <span className="text-[10px] uppercase tracking-[0.2em] text-white/60">{scrollLabel}</span>
-        <div className="w-[1px] h-12 bg-gradient-to-b from-white to-transparent" />
       </div>
     </section>
   );
