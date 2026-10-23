@@ -11,6 +11,8 @@ import Link from "next/link";
 import Image from "next/image";
 import type { Metadata } from "next";
 import { Reveal } from "@/components/shared/Reveal";
+import { ReelsCarousel } from "@/components/reels/ReelsCarousel";
+import { getReels } from "@/lib/content/reelsStore";
 import { buildPageMetadata, getAltResolver } from "@/lib/seo/resolve";
 import { getStructuredData } from "@/lib/seo/structuredDataResolve";
 import { StructuredData } from "@/components/seo/StructuredData";
@@ -39,6 +41,7 @@ export default async function Home() {
     role: c(`home.testimonial${n}.role`),
   }));
 
+  const homepageReels = await getReels("homepage");
   const futureBallersImage = c("program.future-ballers.image");
   const miniBasketImage = c("program.mini-basket.image");
   const youthAcademyImage = c("program.youth-academy.image");
@@ -261,6 +264,18 @@ export default async function Home() {
             </div>
           </div>
         </section>
+      </Reveal>
+
+      {/* INSTAGRAM REELS — homepage reels from data/reels.ts (renders nothing when there are none) */}
+      <Reveal>
+        <ReelsCarousel
+          reels={homepageReels}
+          eyebrow={c("home.reels.eyebrow")}
+          title={c("home.reels.title")}
+          text={c("home.reels.text")}
+          followLabel={c("home.reels.follow")}
+          watchLabel={c("home.reels.watch")}
+        />
       </Reveal>
 
       <Reveal><EventStrip /></Reveal>

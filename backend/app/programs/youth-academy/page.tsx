@@ -14,6 +14,8 @@ import { getStructuredData } from "@/lib/seo/structuredDataResolve";
 import { StructuredData } from "@/components/seo/StructuredData";
 import { getContentGetter } from "@/lib/content/pageContent";
 import { RichTitle } from "@/components/shared/RichTitle";
+import { ReelsCarousel } from "@/components/reels/ReelsCarousel";
+import { getReels } from "@/lib/content/reelsStore";
 
 export const revalidate = 60;
 
@@ -210,6 +212,9 @@ export default async function YouthAcademy() {
           </div>
         </div>
       </section>
+
+      {/* Reels tagged "youth-academy" in data/reels.ts; renders nothing when there are none */}
+      <ReelsCarousel reels={await getReels("youth-academy")} title="See it in action" text="Real sessions from the academy." />
 
       {/* ── CTA — Lever 2: most compact (py-16) ── */}
       <section className="bg-primary py-16 text-white text-center">

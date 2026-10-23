@@ -702,6 +702,13 @@ export const HOME_FIELDS: ContentField[] = [
     ["home.testimonial3.author", "Testimonial 3 — author", "text", "Ahmed K.", 60],
     ["home.testimonial3.role", "Testimonial 3 — role", "text", "Elite Player", 60],
   ]),
+  ...fieldsFor("Home", "Instagram reels", [
+    ["home.reels.eyebrow", "Small heading", "text", "Instagram", 30],
+    ["home.reels.title", "Heading", "text", "Follow the action"],
+    ["home.reels.text", "Short pitch", "area", "Training, game days and life at the academy. New reels every week.", 160],
+    ["home.reels.follow", "Follow button text", "text", "Follow us on Instagram", 40],
+    ["home.reels.watch", "\"Watch\" link text under each reel", "text", "Watch on Instagram", 40],
+  ]),
   ...fieldsFor("Home", "Book a trial", [
     ["home.book-trial.headline", "Book-a-trial section headline", "text", "Start Your Journey Today"],
     ["home.book-trial.subtext", "Book-a-trial section subtext", "area", "Book a free assessment session. Let our coaches evaluate your potential and place you in the right program.", 220],

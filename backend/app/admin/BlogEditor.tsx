@@ -741,7 +741,7 @@ function RichEditor({ value, onChange, onBlur }: { value: string; onChange: (val
       return;
     }
     const [, type, code] = match;
-    const html = `<iframe src="https://www.instagram.com/${type}/${code}/embed" width="400" height="480" frameborder="0" scrolling="no" allowtransparency="true"></iframe>`;
+    const html = `<iframe src="https://www.instagram.com/${type}/${code}/embed" width="400" height="700" frameborder="0" scrolling="no" allowtransparency="true"></iframe>`;
     editorRef.current?.focus({ preventScroll: true });
     document.execCommand("insertHTML", false, html);
     emit();

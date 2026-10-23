@@ -6,6 +6,8 @@ import type { Metadata } from "next";
 import { buildPageMetadata, getAltResolver } from "@/lib/seo/resolve";
 import { BreadcrumbJsonLd } from "@/components/seo/StructuredData";
 import { getContentGetter } from "@/lib/content/pageContent";
+import { ReelsCarousel } from "@/components/reels/ReelsCarousel";
+import { getReels } from "@/lib/content/reelsStore";
 
 export const revalidate = 60;
 
@@ -168,6 +170,9 @@ export default async function PrivateTraining() {
         </div>
 
       </div>
+
+      {/* Reels tagged "private-training" in data/reels.ts; renders nothing when there are none */}
+      <ReelsCarousel reels={await getReels("private-training")} title="See it in action" text="Real sessions from the academy." />
     </>
   );
 }

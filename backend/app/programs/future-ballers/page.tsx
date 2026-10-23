@@ -13,6 +13,8 @@ import { getStructuredData } from "@/lib/seo/structuredDataResolve";
 import { StructuredData } from "@/components/seo/StructuredData";
 import { getContentGetter } from "@/lib/content/pageContent";
 import { RichTitle } from "@/components/shared/RichTitle";
+import { ReelsCarousel } from "@/components/reels/ReelsCarousel";
+import { getReels } from "@/lib/content/reelsStore";
 
 export const revalidate = 60;
 
@@ -210,6 +212,9 @@ export default async function FutureBallers() {
           </div>
         </div>
       </section>
+
+      {/* Reels tagged "future-ballers" in data/reels.ts; renders nothing when there are none */}
+      <ReelsCarousel reels={await getReels("future-ballers")} title="See it in action" text="Real sessions from the academy." />
 
       {/* ── CTA — Lever 2: most spacious (py-24) ── */}
       <section className="bg-primary py-24 text-white text-center">

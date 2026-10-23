@@ -231,6 +231,8 @@
    Tailwind's reset otherwise leaves headings unsized and lists without bullets). */
 .blog-content > :first-child { margin-top: 0; }
 .blog-content p { margin: 0 0 1.25rem; }
+/* Instagram embeds: never wider than the article, no border; height is set to fit (see InstagramEmbedSizer). */
+.blog-content iframe { display: block; max-width: 100%; margin: 0 0 1.25rem; border: 0; }
 .blog-content h1,
 .blog-content h2,
 .blog-content h3,

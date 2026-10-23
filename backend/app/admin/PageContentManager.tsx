@@ -9,6 +9,7 @@ import { ExternalLink } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { IMAGE_LIMITS_TEXT, imageFileProblem } from "@/lib/blogPaste";
 import { FaqManager } from "./FaqManager";
+import { ReelsManager } from "./ReelsManager";
 
 interface ContentRow {
   key: string;
@@ -138,6 +139,7 @@ const PAGE_INFO: Record<string, { url: string; menu: "Main pages" | "Program pag
   "Events & Camps": { url: "/events", menu: "Main pages" },
   Blog: { url: "/blog", menu: "Main pages" },
   FAQs: { url: "/faqs", menu: "Main pages" },
+  "Instagram reels": { url: "/", menu: "Main pages" },
   "Future Ballers": { url: "/programs/future-ballers", menu: "Program pages" },
   "Mini Basket": { url: "/programs/mini-basket", menu: "Program pages" },
   "Youth Academy": { url: "/programs/youth-academy", menu: "Program pages" },
@@ -145,6 +147,9 @@ const PAGE_INFO: Record<string, { url: string; menu: "Main pages" | "Program pag
 };
 /** Not a list of fields: its questions are edited in the FAQ manager. */
 const FAQ_PAGE = "FAQs";
+const REELS_PAGE = "Instagram reels";
+/** Pages that aren't a list of text fields: they have their own editors. */
+const EDITOR_PAGES = [FAQ_PAGE, REELS_PAGE];
 const MENUS = ["Main pages", "Program pages"] as const;
 const sectionId = (page: string, section: string) => `content-${page}-${section}`.toLowerCase().replace(/[^a-z0-9]+/g, "-");
 
@@ -230,7 +235,7 @@ export function PageContentManager() {
     groups.set(row.page, group);
   }
   const order = Object.keys(PAGE_INFO);
-  const pages = [...groups.keys(), FAQ_PAGE].sort((a, b) => order.indexOf(a) - order.indexOf(b));
+  const pages = [...groups.keys(), ...EDITOR_PAGES].sort((a, b) => order.indexOf(a) - order.indexOf(b));
   const current = selected && pages.includes(selected) ? selected : pages[0];
   const menuOf = (page: string) => PAGE_INFO[page]?.menu ?? "Main pages";
   const choose = (page: string) => {
@@ -253,7 +258,7 @@ export function PageContentManager() {
         {MENUS.map((menu) => (
           <optgroup key={menu} label={menu}>
             {pages.filter((page) => menuOf(page) === menu).map((page) => (
-              <option key={page} value={page}>{page === FAQ_PAGE ? page : `${page} (${groups.get(page)!.length} fields)`}</option>
+              <option key={page} value={page}>{EDITOR_PAGES.includes(page) ? page : `${page} (${groups.get(page)!.length} fields)`}</option>
             ))}
           </optgroup>
         ))}
@@ -279,7 +284,7 @@ export function PageContentManager() {
                     }`}
                   >
                     <span>{page}</span>
-                    {page !== FAQ_PAGE && <span className="text-xs text-gray-400">{groups.get(page)!.length}</span>}
+                    {!EDITOR_PAGES.includes(page) && <span className="text-xs text-gray-400">{groups.get(page)!.length}</span>}
                   </button>
                 ))}
               </div>
@@ -296,6 +301,16 @@ export function PageContentManager() {
               </a>
             </div>
             <FaqManager />
+          </div>
+        ) : current === REELS_PAGE ? (
+          <div className="min-w-0" data-testid={`content-page-${REELS_PAGE}`}>
+            <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2 border-b border-gray-200 pb-2">
+              <h2 className="text-lg font-black uppercase tracking-tight">Instagram reels</h2>
+              <a href="/" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs font-semibold text-[#FF6C0E] hover:underline">
+                View homepage <ExternalLink className="h-3 w-3" />
+              </a>
+            </div>
+            <ReelsManager />
           </div>
         ) : (
           <PageFields key={current} page={current} fields={groups.get(current)!} />

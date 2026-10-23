@@ -13,6 +13,8 @@ import { getStructuredData } from "@/lib/seo/structuredDataResolve";
 import { StructuredData } from "@/components/seo/StructuredData";
 import { getContentGetter } from "@/lib/content/pageContent";
 import { RichTitle } from "@/components/shared/RichTitle";
+import { ReelsCarousel } from "@/components/reels/ReelsCarousel";
+import { getReels } from "@/lib/content/reelsStore";
 
 export const revalidate = 60;
 
@@ -207,6 +209,9 @@ export default async function MiniBasket() {
           </div>
         </div>
       </section>
+
+      {/* Reels tagged "mini-basket" in data/reels.ts; renders nothing when there are none */}
+      <ReelsCarousel reels={await getReels("mini-basket")} title="See it in action" text="Real sessions from the academy." />
 
       {/* ── CTA ── */}
       <section className="bg-primary py-20 text-white text-center">

@@ -731,3 +731,22 @@ export const faqItems = pgTable("faq_items", {
 
 export type FaqItemRow = typeof faqItems.$inferSelect;
 export type InsertFaqItemRow = typeof faqItems.$inferInsert;
+
+/**
+ * Instagram reels shown on the site, edited in Admin → Page Content → Instagram
+ * reels. `target` is where a reel appears: "homepage" or a program slug.
+ */
+export const reelItems = pgTable("reel_items", {
+  id: serial("id").primaryKey(),
+  url: text("url").notNull(),
+  caption: text("caption").notNull(),
+  target: text("target").notNull(),
+  poster: text("poster"),
+  sortOrder: integer("sort_order").notNull().default(0),
+  visible: boolean("visible").notNull().default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export type ReelItemRow = typeof reelItems.$inferSelect;
+export type InsertReelItemRow = typeof reelItems.$inferInsert;

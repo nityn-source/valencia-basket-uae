@@ -20,6 +20,8 @@ import {
   type InsertStaffMemberRow,
   type FaqItemRow,
   type InsertFaqItemRow,
+  type ReelItemRow,
+  type InsertReelItemRow,
   type BlogPost,
   type BlogCategory,
   type BlogTag,
@@ -37,6 +39,7 @@ import {
   pageContentOverrides,
   staffMembers,
   faqItems,
+  reelItems,
   blogPosts,
   blogCategories,
   blogTags,
@@ -181,6 +184,13 @@ export interface IStorage {
   updateFaqItem(id: number, changes: Partial<InsertFaqItemRow>): Promise<FaqItemRow | undefined>;
   deleteFaqItem(id: number): Promise<void>;
   reorderFaqItems(section: string, ids: number[]): Promise<void>;
+
+  getReelItems(): Promise<ReelItemRow[]>;
+  getReelItemById(id: number): Promise<ReelItemRow | undefined>;
+  createReelItem(row: InsertReelItemRow): Promise<ReelItemRow>;
+  updateReelItem(id: number, changes: Partial<InsertReelItemRow>): Promise<ReelItemRow | undefined>;
+  deleteReelItem(id: number): Promise<void>;
+  reorderReelItems(target: string, ids: number[]): Promise<void>;
 
   getAllSeoImageAltFiles(): Promise<SeoImageAlt[]>;
   getAllSeoImageAlts(): Promise<SeoImageAlt[]>;
@@ -575,6 +585,38 @@ export class DatabaseStorage implements IStorage {
       for (const [index, id] of ids.entries()) {
         await tx.update(faqItems).set({ sortOrder: index, updatedAt: new Date() })
           .where(and(eq(faqItems.id, id), eq(faqItems.section, section)));
+      }
+    });
+  }
+
+  async getReelItems(): Promise<ReelItemRow[]> {
+    return db.select().from(reelItems).orderBy(asc(reelItems.sortOrder), asc(reelItems.id));
+  }
+
+  async getReelItemById(id: number): Promise<ReelItemRow | undefined> {
+    const [row] = await db.select().from(reelItems).where(eq(reelItems.id, id));
+    return row;
+  }
+
+  async createReelItem(row: InsertReelItemRow): Promise<ReelItemRow> {
+    const [created] = await db.insert(reelItems).values(row).returning();
+    return created;
+  }
+
+  async updateReelItem(id: number, changes: Partial<InsertReelItemRow>): Promise<ReelItemRow | undefined> {
+    const [updated] = await db.update(reelItems).set({ ...changes, updatedAt: new Date() }).where(eq(reelItems.id, id)).returning();
+    return updated;
+  }
+
+  async deleteReelItem(id: number): Promise<void> {
+    await db.delete(reelItems).where(eq(reelItems.id, id));
+  }
+
+  async reorderReelItems(target: string, ids: number[]): Promise<void> {
+    await db.transaction(async (tx) => {
+      for (const [index, id] of ids.entries()) {
+        await tx.update(reelItems).set({ sortOrder: index, updatedAt: new Date() })
+          .where(and(eq(reelItems.id, id), eq(reelItems.target, target)));
       }
     });
   }

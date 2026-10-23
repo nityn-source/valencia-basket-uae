@@ -39,7 +39,7 @@ export function instagramQuotesToEmbeds(html: string) {
     if (!/View this post on Instagram|A post shared by/i.test(inner)) return full;
     const post = /https?:\/\/(?:www\.)?instagram\.com\/(p|reel|tv)\/([A-Za-z0-9_-]+)/i.exec(inner);
     if (!post) return full;
-    return `<iframe src="https://www.instagram.com/${post[1].toLowerCase()}/${post[2]}/embed" width="400" height="480" frameborder="0" scrolling="no" allowtransparency="true"></iframe>`;
+    return `<iframe src="https://www.instagram.com/${post[1].toLowerCase()}/${post[2]}/embed" width="400" height="700" frameborder="0" scrolling="no" allowtransparency="true"></iframe>`;
   });
 }
 

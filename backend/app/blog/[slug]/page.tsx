@@ -13,6 +13,7 @@ import { authorDisplayName, authorPath } from "@/lib/content/staff";
 import { getAuthorForPost, staffPhotoAlt } from "@/lib/content/staffStore";
 import { getAltResolver } from "@/lib/seo/resolve";
 import { PasswordForm } from "./PasswordForm";
+import { InstagramEmbedSizer } from "@/components/blog/InstagramEmbedSizer";
 
 export const dynamic = "force-dynamic";
 
@@ -109,7 +110,10 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
         </header>
         <div className="container mx-auto max-w-4xl px-4 py-12 md:px-6 md:py-20">
           {hasRichContent ? (
-            <div className="prose blog-content max-w-none text-lg leading-8 text-gray-700" dangerouslySetInnerHTML={{ __html: safeContent }} />
+            <>
+              <div className="prose blog-content max-w-none text-lg leading-8 text-gray-700" dangerouslySetInnerHTML={{ __html: safeContent }} />
+              <InstagramEmbedSizer />
+            </>
           ) : (
             <div className="whitespace-pre-line text-lg leading-8 text-gray-700">{safeContent}</div>
           )}

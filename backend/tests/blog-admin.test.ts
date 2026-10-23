@@ -145,7 +145,7 @@ test("nofollow and sponsored links keep their rel values, with or without a new 
 
 test("a pasted Instagram embed quote becomes the Instagram iframe embed", () => {
   const pasted = '<blockquote class="instagram-media" data-instgrm-permalink="https://www.instagram.com/reel/DcOkdAWKJJs/?utm_source=ig_embed"><div><a href="https://www.instagram.com/reel/DcOkdAWKJJs/?utm_source=ig_embed" target="_blank"><div>View this post on Instagram</div></a><p><a href="https://www.instagram.com/reel/DcOkdAWKJJs/">A post shared by Valencia Basket (@valenciabasketuae)</a></p></div></blockquote><script async src="//www.instagram.com/embed.js"></script>';
-  assert.equal(sanitizeBlogHtml(`<p>Intro</p>${pasted}<p>After</p>`), '<p>Intro</p><iframe src="https://www.instagram.com/reel/DcOkdAWKJJs/embed" width="400" height="480" frameborder="0" scrolling="no" allowtransparency="true"></iframe><p>After</p>');
+  assert.equal(sanitizeBlogHtml(`<p>Intro</p>${pasted}<p>After</p>`), '<p>Intro</p><iframe src="https://www.instagram.com/reel/DcOkdAWKJJs/embed" width="400" height="700" frameborder="0" scrolling="no" allowtransparency="true"></iframe><p>After</p>');
   assert.equal(sanitizeBlogHtml("<blockquote>A real quote from the coach</blockquote>"), "<blockquote>A real quote from the coach</blockquote>", "ordinary quotes stay quotes");
 });
 
