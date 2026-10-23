@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { ArrowUpRight, ChevronLeft, ChevronRight, Instagram, Play } from "lucide-react";
 import { INSTAGRAM_URL, embedSrc, isPlaceholderReel, type Reel } from "@/lib/reels";
 
@@ -14,11 +14,17 @@ interface ReelsCarouselProps {
 }
 
 const EMBED_TIMEOUT_MS = 8000;
+// When every reel fits on one row at this width or more, they're all shown at once.
+const CARD_MIN = 200;
+const CARD_MAX = 230;
+const CARD_GAP = 12;
+// Never more than this many live Instagram embeds on the page at once.
+const MAX_LIVE = 4;
 
 /** One reel card: a poster until it's the centred reel, then the live Instagram embed. */
-function ReelCard({ reel, active, nearViewport }: { reel: Reel; active: boolean; nearViewport: boolean }) {
+function ReelCard({ reel, wantLive, nearViewport }: { reel: Reel; wantLive: boolean; nearViewport: boolean }) {
   const src = embedSrc(reel.url);
-  const live = active && nearViewport && !!src && !isPlaceholderReel(reel);
+  const live = wantLive && nearViewport && !!src && !isPlaceholderReel(reel);
   const [loaded, setLoaded] = useState(false);
   const [failed, setFailed] = useState(false);
 
@@ -91,7 +97,9 @@ export function ReelsCarousel({
   const trackRef = useRef<HTMLDivElement>(null);
   const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
   const [active, setActive] = useState(0);
+  const viewRef = useRef<HTMLDivElement>(null);
   const [nearViewport, setNearViewport] = useState(false);
+  const [width, setWidth] = useState(0);
 
   // Only start loading Instagram once the section is close to the screen.
   useEffect(() => {
@@ -109,6 +117,28 @@ export function ReelsCarousel({
     observer.observe(el);
     return () => observer.disconnect();
   }, []);
+
+  // Measure the space for the reels, so we can show them all at once when they fit.
+  useLayoutEffect(() => {
+    const el = viewRef.current;
+    if (!el) return;
+    const measure = () => setWidth(el.clientWidth);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  const count = reels.length;
+  const fit = count > 0 && width > 0 && count * CARD_MIN + (count - 1) * CARD_GAP <= width;
+  const fitWidth = count > 0 ? Math.min(CARD_MAX, Math.floor((width - (count - 1) * CARD_GAP) / count)) : CARD_MAX;
+  // The reels (up to MAX_LIVE) closest to the selected one are live embeds; the rest stay as posters.
+  const liveSet = new Set(
+    reels
+      .map((_, index) => index)
+      .sort((a, b) => Math.abs(a - active) - Math.abs(b - active))
+      .slice(0, MAX_LIVE),
+  );
 
   // The active reel is whichever card sits closest to the middle of the track.
   const updateActive = useCallback(() => {
@@ -142,7 +172,7 @@ export function ReelsCarousel({
       track.removeEventListener("scroll", onScroll);
       cancelAnimationFrame(frame);
     };
-  }, [updateActive, reels.length]);
+  }, [updateActive, reels.length, fit]);
 
   const goTo = (index: number) => {
     const track = trackRef.current;
@@ -172,31 +202,54 @@ export function ReelsCarousel({
             >
               <Instagram className="h-4 w-4" aria-hidden="true" /> {followLabel}
             </a>
+          </div>
+
+          <div className="min-w-0" ref={viewRef}>
+            {fit ? (
+              <div className="flex items-start justify-center py-6" style={{ gap: CARD_GAP }} data-testid="reels-all">
+                {reels.map((reel, index) => (
+                  <div key={reel.url} className="shrink-0" style={{ width: fitWidth }} onClick={() => setActive(index)} data-testid={`reel-card-${index}`}>
+                    <ReelCard reel={reel} wantLive={liveSet.has(index)} nearViewport={nearViewport} />
+                    <p className="mt-3 text-sm font-bold leading-snug">{reel.caption}</p>
+                    <a
+                      href={reel.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-[#E8722C] hover:underline"
+                      data-testid={`link-reel-watch-${index}`}
+                    >
+                      {watchLabel} <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
+                    </a>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <>
+            <div className="relative">
             {reels.length > 1 && (
-              <div className="mt-8 hidden gap-2 lg:flex">
+              <>
                 <button
                   type="button"
                   onClick={() => goTo(Math.max(0, active - 1))}
                   disabled={active === 0}
                   aria-label="Previous reel"
-                  className="flex h-11 w-11 items-center justify-center rounded-full border border-white/25 text-white transition-colors hover:border-[#E8722C] hover:text-[#E8722C] disabled:opacity-30"
+                  className="absolute left-1 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/30 bg-[#16130F]/85 text-white shadow-lg transition-colors hover:border-[#E8722C] hover:text-[#E8722C] disabled:pointer-events-none disabled:opacity-25 sm:left-3"
+                  data-testid="reel-prev"
                 >
-                  <ChevronLeft className="h-5 w-5" />
+                  <ChevronLeft className="h-6 w-6" />
                 </button>
                 <button
                   type="button"
                   onClick={() => goTo(Math.min(reels.length - 1, active + 1))}
                   disabled={active === reels.length - 1}
                   aria-label="Next reel"
-                  className="flex h-11 w-11 items-center justify-center rounded-full bg-[#E8722C] text-white transition-colors hover:bg-orange-600 disabled:opacity-30"
+                  className="absolute right-1 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-[#E8722C] text-white shadow-lg transition-colors hover:bg-orange-600 disabled:pointer-events-none disabled:opacity-25 sm:right-3"
+                  data-testid="reel-next"
                 >
-                  <ChevronRight className="h-5 w-5" />
+                  <ChevronRight className="h-6 w-6" />
                 </button>
-              </div>
+              </>
             )}
-          </div>
-
-          <div className="min-w-0">
             <div
               ref={trackRef}
               className="relative flex snap-x snap-mandatory items-center gap-3 overflow-x-auto py-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
@@ -222,10 +275,11 @@ export function ReelsCarousel({
                   data-testid={`reel-card-${index}`}
                 >
                   <div className={index === active ? "rounded-lg outline outline-2 outline-offset-2 outline-[#E8722C]" : ""}>
-                    <ReelCard reel={reel} active={index === active} nearViewport={nearViewport} />
+                    <ReelCard reel={reel} wantLive={index === active} nearViewport={nearViewport} />
                   </div>
                 </div>
               ))}
+            </div>
             </div>
 
             <div className="mt-2 text-center">
@@ -255,6 +309,8 @@ export function ReelsCarousel({
                   />
                 ))}
               </div>
+            )}
+              </>
             )}
           </div>
         </div>
