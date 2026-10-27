@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { IMAGE_LIMITS_TEXT, imageFileProblem } from "@/lib/blogPaste";
-import { REEL_LIMITS, REEL_TARGETS, REEL_TARGET_IDS, reelId, type Reel, type ReelTarget } from "@/lib/reels";
+import { MAX_HOMEPAGE_REELS, REEL_LIMITS, REEL_TARGETS, REEL_TARGET_IDS, reelId, type Reel, type ReelTarget } from "@/lib/reels";
 
 interface ReelsResponse {
   reels: Reel[];
@@ -123,7 +123,6 @@ function ReelEditor({
     const found: FieldErrors = {};
     if (!draft.url.trim()) found.url = "Paste the reel's Instagram link";
     else if (!reelId(draft.url.trim())) found.url = "That doesn't look like an Instagram reel link (instagram.com/reel/…)";
-    if (!draft.caption.trim()) found.caption = "Caption is required";
     setErrors(found);
     if (Object.keys(found).length) {
       toast({ title: "Please fix the highlighted fields", variant: "destructive" });
@@ -170,7 +169,7 @@ function ReelEditor({
         {errorText("url")}
         <p className="mt-1 text-xs text-gray-500">Open the reel on Instagram, tap Share → Copy link, and paste it here.</p>
 
-        <label htmlFor="reel-caption" className={label}>Caption *</label>
+        <label htmlFor="reel-caption" className={label}>Caption (optional)</label>
         <Input id="reel-caption" value={draft.caption} maxLength={REEL_LIMITS.caption} onChange={(event) => update("caption", event.target.value)} />
         <Counter value={draft.caption} max={REEL_LIMITS.caption} />
         {errorText("caption")}
@@ -312,7 +311,7 @@ export function ReelsManager() {
   return (
     <div className="space-y-6" data-testid="reels-manager">
       <p className="text-sm text-gray-500">
-        Add reels by pasting their Instagram link. They appear in the &quot;Follow the action&quot; section on the homepage and on program pages. The section&apos;s heading and button text are under Home.
+        Add reels by pasting their Instagram link. They appear in the &quot;Follow the action&quot; section on the homepage (the first {MAX_HOMEPAGE_REELS} visible reels) and on program pages. Add a cover image to each reel so it shows instantly while the reel loads. The section&apos;s heading and button text are under Home → Instagram reels.
       </p>
       <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
         <section className={`border border-gray-200 bg-white ${mobileEditing ? "hidden xl:block" : ""}`}>
@@ -343,10 +342,11 @@ export function ReelsManager() {
                     <button type="button" className="flex min-w-0 flex-1 items-center gap-3 text-left" onClick={() => open(reel.id!)}>
                       <span className={reel.visible ? "" : "opacity-45"}><Thumb poster={reel.poster} /></span>
                       <span className="min-w-0">
-                        <span className={`block truncate text-sm font-bold ${reel.visible ? "" : "text-gray-400"}`}>{reel.caption}</span>
+                        <span className={`block truncate text-sm font-bold ${reel.visible ? "" : "text-gray-400"}`}>{reel.caption || "No caption"}</span>
                         <span className="block truncate text-xs text-gray-500">{shortLink(reel.url)}</span>
                       </span>
                       {!reel.visible && <span className="shrink-0 rounded bg-red-100 px-1.5 text-[10px] font-bold uppercase text-red-600">Hidden</span>}
+                      {reel.visible && !reel.poster && <span className="shrink-0 rounded bg-amber-100 px-1.5 text-[10px] font-bold uppercase text-amber-700">No cover</span>}
                     </button>
                   </div>
                 ))}

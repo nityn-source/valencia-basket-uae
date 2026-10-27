@@ -3,7 +3,7 @@ import { cache } from "react";
 import { storage } from "@/lib/storage";
 import { EXTRA_FIELDS } from "./pageContentFields";
 
-export type ContentFieldType = "text" | "textarea" | "image";
+export type ContentFieldType = "text" | "textarea" | "image" | "toggle";
 
 export interface ContentField {
   key: string;

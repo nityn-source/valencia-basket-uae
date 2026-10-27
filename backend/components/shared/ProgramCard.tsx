@@ -14,7 +14,7 @@ interface ProgramCardProps {
 export function ProgramCard({ title, age, description, image, imageAlt, href, buttonLabel = "Learn More" }: ProgramCardProps) {
   return (
     <Link href={href} className="block">
-      <div className="group relative h-[420px] overflow-hidden bg-black cursor-pointer">
+      <div className="group relative h-[340px] md:h-[420px] overflow-hidden bg-black cursor-pointer">
         <Image
           src={image}
           alt={imageAlt}
@@ -23,7 +23,7 @@ export function ProgramCard({ title, age, description, image, imageAlt, href, bu
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
 
-        <div className="absolute bottom-0 left-0 p-8 w-full">
+        <div className="absolute bottom-0 left-0 p-6 md:p-8 w-full">
           {/* Age badge */}
           <span className="inline-block py-1 px-2 bg-primary text-white text-xs font-bold uppercase tracking-wider mb-3">
             {age}

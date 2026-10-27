@@ -12,6 +12,8 @@ import Image from "next/image";
 import type { Metadata } from "next";
 import { Reveal } from "@/components/shared/Reveal";
 import { ReelsCarousel } from "@/components/reels/ReelsCarousel";
+import { VideoTestimonials } from "@/components/home/VideoTestimonials";
+import { getVideoTestimonials } from "@/lib/content/videoTestimonialsStore";
 import { getReels } from "@/lib/content/reelsStore";
 import { buildPageMetadata, getAltResolver } from "@/lib/seo/resolve";
 import { getStructuredData } from "@/lib/seo/structuredDataResolve";
@@ -42,6 +44,8 @@ export default async function Home() {
   }));
 
   const homepageReels = await getReels("homepage");
+  const videoTestimonials = await getVideoTestimonials();
+  const showVideos = c("home.testimonials.show") !== "off" && videoTestimonials.length > 0;
   const futureBallersImage = c("program.future-ballers.image");
   const miniBasketImage = c("program.mini-basket.image");
   const youthAcademyImage = c("program.youth-academy.image");
@@ -69,7 +73,7 @@ export default async function Home() {
 
       {/* PROGRAMS SECTION */}
       <Reveal>
-        <section id="programs" className="py-20 md:py-32 bg-white">
+        <section id="programs" className="py-14 md:py-32 bg-white">
           <div className="container mx-auto px-4 md:px-6">
             <SectionHeader
               title={c("home.programs.title")}
@@ -127,6 +131,39 @@ export default async function Home() {
         </section>
       </Reveal>
 
+      {/* INSTAGRAM REELS — dark block right after Player Pathway (renders nothing when there are no reels) */}
+      <Reveal>
+        <ReelsCarousel
+          reels={homepageReels}
+          eyebrow={c("home.reels.eyebrow")}
+          title={c("home.reels.title")}
+          text={c("home.reels.text")}
+          followLabel={c("home.reels.follow")}
+          watchLabel={c("home.reels.watch")}
+        />
+      </Reveal>
+
+      {/* COMMUNITY STORIES — video testimonials (YouTube unlisted or Google Drive, managed in admin) */}
+      {showVideos && <Reveal>
+        <section className="py-14 md:py-20 bg-white">
+          <div className="container mx-auto px-4 md:px-6">
+            <SectionHeader title={c("home.testimonials.title")} description={c("home.testimonials.text")} centered className="mb-8 md:mb-10" />
+            {videoTestimonials.length > 0 && (
+              <>
+                <VideoTestimonials videos={videoTestimonials} />
+                <div className="mt-8 text-center">
+                  <Link href="#book-trial" data-testid="link-videos-book">
+                    <Button className="bg-primary hover:bg-orange-600 text-white uppercase font-bold tracking-wider rounded-none px-10 h-12 text-sm transition-colors">
+                      {c("home.testimonials.button")} <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </Link>
+                </div>
+              </>
+            )}
+          </div>
+        </section>
+      </Reveal>}
+
       {/* METHODOLOGY SECTION */}
       <Reveal>
         <section className="py-20 md:py-32 bg-neutral-900 text-white relative overflow-hidden">
@@ -175,18 +212,18 @@ export default async function Home() {
         </section>
       </Reveal>
 
-      {/* MID-PAGE CTA */}
+      {/* MID-PAGE CTA — orange band between the dark Methodology and the light Facilities blocks */}
       <Reveal>
-        <section className="py-14 bg-black">
+        <section className="py-12 bg-primary">
           <div className="container mx-auto px-4 md:px-6 flex flex-col sm:flex-row items-center justify-between gap-6">
             <div>
-              <p className="text-xs font-bold uppercase tracking-widest text-primary mb-1">{c("home.cta-mid.eyebrow")}</p>
+              <p className="text-xs font-bold uppercase tracking-widest text-black/70 mb-1">{c("home.cta-mid.eyebrow")}</p>
               <h3 className="text-2xl md:text-3xl font-black uppercase text-white leading-tight">
                 {c("home.cta-mid.headline")}
               </h3>
             </div>
             <Link href="#book-trial" className="shrink-0">
-              <Button className="bg-primary hover:bg-orange-600 text-white uppercase font-bold tracking-wider rounded-none px-10 h-12 text-sm transition-colors">
+              <Button className="bg-black hover:bg-white hover:text-black text-white uppercase font-bold tracking-wider rounded-none px-10 h-12 text-sm transition-colors">
                 {c("home.cta-mid.button")} <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </Link>
@@ -243,12 +280,12 @@ export default async function Home() {
         label2={c("home.spain.label2")}
       />
 
-      {/* TESTIMONIALS */}
+      {/* WRITTEN QUOTES — between Born in Valencia and the booking form */}
       <Reveal>
-        <section className="py-20 bg-white border-t border-gray-100">
+        <section className="py-14 md:py-20 bg-white">
           <div className="container mx-auto px-4 md:px-6">
-            <SectionHeader title={c("home.testimonials.title")} centered />
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-12">
+            <SectionHeader title={c("home.quotes.title")} description={c("home.quotes.text")} centered className="mb-8 md:mb-10" />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
               {testimonials.map((t, idx) => (
                 <div key={idx} className="bg-gray-50 p-8 relative">
                   <div className="text-primary text-6xl font-serif absolute top-4 left-6 opacity-20">&quot;</div>
@@ -264,18 +301,6 @@ export default async function Home() {
             </div>
           </div>
         </section>
-      </Reveal>
-
-      {/* INSTAGRAM REELS — homepage reels from data/reels.ts (renders nothing when there are none) */}
-      <Reveal>
-        <ReelsCarousel
-          reels={homepageReels}
-          eyebrow={c("home.reels.eyebrow")}
-          title={c("home.reels.title")}
-          text={c("home.reels.text")}
-          followLabel={c("home.reels.follow")}
-          watchLabel={c("home.reels.watch")}
-        />
       </Reveal>
 
       <Reveal><EventStrip /></Reveal>

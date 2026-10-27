@@ -14,21 +14,22 @@ interface ReelsCarouselProps {
 }
 
 const EMBED_TIMEOUT_MS = 8000;
-// When every reel fits on one row at this width or more, they're all shown at once.
-const CARD_MIN = 200;
-const CARD_MAX = 230;
-const CARD_GAP = 12;
+const GAP = 16;
 // Never more than this many live Instagram embeds on the page at once.
 const MAX_LIVE = 4;
 
-/** One reel card: a poster until it's the centred reel, then the live Instagram embed. */
+/**
+ * One reel card. The cover (uploaded image, or a brand-coloured card) is always
+ * there, so something shows instantly; the live Instagram embed loads behind it
+ * and fades in once it is ready.
+ */
 function ReelCard({ reel, wantLive, nearViewport }: { reel: Reel; wantLive: boolean; nearViewport: boolean }) {
   const src = embedSrc(reel.url);
   const live = wantLive && nearViewport && !!src && !isPlaceholderReel(reel);
   const [loaded, setLoaded] = useState(false);
   const [failed, setFailed] = useState(false);
 
-  // A new reel starts fresh.
+  // A reel that stops being live starts fresh next time.
   useEffect(() => {
     if (!live) {
       setLoaded(false);
@@ -45,27 +46,15 @@ function ReelCard({ reel, wantLive, nearViewport }: { reel: Reel; wantLive: bool
     return () => window.clearTimeout(timer);
   }, [live, loaded]);
 
-  const showPoster = !live || !loaded || failed;
+  const covered = !live || !loaded || failed;
 
   return (
-    <div className="relative aspect-[9/19] w-full overflow-hidden rounded-lg bg-[#2b251e]">
-      {live && !failed && (
-        <iframe
-          src={src!}
-          title={`Instagram reel: ${reel.caption}`}
-          loading="lazy"
-          allowFullScreen
-          referrerPolicy="strict-origin-when-cross-origin"
-          sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
-          onLoad={() => setLoaded(true)}
-          className={`absolute inset-0 h-full w-full border-0 bg-white transition-opacity duration-300 ${loaded ? "opacity-100" : "opacity-0"}`}
-        />
-      )}
-      {showPoster && (
+    <div className="relative aspect-[9/17.5] w-full overflow-hidden rounded-xl bg-[#2b251e]">
+      {covered && (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-4 text-center">
           {reel.poster && <img src={reel.poster} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover" />}
-          <span className="relative z-10 flex h-12 w-12 items-center justify-center rounded-full bg-[#E8722C] text-white">
-            <Play className="h-5 w-5 fill-current" aria-hidden="true" />
+          <span className="relative z-10 flex h-14 w-14 items-center justify-center rounded-full bg-[#E8722C] text-white shadow-lg">
+            <Play className="h-6 w-6 fill-current" aria-hidden="true" />
           </span>
           {isPlaceholderReel(reel) ? (
             <span className="relative z-10 text-[11px] font-bold uppercase tracking-wider text-white/60">Placeholder reel</span>
@@ -81,6 +70,18 @@ function ReelCard({ reel, wantLive, nearViewport }: { reel: Reel; wantLive: bool
           ) : null}
         </div>
       )}
+      {live && !failed && (
+        <iframe
+          src={src!}
+          title={reel.caption ? `Instagram reel: ${reel.caption}` : "Instagram reel"}
+          loading="lazy"
+          allowFullScreen
+          referrerPolicy="strict-origin-when-cross-origin"
+          sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
+          onLoad={() => setLoaded(true)}
+          className={`absolute inset-0 h-full w-full border-0 bg-transparent transition-opacity duration-300 ${loaded ? "opacity-100" : "opacity-0"}`}
+        />
+      )}
     </div>
   );
 }
@@ -94,12 +95,12 @@ export function ReelsCarousel({
   watchLabel = "Watch on Instagram",
 }: ReelsCarouselProps) {
   const sectionRef = useRef<HTMLDivElement>(null);
+  const viewRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
   const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
-  const [active, setActive] = useState(0);
-  const viewRef = useRef<HTMLDivElement>(null);
   const [nearViewport, setNearViewport] = useState(false);
   const [width, setWidth] = useState(0);
+  const [first, setFirst] = useState(0);
 
   // Only start loading Instagram once the section is close to the screen.
   useEffect(() => {
@@ -118,7 +119,6 @@ export function ReelsCarousel({
     return () => observer.disconnect();
   }, []);
 
-  // Measure the space for the reels, so we can show them all at once when they fit.
   useLayoutEffect(() => {
     const el = viewRef.current;
     if (!el) return;
@@ -129,34 +129,31 @@ export function ReelsCarousel({
     return () => observer.disconnect();
   }, []);
 
+  // Four across on desktop, two on tablets, one big card with the next peeking on phones.
+  const perView = width >= 1000 ? 4 : width >= 640 ? 2 : 1;
+  const cardWidth = perView === 1 ? Math.round(width * 0.9) : Math.floor((width - GAP * (perView - 1)) / perView);
   const count = reels.length;
-  const fit = count > 0 && width > 0 && count * CARD_MIN + (count - 1) * CARD_GAP <= width;
-  const fitWidth = count > 0 ? Math.min(CARD_MAX, Math.floor((width - (count - 1) * CARD_GAP) / count)) : CARD_MAX;
-  // The reels (up to MAX_LIVE) closest to the selected one are live embeds; the rest stay as posters.
-  const liveSet = new Set(
-    reels
-      .map((_, index) => index)
-      .sort((a, b) => Math.abs(a - active) - Math.abs(b - active))
-      .slice(0, MAX_LIVE),
-  );
+  const scrolls = count > perView;
+  const sidePad = perView === 1 ? Math.round((width - cardWidth) / 2) : 0;
 
-  // The active reel is whichever card sits closest to the middle of the track.
-  const updateActive = useCallback(() => {
+  // The first fully visible card (or, on phones, the centred one).
+  const updateFirst = useCallback(() => {
     const track = trackRef.current;
     if (!track) return;
-    const middle = track.scrollLeft + track.clientWidth / 2;
+    const mark = perView === 1 ? track.scrollLeft + track.clientWidth / 2 : track.scrollLeft;
     let best = 0;
     let bestDistance = Infinity;
     cardRefs.current.forEach((card, index) => {
       if (!card) return;
-      const distance = Math.abs(card.offsetLeft + card.offsetWidth / 2 - middle);
+      const point = perView === 1 ? card.offsetLeft + card.offsetWidth / 2 : card.offsetLeft;
+      const distance = Math.abs(point - mark);
       if (distance < bestDistance) {
         best = index;
         bestDistance = distance;
       }
     });
-    setActive(best);
-  }, []);
+    setFirst(best);
+  }, [perView]);
 
   useEffect(() => {
     const track = trackRef.current;
@@ -164,155 +161,115 @@ export function ReelsCarousel({
     let frame = 0;
     const onScroll = () => {
       cancelAnimationFrame(frame);
-      frame = requestAnimationFrame(updateActive);
+      frame = requestAnimationFrame(updateFirst);
     };
     track.addEventListener("scroll", onScroll, { passive: true });
-    updateActive();
+    updateFirst();
     return () => {
       track.removeEventListener("scroll", onScroll);
       cancelAnimationFrame(frame);
     };
-  }, [updateActive, reels.length, fit]);
+  }, [updateFirst, count, perView]);
 
   const goTo = (index: number) => {
     const track = trackRef.current;
     const card = cardRefs.current[index];
     if (!track || !card) return;
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    track.scrollTo({ left: card.offsetLeft + card.offsetWidth / 2 - track.clientWidth / 2, behavior: reduced ? "auto" : "smooth" });
+    const left = perView === 1 ? card.offsetLeft + card.offsetWidth / 2 - track.clientWidth / 2 : card.offsetLeft;
+    track.scrollTo({ left, behavior: reduced ? "auto" : "smooth" });
   };
 
-  if (reels.length === 0) return null;
-  const current = reels[Math.min(active, reels.length - 1)];
+  const maxFirst = Math.max(0, count - perView);
+  const step = (direction: -1 | 1) => goTo(Math.max(0, Math.min(maxFirst, first + direction * (perView === 1 ? 1 : perView))));
+
+  // Live embeds: the visible cards, plus the next one on phones, never more than MAX_LIVE.
+  const liveSet = new Set<number>();
+  for (let index = first; index < Math.min(count, first + (perView === 1 ? 2 : perView)) && liveSet.size < MAX_LIVE; index++) liveSet.add(index);
+
+  if (count === 0) return null;
 
   return (
-    <section ref={sectionRef} className="overflow-hidden bg-[#16130F] py-16 text-white md:py-24" aria-label={title} data-testid="reels-carousel">
+    <section ref={sectionRef} className="overflow-hidden bg-[#16130F] py-14 text-white md:py-20" aria-label={title} data-testid="reels-carousel">
       <div className="container mx-auto px-4 md:px-6">
-        <div className="grid items-center gap-10 lg:grid-cols-[minmax(0,320px)_minmax(0,1fr)] lg:gap-14">
-          <div>
-            <span className="block text-[11px] font-bold uppercase tracking-[0.22em] text-[#E8722C]">{eyebrow}</span>
-            <h2 className="mt-3 text-4xl font-black uppercase leading-none tracking-tighter md:text-5xl">{title}</h2>
-            <p className="mt-5 max-w-sm text-base leading-relaxed text-white/65">{text}</p>
-            <a
-              href={INSTAGRAM_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-7 inline-flex min-h-[48px] items-center gap-2 bg-[#E8722C] px-6 text-sm font-bold uppercase tracking-wider text-white transition-colors hover:bg-orange-600"
-              data-testid="link-reels-follow"
-            >
-              <Instagram className="h-4 w-4" aria-hidden="true" /> {followLabel}
-            </a>
-          </div>
+        <div className="mx-auto max-w-2xl text-center">
+          <span className="block text-[11px] font-bold uppercase tracking-[0.22em] text-[#E8722C]">{eyebrow}</span>
+          <h2 className="mt-3 text-4xl font-black uppercase leading-none tracking-tighter md:text-6xl">{title}</h2>
+          {text && <p className="mx-auto mt-5 max-w-lg text-base leading-relaxed text-white/65 md:text-lg">{text}</p>}
+          <a
+            href={INSTAGRAM_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-7 inline-flex min-h-[48px] items-center gap-2 bg-[#E8722C] px-6 text-sm font-bold uppercase tracking-wider text-white transition-colors hover:bg-orange-600"
+            data-testid="link-reels-follow"
+          >
+            <Instagram className="h-4 w-4" aria-hidden="true" /> {followLabel}
+          </a>
+        </div>
 
-          <div className="min-w-0" ref={viewRef}>
-            {fit ? (
-              <div className="flex items-start justify-center py-6" style={{ gap: CARD_GAP }} data-testid="reels-all">
-                {reels.map((reel, index) => (
-                  <div key={reel.url} className="shrink-0" style={{ width: fitWidth }} onClick={() => setActive(index)} data-testid={`reel-card-${index}`}>
-                    <ReelCard reel={reel} wantLive={liveSet.has(index)} nearViewport={nearViewport} />
-                    <p className="mt-3 text-sm font-bold leading-snug">{reel.caption}</p>
-                    <a
-                      href={reel.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-[#E8722C] hover:underline"
-                      data-testid={`link-reel-watch-${index}`}
-                    >
-                      {watchLabel} <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
-                    </a>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <>
-            <div className="relative">
-            {reels.length > 1 && (
-              <>
-                <button
-                  type="button"
-                  onClick={() => goTo(Math.max(0, active - 1))}
-                  disabled={active === 0}
-                  aria-label="Previous reel"
-                  className="absolute left-1 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/30 bg-[#16130F]/85 text-white shadow-lg transition-colors hover:border-[#E8722C] hover:text-[#E8722C] disabled:pointer-events-none disabled:opacity-25 sm:left-3"
-                  data-testid="reel-prev"
-                >
-                  <ChevronLeft className="h-6 w-6" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => goTo(Math.min(reels.length - 1, active + 1))}
-                  disabled={active === reels.length - 1}
-                  aria-label="Next reel"
-                  className="absolute right-1 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-[#E8722C] text-white shadow-lg transition-colors hover:bg-orange-600 disabled:pointer-events-none disabled:opacity-25 sm:right-3"
-                  data-testid="reel-next"
-                >
-                  <ChevronRight className="h-6 w-6" />
-                </button>
-              </>
-            )}
-            <div
-              ref={trackRef}
-              className="relative flex snap-x snap-mandatory items-center gap-3 overflow-x-auto py-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-              style={{
-                ["--cw" as string]: "min(60vw, 230px)",
-                paddingInline: "calc(50% - var(--cw) / 2)",
-              }}
-              tabIndex={0}
-              aria-roledescription="carousel"
-              aria-label="Instagram reels"
-            >
-              {reels.map((reel, index) => (
-                <div
-                  key={reel.url}
-                  ref={(node) => {
-                    cardRefs.current[index] = node;
-                  }}
-                  onClick={() => index !== active && goTo(index)}
-                  className={`w-[var(--cw)] shrink-0 snap-center transition-[opacity,transform] duration-300 motion-reduce:transition-none ${
-                    index === active ? "scale-100 opacity-100" : "scale-[0.84] cursor-pointer opacity-45"
-                  }`}
-                  aria-hidden={index === active ? undefined : true}
-                  data-testid={`reel-card-${index}`}
-                >
-                  <div className={index === active ? "rounded-lg outline outline-2 outline-offset-2 outline-[#E8722C]" : ""}>
-                    <ReelCard reel={reel} wantLive={index === active} nearViewport={nearViewport} />
-                  </div>
-                </div>
-              ))}
-            </div>
-            </div>
-
-            <div className="mt-2 text-center">
-              <p className="text-base font-bold" data-testid="reel-caption">{current.caption}</p>
-              <a
-                href={current.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-1 inline-flex items-center gap-1 text-sm font-semibold text-[#E8722C] hover:underline"
-                data-testid="link-reel-watch"
+        <div ref={viewRef} className="relative mt-10 md:mt-12 md:px-6">
+          {scrolls && (
+            <>
+              <button
+                type="button"
+                onClick={() => step(-1)}
+                disabled={first === 0}
+                aria-label="Previous reel"
+                className="absolute left-1 top-[40%] z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/30 bg-[#16130F]/85 text-white shadow-lg transition-colors hover:border-[#E8722C] hover:text-[#E8722C] disabled:pointer-events-none disabled:opacity-25 md:-left-3"
+                data-testid="reel-prev"
               >
-                {watchLabel} <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
-              </a>
-            </div>
-
-            {reels.length > 1 && (
-              <div className="mt-4 flex justify-center gap-1.5" role="tablist" aria-label="Choose a reel">
-                {reels.map((reel, index) => (
-                  <button
-                    key={reel.url}
-                    type="button"
-                    role="tab"
-                    aria-selected={index === active}
-                    aria-label={`Reel ${index + 1}: ${reel.caption}`}
-                    onClick={() => goTo(index)}
-                    className={`h-1.5 rounded-full transition-all ${index === active ? "w-5 bg-[#E8722C]" : "w-1.5 bg-white/30"}`}
-                  />
-                ))}
+                <ChevronLeft className="h-6 w-6" />
+              </button>
+              <button
+                type="button"
+                onClick={() => step(1)}
+                disabled={first >= maxFirst}
+                aria-label="Next reel"
+                className="absolute right-1 top-[40%] z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-[#E8722C] text-white shadow-lg transition-colors hover:bg-orange-600 disabled:pointer-events-none disabled:opacity-25 md:-right-3"
+                data-testid="reel-next"
+              >
+                <ChevronRight className="h-6 w-6" />
+              </button>
+            </>
+          )}
+          <div
+            ref={trackRef}
+            className="relative flex snap-x snap-mandatory overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            style={{ gap: perView === 1 ? 12 : GAP, paddingInline: sidePad }}
+            tabIndex={scrolls ? 0 : undefined}
+            aria-roledescription="carousel"
+            aria-label="Instagram reels"
+            data-testid="reels-track"
+          >
+            {reels.map((reel, index) => (
+              <div
+                key={reel.url}
+                ref={(node) => {
+                  cardRefs.current[index] = node;
+                }}
+                className={`shrink-0 ${perView === 1 ? "snap-center" : "snap-start"}`}
+                style={{ width: cardWidth || undefined }}
+                data-testid={`reel-card-${index}`}
+              >
+                <ReelCard reel={reel} wantLive={liveSet.has(index)} nearViewport={nearViewport} />
+                {reel.caption && <p className="mt-3 text-sm font-bold leading-snug">{reel.caption}</p>}
+                <a
+                  href={reel.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-[#E8722C] hover:underline"
+                  data-testid={`link-reel-watch-${index}`}
+                >
+                  {watchLabel} <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
+                </a>
               </div>
-            )}
-              </>
-            )}
+            ))}
           </div>
+          {scrolls && (
+            <p className="mt-4 text-center text-xs text-white/50" aria-live="polite">
+              {perView === 1 ? `${first + 1} of ${count}` : `${first + 1}–${Math.min(count, first + perView)} of ${count}`}
+            </p>
+          )}
         </div>
       </div>
     </section>

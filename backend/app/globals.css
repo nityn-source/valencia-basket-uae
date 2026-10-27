@@ -203,14 +203,15 @@
   animation: fadeIn 1s ease-out 1.5s both;
 }
 
-/* Trust bar mobile marquee */
+/* Trust bar sliding banner (all screen sizes). The track holds 6 copies of the row and slides by half of
+   its width (3 copies), so the speed matches the old two-copy version. */
 @keyframes marquee {
   from { transform: translateX(0); }
   to   { transform: translateX(-50%); }
 }
 
 .marquee-track {
-  animation: marquee 32s linear infinite;
+  animation: marquee 96s linear infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {

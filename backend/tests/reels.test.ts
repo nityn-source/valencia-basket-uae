@@ -14,12 +14,13 @@ test("reel ids are read from reel, reels and post links", () => {
   assert.equal(embedSrc("https://www.instagram.com/reel/Cabc123/"), "https://www.instagram.com/reel/Cabc123/embed/");
 });
 
-test("reel form: needs a real reel link and a caption, checks the cover image", () => {
+test("reel form: needs a real reel link, caption is optional, checks the cover image", () => {
   const ok = { url: "https://www.instagram.com/reel/Cabc123/", caption: "First session", target: "homepage", poster: "", visible: true };
   assert.ok(reelInputSchema.safeParse(ok).success);
   assert.ok(!reelInputSchema.safeParse({ ...ok, url: "https://www.instagram.com/valenciabasketuae/" }).success, "a profile link is not a reel");
   assert.ok(!reelInputSchema.safeParse({ ...ok, url: "" }).success);
-  assert.ok(!reelInputSchema.safeParse({ ...ok, caption: "  " }).success);
+  assert.ok(reelInputSchema.safeParse({ ...ok, caption: "  " }).success, "caption is optional");
+  assert.equal(reelInputSchema.parse({ ...ok, caption: undefined }).caption, "");
   assert.ok(!reelInputSchema.safeParse({ ...ok, target: "contact" }).success);
   assert.ok(!reelInputSchema.safeParse({ ...ok, poster: "http://insecure.example/a.jpg" }).success);
   assert.ok(reelInputSchema.safeParse({ ...ok, poster: "https://cdn.example.com/a.jpg" }).success);

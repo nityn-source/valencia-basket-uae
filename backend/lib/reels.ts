@@ -20,6 +20,8 @@ export const REEL_TARGETS = [
 export type ReelTarget = (typeof REEL_TARGETS)[number]["id"];
 export const REEL_TARGET_IDS = REEL_TARGETS.map((target) => target.id) as [ReelTarget, ...ReelTarget[]];
 export const REEL_LIMITS = { caption: 120, url: 300 } as const;
+/** The most reels shown in the homepage row. */
+export const MAX_HOMEPAGE_REELS = 8;
 
 export interface Reel {
   id?: number;
@@ -53,7 +55,7 @@ export const reelInputSchema = z.object({
     .min(1, "Paste the reel's Instagram link")
     .max(REEL_LIMITS.url)
     .refine((value) => reelId(value) !== null, "That doesn't look like an Instagram reel link (instagram.com/reel/…)"),
-  caption: z.string().trim().min(1, "Caption is required").max(REEL_LIMITS.caption),
+  caption: z.string().trim().max(REEL_LIMITS.caption).default(""),
   target: z.enum(REEL_TARGET_IDS),
   poster: z
     .string()

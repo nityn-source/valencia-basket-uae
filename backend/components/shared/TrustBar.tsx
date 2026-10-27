@@ -1,61 +1,39 @@
 import { Shield, Award, Users, Activity, Star } from "lucide-react";
 import { getContentGetter } from "@/lib/content/pageContent";
 
+// How many extra copies of the row follow the original. The track slides left by half of
+// its width, so it loops seamlessly as long as half the track is wider than the screen.
+const COPIES = 5;
+
 export async function TrustBar() {
   const c = await getContentGetter();
   const icons = [Award, Users, Activity, Shield, Star];
   const items = icons.map((icon, i) => ({ icon, text: c(`home.trust${i + 1}.text`) }));
 
+  const row = (prefix: string) =>
+    items.map((item, idx) => (
+      <div key={`${prefix}-${idx}`} className="group flex items-center gap-3 px-8 md:px-12">
+        <div className="shrink-0 rounded-full bg-black/20 p-2 text-white transition-colors group-hover:bg-black">
+          <item.icon className="h-5 w-5" />
+        </div>
+        <span className="whitespace-nowrap text-sm font-bold uppercase tracking-wider text-white">{item.text}</span>
+      </div>
+    ));
+
   return (
-    <div className="bg-neutral-900 border-b border-neutral-800 py-8">
-
-      {/* ── Mobile: auto-scrolling marquee ── */}
-      <div className="md:hidden marquee-container overflow-hidden">
-        {/* Track contains items duplicated once so -50% translateX loops perfectly */}
-        <div className="marquee-track flex w-max items-center" aria-label="Trust bar">
-          {/* Original set */}
-          {items.map((item, idx) => (
-            <div key={`a-${idx}`} className="flex items-center gap-3 px-8">
-              <div className="p-2 rounded-full bg-neutral-800 text-primary shrink-0">
-                <item.icon className="h-5 w-5" />
-              </div>
-              <span className="text-sm font-bold uppercase tracking-wider text-white whitespace-nowrap">
-                {item.text}
-              </span>
-            </div>
-          ))}
-          {/* Duplicate set — seamless loop, hidden from screen readers */}
-          <div className="marquee-duplicate contents" aria-hidden="true">
-            {items.map((item, idx) => (
-              <div key={`b-${idx}`} className="flex items-center gap-3 px-8">
-                <div className="p-2 rounded-full bg-neutral-800 text-primary shrink-0">
-                  <item.icon className="h-5 w-5" />
-                </div>
-                <span className="text-sm font-bold uppercase tracking-wider text-white whitespace-nowrap">
-                  {item.text}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* ── Desktop: static single row — unchanged ── */}
-      <div className="hidden md:block container mx-auto px-4">
-        <div className="flex justify-between items-center gap-4">
-          {items.map((item, idx) => (
-            <div key={idx} className="flex items-center gap-3 group">
-              <div className="p-2 rounded-full bg-neutral-800 text-primary group-hover:bg-primary group-hover:text-white transition-colors">
-                <item.icon className="h-5 w-5" />
-              </div>
-              <span className="text-sm font-bold uppercase tracking-wider text-white">
-                {item.text}
-              </span>
+    <div className="bg-primary py-5 md:py-6">
+      {/* Sliding banner on every screen size; it pauses when hovered. With reduced motion it stops and can be scrolled by hand. */}
+      <div className="marquee-container overflow-hidden">
+        <div className="marquee-track flex w-max items-center hover:[animation-play-state:paused]" aria-label="Trust bar">
+          {row("a")}
+          {/* Copies for the seamless loop, hidden from screen readers */}
+          {Array.from({ length: COPIES }, (_, copy) => (
+            <div key={copy} className="marquee-duplicate contents" aria-hidden="true">
+              {row(`b${copy}`)}
             </div>
           ))}
         </div>
       </div>
-
     </div>
   );
 }

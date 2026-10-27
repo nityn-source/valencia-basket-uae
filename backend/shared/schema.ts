@@ -750,3 +750,23 @@ export const reelItems = pgTable("reel_items", {
 
 export type ReelItemRow = typeof reelItems.$inferSelect;
 export type InsertReelItemRow = typeof reelItems.$inferInsert;
+
+/**
+ * Video testimonials shown in the homepage "Community Stories" block, edited in
+ * Admin → Page Content → Video testimonials. `url` is a Google Drive share link.
+ */
+export const videoTestimonials = pgTable("video_testimonials", {
+  id: serial("id").primaryKey(),
+  url: text("url").notNull(),
+  name: text("name").notNull(),
+  role: text("role").notNull().default(""),
+  quote: text("quote").notNull().default(""),
+  poster: text("poster"),
+  sortOrder: integer("sort_order").notNull().default(0),
+  visible: boolean("visible").notNull().default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export type VideoTestimonialRow = typeof videoTestimonials.$inferSelect;
+export type InsertVideoTestimonialRow = typeof videoTestimonials.$inferInsert;

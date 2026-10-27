@@ -84,6 +84,9 @@ export async function PUT(request: NextRequest) {
     if (field.maxLength && value.length > field.maxLength) {
       return NextResponse.json({ error: `Must be ${field.maxLength} characters or fewer` }, { status: 400 });
     }
+    if (field.type === "toggle" && value !== "on" && value !== "off") {
+      return NextResponse.json({ error: "Must be on or off" }, { status: 400 });
+    }
     if (field.type === "image" && !/^https:\/\//i.test(value)) {
       return NextResponse.json({ error: "Image must be an HTTPS URL" }, { status: 400 });
     }

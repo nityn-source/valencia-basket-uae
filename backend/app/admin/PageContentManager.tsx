@@ -10,13 +10,15 @@ import { useToast } from "@/hooks/use-toast";
 import { IMAGE_LIMITS_TEXT, imageFileProblem } from "@/lib/blogPaste";
 import { FaqManager } from "./FaqManager";
 import { ReelsManager } from "./ReelsManager";
+import { VideoTestimonialsManager } from "./VideoTestimonialsManager";
+import { SwitchButton, useToggleSave } from "./SectionSwitch";
 
 interface ContentRow {
   key: string;
   page: string;
   section: string | null;
   label: string;
-  type: "text" | "textarea" | "image";
+  type: "text" | "textarea" | "image" | "toggle";
   maxLength: number | null;
   default: string;
   value: string;
@@ -38,6 +40,7 @@ function ContentFieldEditor({ row }: { row: ContentRow }) {
   const { toast } = useToast();
   const [value, setValue] = useState(row.value);
   const [uploading, setUploading] = useState(false);
+  const toggleSave = useToggleSave(row.key);
 
   const save = useMutation({
     mutationFn: async (nextValue: string | null) => {
@@ -93,7 +96,12 @@ function ContentFieldEditor({ row }: { row: ContentRow }) {
         </span>
       </div>
 
-      {row.type === "image" ? (
+      {row.type === "toggle" ? (
+        <div className="flex items-center gap-3">
+          <SwitchButton on={row.value !== "off"} onChange={(next) => toggleSave.mutate(next)} disabled={toggleSave.isPending} label={row.label} />
+          <span className="text-sm text-gray-600">{row.value !== "off" ? "Shown (the block still hides itself when it has nothing to show)" : "Hidden"}</span>
+        </div>
+      ) : row.type === "image" ? (
         <div className="space-y-3">
           <img src={value} alt="" className="max-h-48 w-full max-w-md rounded object-cover" />
           <label className="inline-flex cursor-pointer items-center gap-2 border border-gray-300 px-3 py-2 text-sm font-bold">
@@ -140,6 +148,7 @@ const PAGE_INFO: Record<string, { url: string; menu: "Main pages" | "Program pag
   Blog: { url: "/blog", menu: "Main pages" },
   FAQs: { url: "/faqs", menu: "Main pages" },
   "Instagram reels": { url: "/", menu: "Main pages" },
+  "Video testimonials": { url: "/", menu: "Main pages" },
   "Future Ballers": { url: "/programs/future-ballers", menu: "Program pages" },
   "Mini Basket": { url: "/programs/mini-basket", menu: "Program pages" },
   "Youth Academy": { url: "/programs/youth-academy", menu: "Program pages" },
@@ -148,8 +157,9 @@ const PAGE_INFO: Record<string, { url: string; menu: "Main pages" | "Program pag
 /** Not a list of fields: its questions are edited in the FAQ manager. */
 const FAQ_PAGE = "FAQs";
 const REELS_PAGE = "Instagram reels";
+const VIDEOS_PAGE = "Video testimonials";
 /** Pages that aren't a list of text fields: they have their own editors. */
-const EDITOR_PAGES = [FAQ_PAGE, REELS_PAGE];
+const EDITOR_PAGES = [FAQ_PAGE, REELS_PAGE, VIDEOS_PAGE];
 const MENUS = ["Main pages", "Program pages"] as const;
 const sectionId = (page: string, section: string) => `content-${page}-${section}`.toLowerCase().replace(/[^a-z0-9]+/g, "-");
 
@@ -311,6 +321,16 @@ export function PageContentManager() {
               </a>
             </div>
             <ReelsManager />
+          </div>
+        ) : current === VIDEOS_PAGE ? (
+          <div className="min-w-0" data-testid={`content-page-${VIDEOS_PAGE}`}>
+            <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2 border-b border-gray-200 pb-2">
+              <h2 className="text-lg font-black uppercase tracking-tight">Video testimonials</h2>
+              <a href="/" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs font-semibold text-[#FF6C0E] hover:underline">
+                View homepage <ExternalLink className="h-3 w-3" />
+              </a>
+            </div>
+            <VideoTestimonialsManager />
           </div>
         ) : (
           <PageFields key={current} page={current} fields={groups.get(current)!} />

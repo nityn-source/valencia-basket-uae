@@ -5,7 +5,7 @@ import type { ContentField } from "./pageContent";
  * "text" is a single line (headings, labels, buttons); "area" is a paragraph.
  * The limit is set from the default's length unless a row gives one.
  */
-type Row = readonly [key: string, label: string, kind: "text" | "area", fallback: string, max?: number];
+type Row = readonly [key: string, label: string, kind: "text" | "area" | "switch", fallback: string, max?: number];
 
 function fieldsFor(page: string, section: string | undefined, rows: Row[]): ContentField[] {
   return rows.map(([key, label, kind, fallback, max]) => ({
@@ -13,8 +13,8 @@ function fieldsFor(page: string, section: string | undefined, rows: Row[]): Cont
     page,
     section,
     label,
-    type: kind === "area" ? "textarea" : "text",
-    maxLength: max ?? Math.max(kind === "area" ? 120 : 60, Math.ceil((fallback.length * 1.8) / 10) * 10),
+    type: kind === "area" ? "textarea" : kind === "switch" ? "toggle" : "text",
+    maxLength: kind === "switch" ? 3 : max ?? Math.max(kind === "area" ? 120 : 60, Math.ceil((fallback.length * 1.8) / 10) * 10),
     default: fallback,
   }));
 }
@@ -638,6 +638,19 @@ export const HOME_FIELDS: ContentField[] = [
     ["home.programs.description", "Programs section subtext", "area", "A comprehensive development structure for every stage of an athlete's journey.", 200],
     ["home.programs.card-button", "Card button text", "text", "Learn More", 30],
   ]),
+  ...fieldsFor("Home", "Instagram reels", [
+    ["home.reels.eyebrow", "Small heading", "text", "Instagram", 30],
+    ["home.reels.title", "Heading", "text", "Follow the action"],
+    ["home.reels.text", "Short pitch", "area", "Training, game days and life at the academy. New reels every week.", 160],
+    ["home.reels.follow", "Follow button text", "text", "Follow us on Instagram", 40],
+    ["home.reels.watch", "\"Watch\" link text under each reel", "text", "Watch on Instagram", 40],
+  ]),
+  ...fieldsFor("Home", "Community stories (videos)", [
+    ["home.testimonials.show", "Show the video block on the homepage", "switch", "on"],
+    ["home.testimonials.title", "Heading (the whole block hides when there are no videos)", "text", "Community Stories"],
+    ["home.testimonials.text", "Text under the heading", "area", "Hear from the parents and players who train with us at Valencia Basket Academy.", 200],
+    ["home.testimonials.button", "Button under the videos", "text", "Book a free trial", 40],
+  ]),
   ...fieldsFor("Home", "Methodology", [
     ["home.methodology.subtitle", "Small heading", "text", "Why Us"],
     ["home.methodology.title", "Heading", "text", "The Valencia Methodology"],
@@ -690,8 +703,9 @@ export const HOME_FIELDS: ContentField[] = [
     ["home.spain.label1", "Map label 1", "text", "VALENCIA", 20],
     ["home.spain.label2", "Map label 2", "text", "DUBAI", 20],
   ]),
-  ...fieldsFor("Home", "Testimonials", [
-    ["home.testimonials.title", "Heading", "text", "Community Stories"],
+  ...fieldsFor("Home", "Written quotes", [
+    ["home.quotes.title", "Heading", "text", "What Our Families Say", 80],
+    ["home.quotes.text", "Text under the heading", "area", "Real words from the parents and players who train with us.", 200],
     ["home.testimonial1.text", "Testimonial 1 — quote", "area", "The discipline and structure at Valencia Basket UAE is unlike anything else in Dubai. My son has improved drastically.", 220],
     ["home.testimonial1.author", "Testimonial 1 — author", "text", "Sarah M.", 60],
     ["home.testimonial1.role", "Testimonial 1 — role", "text", "Parent of U12 Player", 60],
@@ -701,13 +715,6 @@ export const HOME_FIELDS: ContentField[] = [
     ["home.testimonial3.text", "Testimonial 3 — quote", "area", "Bringing the Spanish methodology here was a game changer. The attention to detail is world-class.", 220],
     ["home.testimonial3.author", "Testimonial 3 — author", "text", "Ahmed K.", 60],
     ["home.testimonial3.role", "Testimonial 3 — role", "text", "Elite Player", 60],
-  ]),
-  ...fieldsFor("Home", "Instagram reels", [
-    ["home.reels.eyebrow", "Small heading", "text", "Instagram", 30],
-    ["home.reels.title", "Heading", "text", "Follow the action"],
-    ["home.reels.text", "Short pitch", "area", "Training, game days and life at the academy. New reels every week.", 160],
-    ["home.reels.follow", "Follow button text", "text", "Follow us on Instagram", 40],
-    ["home.reels.watch", "\"Watch\" link text under each reel", "text", "Watch on Instagram", 40],
   ]),
   ...fieldsFor("Home", "Book a trial", [
     ["home.book-trial.headline", "Book-a-trial section headline", "text", "Start Your Journey Today"],

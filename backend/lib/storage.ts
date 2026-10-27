@@ -22,6 +22,8 @@ import {
   type InsertFaqItemRow,
   type ReelItemRow,
   type InsertReelItemRow,
+  type VideoTestimonialRow,
+  type InsertVideoTestimonialRow,
   type BlogPost,
   type BlogCategory,
   type BlogTag,
@@ -40,6 +42,7 @@ import {
   staffMembers,
   faqItems,
   reelItems,
+  videoTestimonials,
   blogPosts,
   blogCategories,
   blogTags,
@@ -191,6 +194,13 @@ export interface IStorage {
   updateReelItem(id: number, changes: Partial<InsertReelItemRow>): Promise<ReelItemRow | undefined>;
   deleteReelItem(id: number): Promise<void>;
   reorderReelItems(target: string, ids: number[]): Promise<void>;
+
+  getVideoTestimonials(): Promise<VideoTestimonialRow[]>;
+  getVideoTestimonialById(id: number): Promise<VideoTestimonialRow | undefined>;
+  createVideoTestimonial(row: InsertVideoTestimonialRow): Promise<VideoTestimonialRow>;
+  updateVideoTestimonial(id: number, changes: Partial<InsertVideoTestimonialRow>): Promise<VideoTestimonialRow | undefined>;
+  deleteVideoTestimonial(id: number): Promise<void>;
+  reorderVideoTestimonials(ids: number[]): Promise<void>;
 
   getAllSeoImageAltFiles(): Promise<SeoImageAlt[]>;
   getAllSeoImageAlts(): Promise<SeoImageAlt[]>;
@@ -617,6 +627,37 @@ export class DatabaseStorage implements IStorage {
       for (const [index, id] of ids.entries()) {
         await tx.update(reelItems).set({ sortOrder: index, updatedAt: new Date() })
           .where(and(eq(reelItems.id, id), eq(reelItems.target, target)));
+      }
+    });
+  }
+
+  async getVideoTestimonials(): Promise<VideoTestimonialRow[]> {
+    return db.select().from(videoTestimonials).orderBy(asc(videoTestimonials.sortOrder), asc(videoTestimonials.id));
+  }
+
+  async getVideoTestimonialById(id: number): Promise<VideoTestimonialRow | undefined> {
+    const [row] = await db.select().from(videoTestimonials).where(eq(videoTestimonials.id, id));
+    return row;
+  }
+
+  async createVideoTestimonial(row: InsertVideoTestimonialRow): Promise<VideoTestimonialRow> {
+    const [created] = await db.insert(videoTestimonials).values(row).returning();
+    return created;
+  }
+
+  async updateVideoTestimonial(id: number, changes: Partial<InsertVideoTestimonialRow>): Promise<VideoTestimonialRow | undefined> {
+    const [updated] = await db.update(videoTestimonials).set({ ...changes, updatedAt: new Date() }).where(eq(videoTestimonials.id, id)).returning();
+    return updated;
+  }
+
+  async deleteVideoTestimonial(id: number): Promise<void> {
+    await db.delete(videoTestimonials).where(eq(videoTestimonials.id, id));
+  }
+
+  async reorderVideoTestimonials(ids: number[]): Promise<void> {
+    await db.transaction(async (tx) => {
+      for (const [index, id] of ids.entries()) {
+        await tx.update(videoTestimonials).set({ sortOrder: index, updatedAt: new Date() }).where(eq(videoTestimonials.id, id));
       }
     });
   }
