@@ -4,6 +4,7 @@ import { storage } from "@/lib/storage";
 import { reelInputSchema } from "@/lib/reels";
 import { rowToReel } from "@/lib/content/reelsStore";
 import { revalidateReelPages } from "@/lib/content/reelsRevalidate";
+import { coverForReel } from "@/lib/content/reelCoverHealth";
 
 export const dynamic = "force-dynamic";
 
@@ -32,9 +33,10 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     sortOrder = Math.max(-1, ...others.map((row) => row.sortOrder)) + 1;
   }
   const { poster, ...fields } = parsed.data;
-  const updated = await storage.updateReelItem(id, { ...fields, poster: poster || null, sortOrder });
+  const auto = poster ? null : await coverForReel(fields.url);
+  const updated = await storage.updateReelItem(id, { ...fields, poster: poster || (auto?.ok ? auto.url : null), sortOrder });
   revalidateReelPages();
-  return NextResponse.json(rowToReel(updated!));
+  return NextResponse.json({ ...rowToReel(updated!), coverStatus: auto ? (auto.ok ? "added" : "failed") : "given" });
 }
 
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {

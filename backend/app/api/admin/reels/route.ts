@@ -4,6 +4,7 @@ import { storage } from "@/lib/storage";
 import { reelInputSchema, REEL_TARGET_IDS } from "@/lib/reels";
 import { rowToReel } from "@/lib/content/reelsStore";
 import { revalidateReelPages } from "@/lib/content/reelsRevalidate";
+import { coverForReel } from "@/lib/content/reelCoverHealth";
 
 export const dynamic = "force-dynamic";
 
@@ -28,7 +29,9 @@ export async function POST(request: NextRequest) {
   const existing = await storage.getReelItems();
   const lastInTarget = Math.max(-1, ...existing.filter((row) => row.target === parsed.data.target).map((row) => row.sortOrder));
   const { poster, ...fields } = parsed.data;
-  const created = await storage.createReelItem({ ...fields, poster: poster || null, sortOrder: lastInTarget + 1 });
+  // No cover given: take Instagram's own picture for the reel (a failure never blocks saving).
+  const auto = poster ? null : await coverForReel(fields.url);
+  const created = await storage.createReelItem({ ...fields, poster: poster || (auto?.ok ? auto.url : null), sortOrder: lastInTarget + 1 });
   revalidateReelPages();
-  return NextResponse.json(rowToReel(created), { status: 201 });
+  return NextResponse.json({ ...rowToReel(created), coverStatus: auto ? (auto.ok ? "added" : "failed") : "given" }, { status: 201 });
 }

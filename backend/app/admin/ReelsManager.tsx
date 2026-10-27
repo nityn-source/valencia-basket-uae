@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { IMAGE_LIMITS_TEXT, imageFileProblem } from "@/lib/blogPaste";
-import { MAX_HOMEPAGE_REELS, REEL_LIMITS, REEL_TARGETS, REEL_TARGET_IDS, reelId, type Reel, type ReelTarget } from "@/lib/reels";
+import { COVER_HEALTH_KEY, useCoverHealth, type CoverHealth } from "./reelCoverHealth";
+import { MAX_HOMEPAGE_REELS, REEL_LIMITS, isPlaceholderReel, REEL_TARGETS, REEL_TARGET_IDS, reelId, type Reel, type ReelTarget } from "@/lib/reels";
 
 interface ReelsResponse {
   reels: Reel[];
@@ -97,7 +98,12 @@ function ReelEditor({
     },
     onSuccess: (saved) => {
       queryClient.invalidateQueries({ queryKey: ["admin-reels"] });
-      toast({ title: isNew ? "Reel added. Live within a minute." : "Saved. Live within a minute." });
+      queryClient.invalidateQueries({ queryKey: COVER_HEALTH_KEY });
+      const status = (saved as Reel & { coverStatus?: string }).coverStatus;
+      toast({
+        title: isNew ? "Reel added. Live within a minute." : "Saved. Live within a minute.",
+        description: status === "added" ? "Cover picture taken from Instagram automatically." : status === "failed" ? "Couldn't get a cover from Instagram automatically. Upload one by hand." : undefined,
+      });
       onSaved(saved);
     },
     onError: (error: Error & { field?: string }) => {
@@ -202,7 +208,7 @@ function ReelEditor({
             {draft.poster && (
               <button type="button" className="ml-3 text-sm font-semibold text-red-600 hover:underline" onClick={() => update("poster", "")}>Remove</button>
             )}
-            <p className="mt-2 text-xs text-gray-500">Shown on the card before the reel is opened. Tall (9:16) images look best. {IMAGE_LIMITS_TEXT}</p>
+            <p className="mt-2 text-xs text-gray-500">Shown on the card before the reel loads. <b>Leave it empty and the cover is taken from Instagram automatically when you save.</b> Or upload your own (tall 9:16 images look best). {IMAGE_LIMITS_TEXT}</p>
           </div>
         </div>
 
@@ -234,6 +240,70 @@ function ReelEditor({
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+function CoverHealthBanner({ missing }: { missing: number }) {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const { data: health } = useCoverHealth();
+
+  const recheck = useMutation({
+    mutationFn: async () => {
+      const res = await fetch("/api/admin/reels/cover-health?probe=force");
+      if (!res.ok) throw new Error("Couldn't check Instagram");
+      return (await res.json()) as CoverHealth;
+    },
+    onSuccess: (next) => {
+      queryClient.setQueryData(COVER_HEALTH_KEY, next);
+      toast({ title: next.state === "ok" ? "Instagram is answering: automatic covers are working" : "Still not working", variant: next.state === "ok" ? undefined : "destructive" });
+    },
+    onError: (error: Error) => toast({ title: error.message, variant: "destructive" }),
+  });
+
+  const fill = useMutation({
+    mutationFn: async () => {
+      const res = await fetch("/api/admin/reels/covers", { method: "POST" });
+      if (!res.ok) throw await readError(res, "Couldn't fetch covers");
+      return (await res.json()) as { added: number; failed: number; remaining: number; health: CoverHealth };
+    },
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ["admin-reels"] });
+      queryClient.setQueryData(COVER_HEALTH_KEY, result.health);
+      toast({
+        title: result.added ? `${result.added} cover${result.added === 1 ? "" : "s"} added` : "No covers added",
+        description: result.failed ? `${result.failed} couldn't be fetched.` : result.remaining ? `${result.remaining} more without a cover: click again.` : undefined,
+        variant: result.added || !result.failed ? undefined : "destructive",
+      });
+    },
+    onError: (error: Error) => toast({ title: error.message, variant: "destructive" }),
+  });
+
+  return (
+    <div className="space-y-3" data-testid="reel-cover-status">
+      {health?.state === "failing" && (
+        <div role="alert" className="border border-red-300 bg-red-50 p-4" data-testid="reel-cover-warning">
+          <p className="text-sm font-black uppercase text-red-700">Automatic reel covers have stopped working</p>
+          <p className="mt-1 text-sm text-red-800">{health.message}</p>
+          <p className="mt-2 text-xs text-red-800">
+            Reels already on the site are not affected, and their covers are saved. New reels just won&apos;t get a cover automatically: upload one by hand in the reel&apos;s editor until this is fixed.
+            {health.failingSince && <> Failing since {new Date(health.failingSince).toLocaleString()}.</>}
+            {health.lastSuccessAt && <> Last worked {new Date(health.lastSuccessAt).toLocaleString()}.</>} Tell your developer: <i>&quot;Instagram reel covers (lib/reelCover.ts) stopped working: {health.reason}&quot;</i>.
+          </p>
+          <Button type="button" size="sm" variant="outline" className="mt-3 border-red-300" onClick={() => recheck.mutate()} disabled={recheck.isPending} data-testid="button-cover-recheck">
+            {recheck.isPending ? "Checking…" : "Check again"}
+          </Button>
+        </div>
+      )}
+      {missing > 0 && (
+        <div className="flex flex-wrap items-center justify-between gap-3 border border-gray-200 bg-white px-4 py-3">
+          <p className="text-sm text-gray-700">{missing} reel{missing === 1 ? " has" : "s have"} no cover picture.</p>
+          <Button type="button" size="sm" onClick={() => fill.mutate()} disabled={fill.isPending} data-testid="button-fetch-covers">
+            {fill.isPending ? "Fetching from Instagram…" : "Fetch missing covers"}
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
@@ -311,8 +381,9 @@ export function ReelsManager() {
   return (
     <div className="space-y-6" data-testid="reels-manager">
       <p className="text-sm text-gray-500">
-        Add reels by pasting their Instagram link. They appear in the &quot;Follow the action&quot; section on the homepage (the first {MAX_HOMEPAGE_REELS} visible reels) and on program pages. Add a cover image to each reel so it shows instantly while the reel loads. The section&apos;s heading and button text are under Home → Instagram reels.
+        Add reels by pasting their Instagram link. They appear in the &quot;Follow the action&quot; section on the homepage (the first {MAX_HOMEPAGE_REELS} visible reels) and on program pages. A cover picture is taken from Instagram automatically so each card shows instantly while the reel loads. The section&apos;s heading and button text are under Home → Instagram reels.
       </p>
+      <CoverHealthBanner missing={reels.filter((reel) => !reel.poster && !isPlaceholderReel(reel)).length} />
       <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
         <section className={`border border-gray-200 bg-white ${mobileEditing ? "hidden xl:block" : ""}`}>
           <div className="flex flex-wrap items-center justify-between gap-2 border-b border-gray-200 px-4 py-3">

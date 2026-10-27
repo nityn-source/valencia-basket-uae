@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { preconnect } from "react-dom";
 import { ArrowUpRight, ChevronLeft, ChevronRight, Instagram, Play } from "lucide-react";
 import { INSTAGRAM_URL, embedSrc, isPlaceholderReel, type Reel } from "@/lib/reels";
 
@@ -13,10 +14,11 @@ interface ReelsCarouselProps {
   watchLabel?: string;
 }
 
-const EMBED_TIMEOUT_MS = 8000;
+const EMBED_TIMEOUT_MS = 12000;
 const GAP = 16;
-// Never more than this many live Instagram embeds on the page at once.
-const MAX_LIVE = 4;
+// Never more than this many Instagram embeds kept loaded at once. Embeds that
+// have loaded stay mounted while the visitor swipes, so nothing reloads or flashes.
+const MAX_LIVE = 6;
 
 /**
  * One reel card. The cover (uploaded image, or a brand-coloured card) is always
@@ -51,7 +53,7 @@ function ReelCard({ reel, wantLive, nearViewport }: { reel: Reel; wantLive: bool
   return (
     <div className="relative aspect-[9/17.5] w-full overflow-hidden rounded-xl bg-[#2b251e]">
       {covered && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-4 text-center">
+        <div className={`absolute inset-0 flex flex-col items-center justify-center gap-3 p-4 text-center ${reel.poster || failed || isPlaceholderReel(reel) ? "" : "animate-pulse bg-gradient-to-b from-[#3a3128] to-[#2b251e]"}`}>
           {reel.poster && <img src={reel.poster} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover" />}
           <span className="relative z-10 flex h-14 w-14 items-center justify-center rounded-full bg-[#E8722C] text-white shadow-lg">
             <Play className="h-6 w-6 fill-current" aria-hidden="true" />
@@ -74,7 +76,6 @@ function ReelCard({ reel, wantLive, nearViewport }: { reel: Reel; wantLive: bool
         <iframe
           src={src!}
           title={reel.caption ? `Instagram reel: ${reel.caption}` : "Instagram reel"}
-          loading="lazy"
           allowFullScreen
           referrerPolicy="strict-origin-when-cross-origin"
           sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
@@ -102,7 +103,13 @@ export function ReelsCarousel({
   const [width, setWidth] = useState(0);
   const [first, setFirst] = useState(0);
 
-  // Only start loading Instagram once the section is close to the screen.
+  // Open the connections to Instagram early so the first embed starts sooner.
+  useEffect(() => {
+    preconnect("https://www.instagram.com", { crossOrigin: "anonymous" });
+    preconnect("https://static.cdninstagram.com", { crossOrigin: "anonymous" });
+  }, []);
+
+  // Only start loading Instagram once the section is within a screen or so.
   useEffect(() => {
     const el = sectionRef.current;
     if (!el) return;
@@ -113,7 +120,7 @@ export function ReelsCarousel({
           observer.disconnect();
         }
       },
-      { rootMargin: "300px 0px" },
+      { rootMargin: "1200px 0px" },
     );
     observer.observe(el);
     return () => observer.disconnect();
@@ -169,7 +176,7 @@ export function ReelsCarousel({
       track.removeEventListener("scroll", onScroll);
       cancelAnimationFrame(frame);
     };
-  }, [updateFirst, count, perView]);
+  }, [updateFirst, count, perView, cardWidth]);
 
   const goTo = (index: number) => {
     const track = trackRef.current;
@@ -183,9 +190,26 @@ export function ReelsCarousel({
   const maxFirst = Math.max(0, count - perView);
   const step = (direction: -1 | 1) => goTo(Math.max(0, Math.min(maxFirst, first + direction * (perView === 1 ? 1 : perView))));
 
-  // Live embeds: the visible cards, plus the next one on phones, never more than MAX_LIVE.
-  const liveSet = new Set<number>();
-  for (let index = first; index < Math.min(count, first + (perView === 1 ? 2 : perView)) && liveSet.size < MAX_LIVE; index++) liveSet.add(index);
+  // Which embeds are loaded: the visible cards at once, the next screenful a moment
+  // later, so the ones being looked at get the bandwidth first. Once loaded they
+  // stay; only if more than MAX_LIVE pile up are the furthest from view dropped.
+  const [live, setLive] = useState<Set<number>>(() => new Set());
+  useEffect(() => {
+    if (!nearViewport) return;
+    const grow = (upTo: number) =>
+      setLive((previous) => {
+        const next = new Set(previous);
+        for (let index = first; index < Math.min(count, upTo); index++) next.add(index);
+        if (next.size > MAX_LIVE) {
+          [...next].sort((a, b) => Math.abs(b - first) - Math.abs(a - first)).slice(0, next.size - MAX_LIVE).forEach((index) => next.delete(index));
+        }
+        return next;
+      });
+    grow(first + (perView === 1 ? 2 : perView));
+    const timer = window.setTimeout(() => grow(first + (perView === 1 ? 3 : perView * 2)), 1200);
+    return () => window.clearTimeout(timer);
+  }, [nearViewport, first, perView, count]);
+  const liveSet = live;
 
   if (count === 0) return null;
 

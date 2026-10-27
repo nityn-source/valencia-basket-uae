@@ -12,6 +12,7 @@ import { FaqManager } from "./FaqManager";
 import { ReelsManager } from "./ReelsManager";
 import { VideoTestimonialsManager } from "./VideoTestimonialsManager";
 import { SwitchButton, useToggleSave } from "./SectionSwitch";
+import { useCoverHealth } from "./reelCoverHealth";
 
 interface ContentRow {
   key: string;
@@ -225,6 +226,8 @@ function PageFields({ page, fields }: { page: string; fields: ContentRow[] }) {
 
 export function PageContentManager() {
   const [selected, setSelected] = useState<string | null>(null);
+  // A "!" on the Instagram reels entry when automatic reel covers have stopped working.
+  const coverBroken = useCoverHealth().data?.state === "failing";
   const { data: rows = [], isLoading } = useQuery<ContentRow[]>({
     queryKey: ["admin-page-content"],
     queryFn: async () => {
@@ -268,7 +271,7 @@ export function PageContentManager() {
         {MENUS.map((menu) => (
           <optgroup key={menu} label={menu}>
             {pages.filter((page) => menuOf(page) === menu).map((page) => (
-              <option key={page} value={page}>{EDITOR_PAGES.includes(page) ? page : `${page} (${groups.get(page)!.length} fields)`}</option>
+              <option key={page} value={page}>{EDITOR_PAGES.includes(page) ? `${page}${page === REELS_PAGE && coverBroken ? " ⚠ needs attention" : ""}` : `${page} (${groups.get(page)!.length} fields)`}</option>
             ))}
           </optgroup>
         ))}
@@ -294,6 +297,7 @@ export function PageContentManager() {
                     }`}
                   >
                     <span>{page}</span>
+                    {page === REELS_PAGE && coverBroken && <span className="ml-auto mr-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-[11px] font-black text-white" title="Automatic reel covers have stopped working" data-testid="cover-alert-dot">!</span>}
                     {!EDITOR_PAGES.includes(page) && <span className="text-xs text-gray-400">{groups.get(page)!.length}</span>}
                   </button>
                 ))}

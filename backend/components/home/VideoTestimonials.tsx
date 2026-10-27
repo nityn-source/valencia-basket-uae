@@ -1,16 +1,149 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { ChevronLeft, ChevronRight, Play } from "lucide-react";
+import { YT_BUFFERING, YT_PLAYING, loadYouTubeApi, type YTPlayer } from "@/lib/youtubeApi";
 import { videoSource, type VideoTestimonial } from "@/lib/videoTestimonials";
 
 const GAP = 20;
+
+/**
+ * A YouTube video that starts on the first tap. The player loads quietly behind
+ * the cover once the card is near the screen; the tap then calls play directly
+ * (a freshly created embed would otherwise show YouTube's own start button and
+ * need a second tap). If the browser refuses to start with sound, it starts muted.
+ */
+function YouTubeFrame({ id, title, active, cover, onTap, children }: { id: string; title: string; active: boolean; cover: ReactNode; onTap: () => void; children?: ReactNode }) {
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const playerRef = useRef<YTPlayer | null>(null);
+  const readyRef = useRef(false);
+  const stateRef = useRef(-1);
+  const wantPlayRef = useRef(false);
+  const [near, setNear] = useState(false);
+  const [covered, setCovered] = useState(true);
+
+  // Start loading when the card gets close to the screen.
+  useEffect(() => {
+    const el = wrapRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          setNear(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: "300px" },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  const play = useCallback(() => {
+    const player = playerRef.current;
+    if (!player || !readyRef.current) return;
+    player.playVideo();
+    // Browsers may block sound-on autoplay; muted playback is always allowed.
+    window.setTimeout(() => {
+      if (stateRef.current !== YT_PLAYING && stateRef.current !== YT_BUFFERING && wantPlayRef.current) {
+        player.mute();
+        player.playVideo();
+      }
+    }, 700);
+  }, []);
+
+  useEffect(() => {
+    if (!near) return;
+    const host = wrapRef.current?.querySelector<HTMLElement>("[data-yt-host]");
+    if (!host) return;
+    let cancelled = false;
+    const mount = document.createElement("div");
+    host.appendChild(mount);
+    loadYouTubeApi()
+      .then((YT) => {
+        if (cancelled) return;
+        playerRef.current = new YT.Player(mount, {
+          videoId: id,
+          host: "https://www.youtube-nocookie.com",
+          playerVars: { rel: 0, modestbranding: 1, playsinline: 1 },
+          events: {
+            onReady: () => {
+              readyRef.current = true;
+              if (wantPlayRef.current) play();
+            },
+            onStateChange: (event) => {
+              stateRef.current = event.data;
+              if (event.data === YT_PLAYING || event.data === YT_BUFFERING) setCovered(false);
+            },
+          },
+        });
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+      playerRef.current?.destroy();
+      playerRef.current = null;
+      readyRef.current = false;
+    };
+  }, [near, id, play]);
+
+  // Tapped: play now, and drop the cover after a moment even if playback hasn't begun (so YouTube's own controls can be used).
+  useEffect(() => {
+    if (!active) {
+      if (wantPlayRef.current) playerRef.current?.pauseVideo();
+      wantPlayRef.current = false;
+      return;
+    }
+    wantPlayRef.current = true;
+    play();
+    const timer = window.setTimeout(() => setCovered(false), 2500);
+    return () => window.clearTimeout(timer);
+  }, [active, play]);
+
+  return (
+    <div ref={wrapRef} className="relative aspect-video overflow-hidden rounded-xl bg-[#2b251e]">
+      <div data-yt-host className="absolute inset-0 [&_iframe]:h-full [&_iframe]:w-full" title={title} />
+      {covered && (
+        <button type="button" onClick={onTap} aria-label={`Play video: ${title}`} className="group absolute inset-0 block h-full w-full text-left">
+          {cover}
+          {children}
+        </button>
+      )}
+    </div>
+  );
+}
 
 /** One wide (16:9) card: a cover picture until tapped, then the YouTube or Google Drive player. */
 function VideoCard({ video, playing, onPlay }: { video: VideoTestimonial; playing: boolean; onPlay: () => void }) {
   const source = videoSource(video.url);
   const cover = video.poster || source?.thumbnail || null;
   const [coverFailed, setCoverFailed] = useState(false);
+
+  const coverImage = cover && !coverFailed && (
+    <img src={cover} alt="" loading="lazy" onError={() => setCoverFailed(true)} className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+  );
+  const overlay = (
+    <>
+      <span className="absolute left-1/2 top-[44%] flex h-16 w-16 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-[#E8722C] text-white shadow-lg transition-transform group-hover:scale-110">
+        <Play className="h-7 w-7 fill-current" aria-hidden="true" />
+      </span>
+      <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 to-transparent px-4 pb-3 pt-10 text-white">
+        <span className="block text-base font-bold leading-tight">{video.name}</span>
+        {video.role && <span className="block text-sm text-white/80">{video.role}</span>}
+      </span>
+    </>
+  );
+
+  if (source?.kind === "youtube") {
+    return (
+      <div>
+        <YouTubeFrame id={source.id} title={video.name} active={playing} cover={coverImage} onTap={onPlay}>
+          {overlay}
+        </YouTubeFrame>
+        {video.quote && <p className="mt-3 text-[15px] italic leading-snug text-gray-700">&ldquo;{video.quote.replace(/^[“"]|[”"]$/g, "")}&rdquo;</p>}
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -101,7 +234,7 @@ export function VideoTestimonials({ videos }: { videos: VideoTestimonial[] }) {
       track.removeEventListener("scroll", onScroll);
       cancelAnimationFrame(frame);
     };
-  }, [updateActive, count, perView]);
+  }, [updateActive, count, perView, cardWidth]);
 
   const scrollToCard = (index: number) => {
     const track = trackRef.current;

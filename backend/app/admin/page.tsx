@@ -46,6 +46,7 @@ import type {
   LeadStatus,
 } from "@shared/schema";
 import { LEAD_STATUS_VALUES, HOW_HEARD_OPTIONS } from "@shared/schema";
+import { useCoverHealth } from "./reelCoverHealth";
 
 const ADMIN_TABS = [
   { value: "trials", testId: "tab-trigger-trials", short: "Trials", full: "Trial Bookings", Icon: Users },
@@ -743,6 +744,8 @@ export default function Admin() {
 }
 
 function AdminDashboard({ authUser, onLogout }: { authUser: AdminAuthUser; onLogout: () => void }) {
+  // Red "!" on the Content tab when automatic reel covers have stopped working.
+  const coverBroken = useCoverHealth().data?.state === "failing";
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -981,11 +984,12 @@ function AdminDashboard({ authUser, onLogout }: { authUser: AdminAuthUser; onLog
                 key={value}
                 value={value}
                 data-testid={testId}
-                className="min-h-[46px] min-w-0 flex-col gap-[3px] px-0 py-1.5 text-[10.5px] font-semibold lg:min-h-0 lg:flex-auto lg:flex-row lg:gap-1.5 lg:px-3 lg:py-1 lg:text-sm lg:font-medium"
+                className="relative min-h-[46px] min-w-0 flex-col gap-[3px] px-0 py-1.5 text-[10.5px] font-semibold lg:min-h-0 lg:flex-auto lg:flex-row lg:gap-1.5 lg:px-3 lg:py-1 lg:text-sm lg:font-medium"
               >
                 <Icon className="h-[18px] w-[18px] shrink-0 lg:h-4 lg:w-4" aria-hidden="true" />
                 <span className="lg:hidden">{short}</span>
                 <span className="hidden lg:inline">{full}</span>
+                {value === "content" && coverBroken && <span className="absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-600 text-[10px] font-black text-white" title="Automatic reel covers have stopped working" data-testid="content-tab-alert">!</span>}
               </TabsTrigger>
             ))}
           </TabsList>
