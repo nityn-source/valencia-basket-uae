@@ -98,7 +98,7 @@ export const videoInputSchema = z.object({
     .min(1, "Paste the video's YouTube or Google Drive link")
     .max(VIDEO_LIMITS.url)
     .refine((value) => videoSource(value) !== null, "That doesn't look like a YouTube or Google Drive video link"),
-  name: z.string().trim().min(1, "Name is required").max(VIDEO_LIMITS.name),
+  name: z.string().trim().max(VIDEO_LIMITS.name).default(""),
   role: z.string().trim().max(VIDEO_LIMITS.role).default(""),
   quote: z.string().trim().max(VIDEO_LIMITS.quote).default(""),
   poster: z

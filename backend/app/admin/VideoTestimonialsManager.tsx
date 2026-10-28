@@ -127,7 +127,6 @@ function VideoEditor({
     const found: FieldErrors = {};
     if (!draft.url.trim()) found.url = "Paste the video's YouTube or Google Drive link";
     else if (!videoSource(draft.url)) found.url = "That doesn't look like a YouTube or Google Drive video link";
-    if (!draft.name.trim()) found.name = "Name is required";
     setErrors(found);
     if (Object.keys(found).length) {
       toast({ title: "Please fix the highlighted fields", variant: "destructive" });
@@ -179,7 +178,7 @@ function VideoEditor({
           <b>Google Drive:</b> right-click the video → Share → General access → <b>Anyone with the link</b> (Viewer), then paste the link. Otherwise visitors will see &quot;you need access&quot;.
         </p>
 
-        <label htmlFor="video-name" className={label}>Name *</label>
+        <label htmlFor="video-name" className={label}>Name (optional)</label>
         <Input id="video-name" value={draft.name} maxLength={VIDEO_LIMITS.name} placeholder="Sarah M." onChange={(event) => update("name", event.target.value)} />
         {errorText("name")}
 
@@ -335,7 +334,7 @@ export function VideoTestimonialsManager() {
               <button type="button" className="flex min-w-0 flex-1 items-center gap-3 text-left" onClick={() => open(video.id!)}>
                 <span className={video.visible ? "" : "opacity-45"}><Thumb url={video.url} poster={video.poster} /></span>
                 <span className="min-w-0">
-                  <span className={`block truncate text-sm font-bold ${video.visible ? "" : "text-gray-400"}`}>{video.name}</span>
+                  <span className={`block truncate text-sm font-bold ${video.visible ? "" : "text-gray-400"}`}>{video.name || "No name"}</span>
                   <span className="block truncate text-xs text-gray-500">{video.role || "No role"}</span>
                 </span>
                 {!video.visible && <span className="shrink-0 rounded bg-red-100 px-1.5 text-[10px] font-bold uppercase text-red-600">Hidden</span>}

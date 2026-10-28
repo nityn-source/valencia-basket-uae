@@ -129,13 +129,13 @@ function VideoCard({ video, onOpen }: { video: VideoTestimonial; onOpen: () => v
   const { cover, onError } = useCover(video);
   return (
     <div>
-      <button type="button" onClick={onOpen} aria-label={`Play video: ${video.name}`} className="group relative block aspect-[9/16] w-full overflow-hidden rounded-xl bg-[#2b251e] text-left">
+      <button type="button" onClick={onOpen} aria-label={`Play video${video.name ? `: ${video.name}` : ""}`} className="group relative block aspect-[9/16] w-full overflow-hidden rounded-xl bg-[#2b251e] text-left">
         {cover && <img src={cover} alt="" loading="lazy" onError={onError} className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />}
         <span className="absolute left-1/2 top-[44%] flex h-16 w-16 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-[#E8722C] text-white shadow-lg transition-transform group-hover:scale-110">
           <Play className="h-7 w-7 fill-current" aria-hidden="true" />
         </span>
         <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 to-transparent px-4 pb-3 pt-10 text-white">
-          <span className="block text-base font-bold leading-tight">{video.name}</span>
+          {video.name && <span className="block text-base font-bold leading-tight">{video.name}</span>}
           {video.role && <span className="block text-sm text-white/80">{video.role}</span>}
         </span>
       </button>
@@ -150,9 +150,9 @@ function ViewerVideo({ video }: { video: VideoTestimonial }) {
   if (!source) return null;
   if (source.kind === "youtube") {
     const coverImage = cover && <img src={cover} alt="" onError={onError} className="absolute inset-0 h-full w-full object-contain" />;
-    return <YouTubeFrame id={source.id} title={video.name} active cover={coverImage} onTap={() => {}} className="h-full w-full bg-black" />;
+    return <YouTubeFrame id={source.id} title={video.name || "Community story"} active cover={coverImage} onTap={() => {}} className="h-full w-full bg-black" />;
   }
-  return <iframe src={source.embedSrc} title={`Video testimonial: ${video.name}`} allow="autoplay; fullscreen; picture-in-picture" allowFullScreen className="h-full w-full border-0" />;
+  return <iframe src={source.embedSrc} title={`Video testimonial${video.name ? `: ${video.name}` : ""}`} allow="autoplay; fullscreen; picture-in-picture" allowFullScreen className="h-full w-full border-0" />;
 }
 
 /**
@@ -239,7 +239,7 @@ function StoryViewer({ videos, start, ctaLabel, onClose }: { videos: VideoTestim
         </div>
 
         <div className="shrink-0 touch-none px-4 pb-4 pt-3" {...swipe}>
-          <p className="text-lg font-bold leading-tight">{video.name}</p>
+          {video.name && <p className="text-lg font-bold leading-tight">{video.name}</p>}
           {video.role && <p className="text-sm text-white/70">{video.role}</p>}
           {video.quote && <p className="mt-2 line-clamp-3 text-sm italic leading-snug text-white/85">&ldquo;{stripQuotes(video.quote)}&rdquo;</p>}
           <div className="mt-3 flex items-stretch gap-2">
@@ -391,7 +391,7 @@ export function VideoTestimonials({ videos, ctaLabel = "Book a free trial" }: { 
               type="button"
               role="tab"
               aria-selected={index === active}
-              aria-label={`Video ${index + 1}: ${video.name}`}
+              aria-label={`Video ${index + 1}${video.name ? `: ${video.name}` : ""}`}
               onClick={() => scrollToCard(index)}
               className={`h-1.5 rounded-full transition-all ${index === active ? "w-5 bg-[#E8722C]" : "w-1.5 bg-gray-300"}`}
             />

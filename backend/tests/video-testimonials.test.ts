@@ -36,14 +36,15 @@ test("YouTube ids are read from every share-link shape, and only from youtube ho
   assert.equal(videoSource("https://example.com/video.mp4"), null);
 });
 
-test("video form: needs a Drive link and a name, checks the cover image", () => {
+test("video form: needs a video link, checks the cover image", () => {
   const ok = { url: `https://drive.google.com/file/d/${ID}/view`, name: "Sarah M.", role: "Parent of U12 player", quote: "", poster: "", visible: true };
   assert.ok(videoInputSchema.safeParse(ok).success);
   assert.ok(!videoInputSchema.safeParse({ ...ok, url: "https://youtube.com/watch?v=abc" }).success, "id must be 11 characters");
   assert.ok(videoInputSchema.safeParse({ ...ok, url: "https://youtu.be/dQw4w9WgXcQ" }).success);
   assert.ok(!videoInputSchema.safeParse({ ...ok, url: "https://vimeo.com/12345" }).success);
   assert.ok(!videoInputSchema.safeParse({ ...ok, url: "" }).success);
-  assert.ok(!videoInputSchema.safeParse({ ...ok, name: " " }).success);
+  assert.ok(videoInputSchema.safeParse({ ...ok, name: " " }).success, "name is optional");
+  assert.equal(videoInputSchema.parse({ ...ok, name: undefined }).name, "");
   assert.ok(!videoInputSchema.safeParse({ ...ok, poster: "http://insecure.example/a.jpg" }).success);
   assert.ok(videoInputSchema.safeParse({ ...ok, role: "", poster: "https://cdn.example.com/a.jpg" }).success);
 });
