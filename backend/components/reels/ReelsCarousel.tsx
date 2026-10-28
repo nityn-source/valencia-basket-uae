@@ -19,6 +19,13 @@ const GAP = 16;
 // Never more than this many Instagram embeds kept loaded at once. Embeds that
 // have loaded stay mounted while the visitor swipes, so nothing reloads or flashes.
 const MAX_LIVE = 6;
+// Instagram's embed is a header bar, the video in a 4:5 box, then a footer with
+// likes and the comment box. Cards show only the top two. Instagram sizes the video
+// box to whatever height the embed is given, so the embed is exactly the card plus
+// the footer's own height; the footer then falls just below the card and is clipped.
+const HEADER_PX = 54;
+const FOOTER_PX = 186;
+const CARD_HEIGHT = `calc(125cqw + ${HEADER_PX}px)`;
 
 /**
  * One reel card. The cover (uploaded image, or a brand-coloured card) is always
@@ -51,7 +58,8 @@ function ReelCard({ reel, wantLive, nearViewport }: { reel: Reel; wantLive: bool
   const covered = !live || !loaded || failed;
 
   return (
-    <div className="relative aspect-[9/17.5] w-full overflow-hidden rounded-xl bg-[#2b251e]">
+    <div className="w-full [container-type:inline-size]">
+    <div className="relative w-full overflow-hidden rounded-xl bg-[#2b251e]" style={{ height: CARD_HEIGHT }}>
       {covered && (
         <div className={`absolute inset-0 flex flex-col items-center justify-center gap-3 p-4 text-center ${reel.poster || failed || isPlaceholderReel(reel) ? "" : "animate-pulse bg-gradient-to-b from-[#3a3128] to-[#2b251e]"}`}>
           {reel.poster && <img src={reel.poster} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover" />}
@@ -80,9 +88,11 @@ function ReelCard({ reel, wantLive, nearViewport }: { reel: Reel; wantLive: bool
           referrerPolicy="strict-origin-when-cross-origin"
           sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
           onLoad={() => setLoaded(true)}
-          className={`absolute inset-0 h-full w-full border-0 bg-transparent transition-opacity duration-300 ${loaded ? "opacity-100" : "opacity-0"}`}
+          style={{ height: `calc(${CARD_HEIGHT} + ${FOOTER_PX}px)` }}
+          className={`absolute left-0 top-0 w-full border-0 bg-transparent transition-opacity duration-300 ${loaded ? "opacity-100" : "opacity-0"}`}
         />
       )}
+    </div>
     </div>
   );
 }

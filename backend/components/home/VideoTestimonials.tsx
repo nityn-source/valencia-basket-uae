@@ -124,22 +124,53 @@ function useCover(video: VideoTestimonial) {
 
 const stripQuotes = (quote: string) => quote.replace(/^[“"]|[”"]$/g, "");
 
-/** One tall (9:16) card: a cover picture and a play button. Tapping opens the viewer. */
-function VideoCard({ video, onOpen }: { video: VideoTestimonial; onOpen: () => void }) {
-  const { cover, onError } = useCover(video);
-  return (
-    <div>
-      <button type="button" onClick={onOpen} aria-label={`Play video${video.name ? `: ${video.name}` : ""}`} className="group relative block aspect-[9/16] w-full overflow-hidden rounded-xl bg-[#2b251e] text-left">
-        {cover && <img src={cover} alt="" loading="lazy" onError={onError} className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />}
-        <span className="absolute left-1/2 top-[44%] flex h-16 w-16 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-[#E8722C] text-white shadow-lg transition-transform group-hover:scale-110">
-          <Play className="h-7 w-7 fill-current" aria-hidden="true" />
-        </span>
+/**
+ * One tall (9:16) card: a cover picture and a play button. On phones tapping opens the
+ * full-screen viewer; on larger screens the video plays in the card itself.
+ */
+function VideoCard({ video, inline, playing, onPlay }: { video: VideoTestimonial; inline: boolean; playing: boolean; onPlay: () => void }) {
+  const { source, cover, onError } = useCover(video);
+  const label = `Play video${video.name ? `: ${video.name}` : ""}`;
+  const coverImage = cover && <img src={cover} alt="" loading="lazy" onError={onError} className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />;
+  const overlay = (
+    <>
+      <span className="absolute left-1/2 top-[44%] flex h-16 w-16 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-[#E8722C] text-white shadow-lg transition-transform group-hover:scale-110">
+        <Play className="h-7 w-7 fill-current" aria-hidden="true" />
+      </span>
+      {(video.name || video.role) && (
         <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 to-transparent px-4 pb-3 pt-10 text-white">
           {video.name && <span className="block text-base font-bold leading-tight">{video.name}</span>}
           {video.role && <span className="block text-sm text-white/80">{video.role}</span>}
         </span>
-      </button>
-      {video.quote && <p className="mt-3 text-[15px] italic leading-snug text-gray-700">&ldquo;{stripQuotes(video.quote)}&rdquo;</p>}
+      )}
+    </>
+  );
+  const quote = video.quote && <p className="mt-3 text-[15px] italic leading-snug text-gray-700">&ldquo;{stripQuotes(video.quote)}&rdquo;</p>;
+
+  if (inline && source?.kind === "youtube") {
+    return (
+      <div>
+        <YouTubeFrame id={source.id} title={video.name || "Community story"} active={playing} cover={coverImage} onTap={onPlay}>
+          {overlay}
+        </YouTubeFrame>
+        {quote}
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <div className="relative aspect-[9/16] overflow-hidden rounded-xl bg-[#2b251e]">
+        {inline && playing && source ? (
+          <iframe src={source.embedSrc} title={`Video testimonial${video.name ? `: ${video.name}` : ""}`} allow="autoplay; fullscreen; picture-in-picture" allowFullScreen className="absolute inset-0 h-full w-full border-0" />
+        ) : (
+          <button type="button" onClick={onPlay} aria-label={label} className="group absolute inset-0 block h-full w-full text-left">
+            {coverImage}
+            {overlay}
+          </button>
+        )}
+      </div>
+      {quote}
     </div>
   );
 }
@@ -267,6 +298,7 @@ export function VideoTestimonials({ videos, ctaLabel = "Book a free trial" }: { 
   const [width, setWidth] = useState(0);
   const [active, setActive] = useState(0);
   const [open, setOpen] = useState<number | null>(null);
+  const [playing, setPlaying] = useState<number | null>(null);
   const closeViewer = useCallback(() => setOpen(null), []);
 
   useLayoutEffect(() => {
@@ -379,7 +411,7 @@ export function VideoTestimonials({ videos, ctaLabel = "Book a free trial" }: { 
             style={{ width: cardWidth || undefined }}
             data-testid={`video-card-${index}`}
           >
-            <VideoCard video={video} onOpen={() => setOpen(index)} />
+            <VideoCard video={video} inline={perView > 1} playing={playing === index} onPlay={() => (perView === 1 ? setOpen(index) : setPlaying(index))} />
           </div>
         ))}
       </div>
@@ -398,7 +430,7 @@ export function VideoTestimonials({ videos, ctaLabel = "Book a free trial" }: { 
           ))}
         </div>
       )}
-      {open !== null && <StoryViewer videos={videos} start={open} ctaLabel={ctaLabel} onClose={closeViewer} />}
+      {open !== null && perView === 1 && <StoryViewer videos={videos} start={open} ctaLabel={ctaLabel} onClose={closeViewer} />}
     </div>
   );
 }
