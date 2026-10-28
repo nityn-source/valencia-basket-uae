@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
-import { createPortal } from "react-dom";
+import { createPortal, preconnect } from "react-dom";
 import { ArrowRight, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Play, X } from "lucide-react";
 import { YT_BUFFERING, YT_PLAYING, loadYouTubeApi, type YTPlayer } from "@/lib/youtubeApi";
 import { videoSource, type VideoTestimonial } from "@/lib/videoTestimonials";
@@ -310,6 +310,27 @@ export function VideoTestimonials({ videos, ctaLabel = "Book a free trial" }: { 
     observer.observe(el);
     return () => observer.disconnect();
   }, []);
+
+  // Phones open the viewer on tap, so nothing is loaded behind the cards. Fetch YouTube's
+  // player code ahead of time (once the section is close) so the tap starts the video at
+  // once instead of waiting on a download.
+  const phone = width > 0 && width < 640;
+  useEffect(() => {
+    const el = viewRef.current;
+    if (!phone || !el || !videos.some((video) => videoSource(video.url)?.kind === "youtube")) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (!entries.some((entry) => entry.isIntersecting)) return;
+        observer.disconnect();
+        preconnect("https://www.youtube-nocookie.com");
+        preconnect("https://i.ytimg.com");
+        loadYouTubeApi().catch(() => {});
+      },
+      { rootMargin: "800px" },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [phone, videos]);
 
   // Four across on wide screens, three on tablets, one with the next peeking on phones.
   const perView = width >= 1000 ? 4 : width >= 640 ? 3 : 1;
