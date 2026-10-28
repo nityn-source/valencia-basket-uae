@@ -81,21 +81,40 @@ export default async function Programs() {
           {programs.map((program, idx) => (
             <div key={program.id} id={program.id} className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center border-b border-gray-100 pb-20 last:border-0 last:pb-0">
               <div className={`order-2 ${idx % 2 === 1 ? "md:order-1" : "md:order-2"}`}>
-                <div className="aspect-video w-full rounded-sm overflow-hidden relative group shadow-xl">
-                   <Image
-                     src={program.image}
-                      alt={alt(program.imageKey)}
-                     fill
-                     className="object-cover transition-transform duration-700 group-hover:scale-105"
-                   />
-                </div>
+                {(() => {
+                  const photo = (
+                    <div className="aspect-video w-full rounded-sm overflow-hidden relative group shadow-xl">
+                      <Image
+                        src={program.image}
+                        alt={alt(program.imageKey)}
+                        fill
+                        className="object-cover transition-transform duration-700 group-hover:scale-105"
+                      />
+                    </div>
+                  );
+                  return program.detailHref ? (
+                    <Link href={program.detailHref} className="block" tabIndex={-1} aria-hidden="true">
+                      {photo}
+                    </Link>
+                  ) : (
+                    photo
+                  );
+                })()}
               </div>
               
               <div className={`order-1 ${idx % 2 === 1 ? "md:order-2" : "md:order-1"}`}>
                 <div className="inline-block py-1 px-3 bg-primary/10 text-primary rounded-full text-xs font-bold uppercase tracking-widest mb-4">
                   {program.age}
                 </div>
-                <h2 className="text-4xl font-black uppercase mb-2">{program.title}</h2>
+                <h2 className="text-4xl font-black uppercase mb-2">
+                  {program.detailHref ? (
+                    <Link href={program.detailHref} className="transition-colors hover:text-primary">
+                      {program.title}
+                    </Link>
+                  ) : (
+                    program.title
+                  )}
+                </h2>
                 <h3 className="text-lg font-bold text-gray-500 mb-6">{program.focus}</h3>
                 <p className="text-gray-600 mb-8 leading-relaxed text-lg">
                   {program.desc}
@@ -141,7 +160,11 @@ export default async function Programs() {
               <div className="inline-block py-1 px-3 bg-primary text-white rounded-full text-xs font-bold uppercase tracking-widest mb-4">
                 {c("programs.private-training.badge")}
               </div>
-              <h2 className="text-5xl font-black uppercase mb-4">{c("programs.private-training.title")}</h2>
+              <h2 className="text-5xl font-black uppercase mb-4">
+                <Link href="/programs/private-training" className="transition-colors hover:text-primary">
+                  {c("programs.private-training.title")}
+                </Link>
+              </h2>
               <h3 className="text-xl font-bold text-primary mb-6">{c("programs.private-training.subtitle")}</h3>
               <p className="text-gray-600 mb-8 leading-relaxed text-lg">
                 {c("programs.private-training.description")}

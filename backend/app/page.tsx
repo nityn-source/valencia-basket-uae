@@ -150,7 +150,7 @@ export default async function Home() {
             <SectionHeader title={c("home.testimonials.title")} description={c("home.testimonials.text")} centered className="mb-8 md:mb-10" />
             {videoTestimonials.length > 0 && (
               <>
-                <VideoTestimonials videos={videoTestimonials} />
+                <VideoTestimonials videos={videoTestimonials} ctaLabel={c("home.testimonials.button")} />
                 <div className="mt-8 text-center">
                   <Link href="#book-trial" data-testid="link-videos-book">
                     <Button className="bg-primary hover:bg-orange-600 text-white uppercase font-bold tracking-wider rounded-none px-10 h-12 text-sm transition-colors">

@@ -129,7 +129,11 @@ export function ReelsCarousel({
   useLayoutEffect(() => {
     const el = viewRef.current;
     if (!el) return;
-    const measure = () => setWidth(el.clientWidth);
+    // Inner width: clientWidth includes the side padding, which the cards can't use.
+    const measure = () => {
+      const style = getComputedStyle(el);
+      setWidth(el.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight));
+    };
     measure();
     const observer = new ResizeObserver(measure);
     observer.observe(el);
