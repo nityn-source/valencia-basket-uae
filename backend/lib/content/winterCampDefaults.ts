@@ -1,0 +1,233 @@
+import type { CampDetails } from "@shared/campDetails";
+
+/**
+ * Starting content for the Winter Camp 2026 page. Used by Admin → Events →
+ * "Fill with Winter Camp 2026 content" so the whole page can be created in one
+ * click and then edited freely. Nothing here is read at render time.
+ */
+export const WINTER_CAMP_DETAILS: CampDetails = {
+  startDate: "2026-12-07",
+  headline: "Basketball Winter Camp 2026 for Kids & Youth",
+  subtext:
+    "Train hard this winter break. Two specialist camps in skills, shooting and competition, coached the Valencia way. For players aged 8-18 in Dubai.",
+  strip: ["Spanish Methodology", "FIBA-Certified Coaches", "Separate Girls’ & Boys’ Groups", "Air-Conditioned Courts", "Ages 8-18"],
+  ctaLabel: "Register Now",
+  whatsappLabel: "WhatsApp Us",
+  openFor: "Open for Ages 8 - 18",
+  heroImage: "/images/summer-camp-1.jpg",
+  programmes: [
+    {
+      id: "skill-lab",
+      weekLabel: "Week 1",
+      name: "Skill Lab",
+      tagline: "Ball Handling, Decision Making & Finishing",
+      venue: "AllSports Arena, Al Quoz",
+      dates: "7th Dec 2026 - 11th Dec 2026",
+      timeLines: ["Monday to Thursday: 5:00 PM - 8:00 PM", "Friday: 3:00 PM - 6:00 PM"],
+      fee: "AED 1,000",
+      heading: "Week 1 Skill Lab: Master the Ball, Read the Game",
+      intro: "Five days dedicated to the skills that make you dangerous with the ball in your hands.",
+      bullets: [
+        { title: "Elite Ball Handling & Pace Control", text: "Tight handles with both hands, change of speed and change of direction" },
+        { title: "Game-Speed Decision Making & Spacing IQ", text: "Read the defence, find the right pass and know where to be" },
+        { title: "Versatile Finishing vs. Contact & Length", text: "Finish at the rim through bodies, arms and pressure" },
+        { title: "Live Small-Sided Games (1v1, 2v2, 3v3)", text: "Put every skill to the test against live defence" },
+        { title: "3 Full Courts = Maximum Reps, Zero Idle Time", text: "More touches, less waiting, every minute on court" },
+      ],
+      optionLabel: "Skill Lab (7–11 December)",
+      classcardUrl: "https://valenciabasketuae.classcard.app/en/packages/details/471124",
+    },
+    {
+      id: "shooting-lab",
+      weekLabel: "Week 2",
+      name: "Shooting Lab",
+      tagline: "Shot Biomechanics, Footwork & High-Volume Scoring",
+      venue: "AllSports Arena, Al Quoz",
+      dates: "14th Dec 2026 - 18th Dec 2026",
+      timeLines: ["Monday to Friday: 9:00 AM - 12:00 PM"],
+      fee: "AED 1,000",
+      heading: "Week 2 Shooting Lab: Build a Shot That Holds Up Under Pressure",
+      intro: "Five days focused on one thing: putting the ball in the basket, consistently.",
+      bullets: [
+        { title: "Shot Biomechanics & Mechanical Precision", text: "Fix your form from your feet to your follow-through" },
+        { title: "Elite Footwork: Catch-and-Shoot & Pull-Ups", text: "Get your feet set and your shot off faster" },
+        { title: "Scoring Off Screens, Cuts & Flare Action", text: "Learn to get open and score off movement" },
+        { title: "Contested Shooting & Pressure Showdowns", text: "Make shots with a hand in your face and the game on the line" },
+        { title: "3 Full Courts = High-Volume Shot Architecture", text: "Hundreds of quality reps every session" },
+      ],
+      optionLabel: "Shooting Lab (14–18 December)",
+      classcardUrl: "https://valenciabasketuae.classcard.app/en/packages/details/471125",
+    },
+    {
+      id: "both-weeks",
+      weekLabel: "",
+      name: "Both Weeks",
+      tagline: "",
+      venue: "",
+      dates: "7th - 18th Dec 2026",
+      timeLines: [],
+      fee: "AED 1,600",
+      heading: "",
+      intro: "",
+      bullets: [],
+      optionLabel: "Both Weeks (Skill Lab + Shooting Lab)",
+      classcardUrl: "https://valenciabasketuae.classcard.app/en/packages/details/471126",
+    },
+  ],
+  introTitle: "Make This Winter Your Best Season Yet!",
+  introText:
+    "Two specialist camps, two ways to level up. Skill Lab sharpens your handle, your decisions and your finishing. Shooting Lab rebuilds your shot from the ground up. Take one, or take both and finish the year a more complete player. Whether you’re new to basketball or ready for your next challenge, there’s a spot on court for you.",
+  fees: {
+    title: "Camp Fees & Booking Options",
+    rows: [
+      { name: "Camp 1", dates: "7th - 11th Dec 2026 (5 days)", fee: "AED 1,000", best: false },
+      { name: "Camp 2", dates: "14th - 18th Dec 2026 (5 days)", fee: "AED 1,000", best: false },
+      { name: "Both Camps", dates: "7th - 18th Dec 2026 (10 days)", fee: "AED 1,600", best: true },
+    ],
+    note: "Book both camps together and save AED 400.",
+  },
+  scheduleTitle: "Your 3 Hours on Court",
+  schedules: [
+    {
+      title: "Week 1: Skill Lab",
+      headers: ["Session", "Mon - Thu", "Friday"],
+      rows: [
+        ["Warm-Up & Activation", "5:00 - 5:20 PM", "3:00 - 3:20 PM"],
+        ["Elite Ball Handling & Pace Control", "5:20 - 6:00 PM", "3:20 - 4:00 PM"],
+        ["Break: Hydration & Mental Reset", "6:00 - 6:07 PM", "4:00 - 4:07 PM"],
+        ["Game-Speed Decision Making & Spacing IQ", "6:07 - 6:45 PM", "4:07 - 4:45 PM"],
+        ["Break: Hydration & Pad Setup", "6:45 - 6:52 PM", "4:45 - 4:52 PM"],
+        ["Versatile Finishing vs. Contact & Length", "6:52 - 7:25 PM", "4:52 - 5:25 PM"],
+        ["Break: Quick Reset & Team Pairing", "7:25 - 7:30 PM", "5:25 - 5:30 PM"],
+        ["Live Small-Sided Games (1v1, 2v2, 3v3)", "7:30 - 7:55 PM", "5:30 - 5:55 PM"],
+        ["Wrap-Up & Cool-Down", "7:55 - 8:00 PM", "5:55 - 6:00 PM"],
+      ],
+    },
+    {
+      title: "Week 2: Shooting Lab",
+      headers: ["Session", "Time"],
+      rows: [
+        ["Warm-Up & Biomechanical Calibration", "9:00 - 9:20 AM"],
+        ["Shot Biomechanics & Mechanical Precision", "9:20 - 10:00 AM"],
+        ["Break: Hydration & Forearm Release", "10:00 - 10:07 AM"],
+        ["Elite Footwork: Catch-and-Shoot & Pull-Ups", "10:07 - 10:45 AM"],
+        ["Break: Hydration & Screen Setup", "10:45 - 10:52 AM"],
+        ["Scoring Off Screens, Cuts & Flare Action", "10:52 - 11:25 AM"],
+        ["Break: Quick Reset & Showdown Rules", "11:25 - 11:30 AM"],
+        ["Contested Shooting & Pressure Showdowns", "11:30 - 11:55 AM"],
+        ["High-Volume Wrap-Up & Cool-Down", "11:55 AM - 12:00 PM"],
+      ],
+    },
+  ],
+  coachesTitle: "Learn From Coaches Who’ve Coached at the Top",
+  coaches: [
+    {
+      name: "Maroš Kováčik",
+      title: "Head of Academy & Technical Director",
+      credential: "2013 EuroLeague Women Coach of the Year · 15× Champion",
+      photo: "/images/coach-maros.jpg",
+    },
+    {
+      name: "Martin Pospíšil",
+      title: "Assistant Technical Director",
+      credential: "Head Coach, Slovakia Women’s National Team",
+      photo: "https://pub-b2680f6e721d4a92b41f30395b8feb3c.r2.dev/coach-martin-pospisil.webp",
+    },
+  ],
+  reelsTitle: "Don’t Just Take Our Word for It",
+  reelsText: "Summer/spring Camp 2026 highlight reels.",
+  reels: [
+    { url: "https://www.instagram.com/reel/DbTMJtSk5e0/", caption: "" },
+    { url: "https://www.instagram.com/reel/DSKvcvnE92l/", caption: "" },
+    { url: "https://www.instagram.com/reel/Dd_wHOpsoHj/", caption: "" },
+  ],
+  facebookReelUrl: "https://www.facebook.com/reel/1403096277814170",
+  whyTitle: "What Makes This Camp Different",
+  why: [
+    "Two specialist camps, each built around one area of the game",
+    "3 full courts and 6 baskets, so you get maximum reps and zero idle time",
+    "Led by international coaches with EuroLeague and national-team experience",
+    "Train the same methodology used at Valencia Basket Club, Spain",
+    "Separate girls’ and boys’ groups, matched by age and level",
+    "Limited spots per court, so coaches see every rep",
+  ],
+  groupsTitle: "Dedicated Groups for Girls and Boys",
+  groupsText: [
+    "At both camps, girls and boys train in separate groups, each matched by age and level. Every group gets the same high-tempo drills, the same competitive games and the same Valencia coaching, so every player gets the full camp experience at their own level.",
+    "During the winter break basketball camps, training alongside players of a similar age and build means every game is competitive and every drill is pitched right. It also gives each player a focused space to push their limits and grow in confidence all week.",
+  ],
+  groupsImage: "/images/girls-game.jpg",
+  leaveTitle: "Every Camper Leaves With",
+  leaves: [
+    { icon: "🏀", title: "Official Valencia Basket Bib", text: "to train in all week" },
+    { icon: "📜", title: "Certificate of Completion", text: "to mark your progress" },
+    { icon: "📋", title: "Player Skills Report", text: "from the coach for parents" },
+  ],
+  systemTitle: "Train Like a Valencia Player",
+  system: [
+    { title: "A system built to make you better", text: "The same development methodology used at Valencia Basket Club, Spain" },
+    { title: "Coaches who know the game", text: "International FIBA-certified coaches who focus on how you grow, not just how you score" },
+    { title: "A path that keeps going", text: "Keep training year-round at our academy and earn a place in our competitive teams" },
+  ],
+  motto: "Cultura del Esfuerzo",
+  mottoSub: "The culture of effort",
+  formTitle: "Claim Your Spot on Court",
+  formIntro: "Pick your programme, then finish your registration and payment securely on Classcard.",
+  formLabel: "Select Your Winter Camp Programme",
+  formPlaceholder: "Select a programme",
+  formButton: "Continue to Registration",
+  formError: "Please select a programme to continue.",
+  faqTitle: "Before You Lace Up",
+  faqs: [
+    {
+      question: "What’s the difference between Skill Lab and Shooting Lab?",
+      answer:
+        "Skill Lab (Week 1) focuses on ball handling, decision making and finishing at the rim. Shooting Lab (Week 2) focuses on shooting technique, footwork and scoring under pressure.",
+    },
+    {
+      question: "Which camp should I book?",
+      answer:
+        "If you want to improve with the ball in your hands and get better at reading the game, choose Skill Lab. If you want a more consistent, reliable shot, choose Shooting Lab. To work on your complete game, book both weeks.",
+    },
+    { question: "Do I need to have played basketball before?", answer: "No. You’ll be grouped by level, so beginners fit right in." },
+    { question: "Will I train with players my age?", answer: "Yes. Groups are based on age and ability after a day-one assessment." },
+    {
+      question: "Can I join both camps?",
+      answer: "Yes. Select “Both Weeks” on the registration form. Booking both costs AED 1,600 instead of AED 2,000.",
+    },
+    {
+      question: "What should I bring?",
+      answer: "Basketball shoes or indoor trainers, sportswear, a water bottle and a healthy snack.",
+    },
+    {
+      question: "Is the court air-conditioned?",
+      answer: "Yes. All sessions are on indoor air-conditioned courts at AllSports Arena.",
+    },
+  ],
+  contactTitle: "Still Have Questions?",
+  phone: "+971 54 438 6838",
+  whatsappUrl: "https://wa.me/971544386838",
+  email: "info@valenciabasket.ae",
+};
+
+/** The standard event fields that go with the camp content. */
+export const WINTER_CAMP_EVENT = {
+  title: "Basketball Winter Camp 2026",
+  slug: "winter-camp-2026",
+  date: "7th - 18th December 2026",
+  endDate: "2026-12-18",
+  time: "Skill Lab: Mon-Fri evenings · Shooting Lab: Mon-Fri 9 AM - 12 PM",
+  location: "AllSports Arena, Al Quoz",
+  description:
+    "Two specialist basketball camps for players aged 8-18 in Dubai: Skill Lab (7-11 Dec) and Shooting Lab (14-18 Dec), coached the Valencia way.",
+  status: "Registration Open",
+  price: "From AED 1,000",
+  image: "/images/summer-camp-1.jpg",
+  imageAlt: "Players and coaches in a huddle at the Valencia Basket winter camp in Dubai",
+  category: "Camp",
+  featured: true,
+  registrationMode: "classcard" as const,
+  registrationOpen: true,
+  registrationCloses: null,
+  details: WINTER_CAMP_DETAILS,
+};

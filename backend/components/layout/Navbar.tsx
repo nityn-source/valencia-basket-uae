@@ -194,7 +194,7 @@ export function Navbar({ logoAlt }: { logoAlt: string }) {
           </div>
 
           {/* Book a Free Trial button */}
-          <Link href="/#book-trial">
+          <Link href="/#book-trial" className="hidden md:block">
             <Button
               size="sm"
               className={cn(
@@ -226,6 +226,8 @@ export function Navbar({ logoAlt }: { logoAlt: string }) {
           {/* Hamburger */}
           <button
             className="lg:hidden text-white z-50 relative"
+            aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
+            aria-expanded={isMobileMenuOpen}
             onClick={() => {
               if (isMobileMenuOpen) {
                 closeMobileMenu();

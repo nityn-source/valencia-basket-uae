@@ -51,7 +51,8 @@ export function ProgramCard({ title, age, description, image, imageAlt, href, bu
 
           {/* Learn More — always visible, 44px min touch target */}
           <span className="inline-flex items-center gap-2 bg-primary text-white text-xs font-bold uppercase tracking-widest px-5 min-h-[44px] transition-colors duration-200 group-hover:bg-orange-600">
-            {buttonLabel} <span aria-hidden="true">→</span>
+            {buttonLabel}
+            <span className="sr-only"> about {title}</span> <span aria-hidden="true">→</span>
           </span>
         </div>
       </div>

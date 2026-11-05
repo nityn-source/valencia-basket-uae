@@ -6,10 +6,12 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { CalendarDays, MapPin, Clock } from "lucide-react";
 import { isPastEvent } from "@/lib/utils";
+import { isRegistrationOpen } from "@/lib/campRegistration";
 import { buildDynamicMetadata } from "@/lib/seo/resolve";
 import { eventPageDefaults } from "@/lib/seo/eventSeo";
 import { getStructuredData } from "@/lib/seo/structuredDataResolve";
 import { StructuredData } from "@/components/seo/StructuredData";
+import { CampEventPage } from "@/components/events/CampEventPage";
 
 export const revalidate = 60;
 
@@ -36,7 +38,17 @@ export default async function EventDetail({ params }: PageProps) {
   }
 
   const eventEnded = isPastEvent(event.endDate);
+  const registrationClosed = eventEnded || !isRegistrationOpen(event);
   const schema = await getStructuredData(`/events/${event.slug}`, event.title);
+
+  if (event.details) {
+    return (
+      <>
+        <StructuredData data={schema} />
+        <CampEventPage event={event} details={event.details} />
+      </>
+    );
+  }
 
   return (
     <>
@@ -72,8 +84,8 @@ export default async function EventDetail({ params }: PageProps) {
 
           <div className="space-y-8">
              <div className="bg-black text-white p-8 sticky top-24">
-                <h3 className="text-2xl font-black uppercase mb-2">{eventEnded ? "Event Completed" : "Secure Your Spot"}</h3>
-                <p className="text-gray-400 text-sm mb-6">{eventEnded ? "This event has ended. Registration is closed." : "Limited availability, register now."}</p>
+                <h3 className="text-2xl font-black uppercase mb-2">{eventEnded ? "Event Completed" : registrationClosed ? "Registration Closed" : "Secure Your Spot"}</h3>
+                <p className="text-gray-400 text-sm mb-6">{eventEnded ? "This event has ended. Registration is closed." : registrationClosed ? "Registration for this event is now closed." : "Limited availability, register now."}</p>
                 <div className="space-y-4 mb-8">
                    <div className="flex justify-between border-b border-gray-800 pb-2">
                       <span className="text-sm uppercase tracking-wider text-gray-400">Date</span>
@@ -94,9 +106,9 @@ export default async function EventDetail({ params }: PageProps) {
                       <span className="font-bold" data-testid="text-event-sidebar-status">{event.status}</span>
                    </div>
                 </div>
-                {eventEnded ? (
+                {registrationClosed ? (
                   <Button size="lg" disabled className="w-full bg-gray-700 text-gray-400 uppercase font-bold tracking-wider rounded-none h-14 cursor-not-allowed hover:bg-gray-700 disabled:opacity-100" data-testid="button-register-now">
-                    Event Completed
+                    {eventEnded ? "Event Completed" : "Registration Closed"}
                   </Button>
                 ) : (
                   <Link href={`/events/${id}/register`} data-testid="link-register-now">

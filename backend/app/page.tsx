@@ -1,7 +1,7 @@
 import { Hero } from "@/components/home/Hero";
 import { TrustBar } from "@/components/shared/TrustBar";
 import { SectionHeader } from "@/components/shared/SectionHeader";
-import { ProgramCard } from "@/components/shared/ProgramCard";
+import { PlayerPathway } from "@/components/home/PlayerPathway";
 import { BookTrialForm } from "@/components/home/BookTrialForm";
 import { EventStrip } from "@/components/home/EventStrip";
 import { SpainConnection } from "@/components/home/SpainConnection";
@@ -71,65 +71,29 @@ export default async function Home() {
 
       <Reveal><TrustBar /></Reveal>
 
-      {/* PROGRAMS SECTION */}
-      <Reveal>
-        <section id="programs" className="py-14 md:py-32 bg-white">
+      {/* PROGRAMS SECTION — a pinned, scroll-driven pathway (plain cards for reduced motion) */}
+      <section id="programs" className="bg-white pt-14 md:pt-32">
+        <Reveal>
           <div className="container mx-auto px-4 md:px-6">
             <SectionHeader
               title={c("home.programs.title")}
               subtitle={c("home.programs.subtitle")}
               description={c("home.programs.description")}
+              className="mb-4 md:mb-6"
             />
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              <ProgramCard
-                title={c("programs.future-ballers.title")}
-                age={c("programs.future-ballers.age")}
-                description={c("home.program.future-ballers.description")}
-                image={futureBallersImage}
-                imageAlt={alt("home.future-ballers")}
-                href="/programs/future-ballers"
-                buttonLabel={cardButton}
-              />
-              <ProgramCard
-                title={c("programs.mini-basket.title")}
-                age={c("programs.mini-basket.age")}
-                description={c("home.program.mini-basket.description")}
-                image={miniBasketImage}
-                imageAlt={alt("home.mini-basket")}
-                href="/programs/mini-basket"
-                buttonLabel={cardButton}
-              />
-              <ProgramCard
-                title={c("programs.youth-academy.title")}
-                age={c("programs.youth-academy.age")}
-                description={c("home.program.youth-academy.description")}
-                image={youthAcademyImage}
-                imageAlt={alt("home.youth-academy")}
-                href="/programs/youth-academy"
-                buttonLabel={cardButton}
-              />
-              <ProgramCard
-                title={c("programs.elite.title")}
-                age={c("programs.elite.age")}
-                description={c("home.program.elite.description")}
-                image={eliteImage}
-                imageAlt={alt("home.elite")}
-                href="/programs#elite"
-                buttonLabel={cardButton}
-              />
-              <ProgramCard
-                title={c("programs.private-training.title")}
-                age={c("programs.private-training.age")}
-                description={c("home.program.private-training.description")}
-                image={privateTrainingImage}
-                imageAlt={alt("home.private-training")}
-                href="/programs/private-training"
-                buttonLabel={cardButton}
-              />
-            </div>
           </div>
-        </section>
-      </Reveal>
+        </Reveal>
+        <PlayerPathway
+          buttonLabel={cardButton}
+          programs={[
+            { title: c("programs.future-ballers.title"), age: c("programs.future-ballers.age"), description: c("home.program.future-ballers.description"), image: futureBallersImage, imageAlt: alt("home.future-ballers"), imageKey: "home.future-ballers", href: "/programs/future-ballers" },
+            { title: c("programs.mini-basket.title"), age: c("programs.mini-basket.age"), description: c("home.program.mini-basket.description"), image: miniBasketImage, imageAlt: alt("home.mini-basket"), imageKey: "home.mini-basket", href: "/programs/mini-basket" },
+            { title: c("programs.youth-academy.title"), age: c("programs.youth-academy.age"), description: c("home.program.youth-academy.description"), image: youthAcademyImage, imageAlt: alt("home.youth-academy"), imageKey: "home.youth-academy", href: "/programs/youth-academy" },
+            { title: c("programs.elite.title"), age: c("programs.elite.age"), description: c("home.program.elite.description"), image: eliteImage, imageAlt: alt("home.elite"), imageKey: "home.elite", href: "/programs#elite" },
+            { title: c("programs.private-training.title"), age: c("programs.private-training.age"), description: c("home.program.private-training.description"), image: privateTrainingImage, imageAlt: alt("home.private-training"), imageKey: "home.private-training", href: "/programs/private-training" },
+          ]}
+        />
+      </section>
 
       {/* INSTAGRAM REELS — dark block right after Player Pathway (renders nothing when there are no reels) */}
       <Reveal>

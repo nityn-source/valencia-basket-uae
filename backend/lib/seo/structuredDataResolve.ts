@@ -1,5 +1,6 @@
 import "server-only";
 import { cache } from "react";
+import type { CampDetails } from "@shared/campDetails";
 import { storage } from "@/lib/storage";
 import {
   structuredDataRegistry,
@@ -38,9 +39,21 @@ export function getEventStructuredData(event: {
   description: string;
   location: string;
   endDate: string | null;
+  details?: CampDetails | null;
 }): Record<string, unknown>[] {
   const path = `/events/${event.slug}`;
-  const startDate = /^\d{4}-\d{2}-\d{2}(?:T.*)?$/.test(event.date) ? { startDate: event.date } : {};
+  const offers = (event.details?.programmes ?? [])
+    .map((p) => ({ name: p.name, price: p.fee.replace(/,/g, "").match(/\d+(?:\.\d+)?/)?.[0] }))
+    .filter((o): o is { name: string; price: string } => Boolean(o.price))
+    .map((o) => ({
+      "@type": "Offer",
+      name: o.name,
+      price: o.price,
+      priceCurrency: "AED",
+      url: `https://valenciabasket.ae${path}#register`,
+    }));
+  const startSource = /^\d{4}-\d{2}-\d{2}(?:T.*)?$/.test(event.date) ? event.date : event.details?.startDate;
+  const startDate = startSource && /^\d{4}-\d{2}-\d{2}$/.test(startSource) ? { startDate: startSource } : {};
   const endDate =
     event.endDate && /^\d{4}-\d{2}-\d{2}(?:T.*)?$/.test(event.endDate) ? { endDate: event.endDate } : {};
   return [
@@ -54,6 +67,7 @@ export function getEventStructuredData(event: {
       ...endDate,
       eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
       location: { "@type": "Place", name: event.location },
+      ...(offers.length > 0 ? { offers } : {}),
     },
   ];
 }
@@ -181,7 +195,12 @@ async function computeDefaultPageSchema(path: string, label?: string): Promise<R
   if (eventSlugMatch) {
     const event = await storage.getEventBySlug(eventSlugMatch[1]);
     if (!event) return [];
-    return [...getEventStructuredData(event), breadcrumbs(path, event.title) as Record<string, unknown>];
+    const faqs = event.details?.faqs ?? [];
+    return [
+      ...getEventStructuredData(event),
+      ...(faqs.length > 0 ? [buildFaqStructuredData(faqs) as unknown as Record<string, unknown>] : []),
+      breadcrumbs(path, event.title) as Record<string, unknown>,
+    ];
   }
 
   const staticEntries = structuredDataRegistry

@@ -33,6 +33,9 @@ import {
 } from "@/components/ui/select";
 import { Users, Calendar, Plus, Pencil, Trash2, Trophy, LogOut, Shield, Lock, Search, ClipboardCheck, PenLine, UserRound, FileText } from "lucide-react";
 import { CopyValueButton, SeoManager } from "./SeoManager";
+import { CampPageEditor } from "./CampPageEditor";
+import { campDetailsSchema, type CampDetails } from "@shared/campDetails";
+import { WINTER_CAMP_DETAILS, WINTER_CAMP_EVENT } from "@/lib/content/winterCampDefaults";
 import { BlogManager } from "./BlogManager";
 import { PageContentManager } from "./PageContentManager";
 import { StaffManager } from "./StaffManager";
@@ -437,6 +440,30 @@ function EventFormDialog({
   const [imageAltIsCustom, setImageAltIsCustom] = useState(Boolean(event?.imageAlt?.trim()));
   const [category, setCategory] = useState(event?.category ?? "Camp");
   const [featured, setFeatured] = useState(event?.featured ?? true);
+  const [details, setDetails] = useState<CampDetails | null>(event?.details ?? null);
+  const [registrationMode, setRegistrationMode] = useState<"internal" | "classcard">(
+    (event?.registrationMode as "internal" | "classcard") ?? "internal",
+  );
+  const [registrationOpen, setRegistrationOpen] = useState(event?.registrationOpen ?? true);
+  const [registrationCloses, setRegistrationCloses] = useState(event?.registrationCloses ?? "");
+
+  const fillWinterCamp = () => {
+    setTitle(WINTER_CAMP_EVENT.title);
+    setSlug(WINTER_CAMP_EVENT.slug);
+    setDate(WINTER_CAMP_EVENT.date);
+    setEndDate(WINTER_CAMP_EVENT.endDate);
+    setTime(WINTER_CAMP_EVENT.time);
+    setLocation(WINTER_CAMP_EVENT.location);
+    setDescription(WINTER_CAMP_EVENT.description);
+    setStatus(WINTER_CAMP_EVENT.status);
+    setPrice(WINTER_CAMP_EVENT.price);
+    setImage(WINTER_CAMP_EVENT.image);
+    setImageAlt(WINTER_CAMP_EVENT.imageAlt);
+    setImageAltIsCustom(true);
+    setCategory(WINTER_CAMP_EVENT.category);
+    setDetails(WINTER_CAMP_DETAILS);
+    setRegistrationMode("classcard");
+  };
 
   const createMutation = useMutation({
     mutationFn: async (data: InsertEvent) => {
@@ -490,6 +517,10 @@ function EventFormDialog({
       imageAlt: imageAltIsCustom ? imageAlt.trim() || null : null,
       category,
       featured,
+      details,
+      registrationMode: details ? registrationMode : "internal",
+      registrationOpen,
+      registrationCloses: registrationCloses || null,
     };
     if (isEditing) {
       updateMutation.mutate(data);
@@ -500,13 +531,20 @@ function EventFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle data-testid="event-dialog-title">
             {isEditing ? "Edit Event" : "Create New Event"}
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
+          <Tabs defaultValue="basics">
+            <TabsList className="mb-4">
+              <TabsTrigger value="basics" data-testid="tab-event-basics">Basics</TabsTrigger>
+              <TabsTrigger value="camp" data-testid="tab-event-camp-page">Camp page</TabsTrigger>
+              <TabsTrigger value="registration" data-testid="tab-event-registration">Registration</TabsTrigger>
+            </TabsList>
+            <TabsContent value="basics" className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="event-title">Title</Label>
@@ -684,6 +722,70 @@ function EventFormDialog({
             />
             <Label htmlFor="event-featured">Featured Event</Label>
           </div>
+            </TabsContent>
+
+            <TabsContent value="camp" className="space-y-4">
+              {details ? (
+                <>
+                  <CampPageEditor value={details} onChange={setDetails} />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="text-red-600"
+                    data-testid="button-remove-camp-page"
+                    onClick={() => {
+                      if (window.confirm("Switch back to the standard event page? The camp page content will be removed when you save.")) {
+                        setDetails(null);
+                        setRegistrationMode("internal");
+                      }
+                    }}
+                  >
+                    Switch back to standard event page
+                  </Button>
+                </>
+              ) : (
+                <div className="space-y-3 border bg-gray-50 p-4 text-sm">
+                  <p>
+                    This event uses the <b>standard event page</b> (one overview paragraph and the sign-up form). Switch to the <b>camp page</b> for the full layout with programmes, fees, schedule, coaches, reels, FAQs and a Classcard registration dropdown.
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <Button type="button" size="sm" data-testid="button-use-camp-page" onClick={() => { setDetails(campDetailsSchema.parse({})); setRegistrationMode("classcard"); }}>
+                      Use camp page (blank)
+                    </Button>
+                    <Button type="button" size="sm" variant="outline" data-testid="button-fill-winter-camp" onClick={fillWinterCamp}>
+                      Fill with Winter Camp 2026 content
+                    </Button>
+                  </div>
+                  <p className="text-xs text-gray-500">The Winter Camp button also fills the Basics tab. You can edit everything before saving.</p>
+                </div>
+              )}
+            </TabsContent>
+
+            <TabsContent value="registration" className="space-y-4">
+              {details && (
+                <div className="space-y-2">
+                  <Label>How people register</Label>
+                  <Select value={registrationMode} onValueChange={(v) => setRegistrationMode(v as "internal" | "classcard")}>
+                    <SelectTrigger data-testid="select-trigger-registration-mode"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="classcard">Programme dropdown, then Classcard (set the links in the Camp page tab)</SelectItem>
+                      <SelectItem value="internal">Standard sign-up form on this website</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+              <div className="flex items-center space-x-2">
+                <Checkbox id="event-registration-open" data-testid="checkbox-registration-open" checked={registrationOpen} onCheckedChange={(c) => setRegistrationOpen(c === true)} />
+                <Label htmlFor="event-registration-open">Registration is open</Label>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="event-registration-closes">Registration closes after (optional)</Label>
+                <Input id="event-registration-closes" data-testid="input-registration-closes" type="date" value={registrationCloses} onChange={(e) => setRegistrationCloses(e.target.value)} className="max-w-xs" />
+                <p className="text-xs text-gray-500">Leave blank to keep registration open until the event's end date ({endDate || "not set"}). Untick the box above to close it right away.</p>
+              </div>
+            </TabsContent>
+          </Tabs>
           <div className="flex justify-end gap-2">
             <Button
               type="button"

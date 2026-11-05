@@ -15,6 +15,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+import { campDetailsSchema, type CampDetails } from "./campDetails";
 
 export const LEAD_STATUS_VALUES = [
   "New",
@@ -278,6 +279,12 @@ export const events = pgTable("events", {
   imageAlt: text("image_alt"),
   category: text("category").default("Camp"),
   featured: boolean("featured").default(true),
+  /** Structured camp page content; null = standard event layout. */
+  details: jsonb("details").$type<CampDetails>(),
+  registrationMode: text("registration_mode").notNull().default("internal"),
+  registrationOpen: boolean("registration_open").notNull().default(true),
+  /** YYYY-MM-DD; registration closes after this day. Blank = open until the event's end date. */
+  registrationCloses: text("registration_closes"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -290,6 +297,13 @@ export const insertEventSchema = createInsertSchema(events)
     endDate: z
       .string()
       .regex(/^\d{4}-\d{2}-\d{2}$/, "End date must be in YYYY-MM-DD format"),
+    details: campDetailsSchema.nullable().optional(),
+    registrationMode: z.enum(["internal", "classcard"]).default("internal"),
+    registrationCloses: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/, "Closing date must be in YYYY-MM-DD format")
+      .nullable()
+      .optional(),
   });
 
 export type InsertEvent = z.infer<typeof insertEventSchema>;
