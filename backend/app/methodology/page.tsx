@@ -45,7 +45,7 @@ export default async function Methodology() {
         <div className="absolute top-0 right-0 w-1/2 h-full bg-primary/10 -skew-x-12 translate-x-1/4" />
         <div className="container mx-auto px-4 md:px-6 text-center relative z-10">
           <span className="text-primary font-bold uppercase tracking-widest text-sm mb-4 block">{c("methodology.hero.eyebrow")}</span>
-          <h1 className="text-5xl md:text-7xl font-black uppercase tracking-tighter mb-6">{c("methodology.hero.title")}</h1>
+          <h1 className="page-title text-5xl md:text-7xl font-black uppercase tracking-tighter mb-6">{c("methodology.hero.title")}</h1>
           <p className="text-xl text-gray-400 max-w-3xl mx-auto">
             {c("methodology.hero.subtext")}
           </p>

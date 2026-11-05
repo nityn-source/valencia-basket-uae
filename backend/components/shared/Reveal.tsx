@@ -19,9 +19,10 @@ export function Reveal({ children, className = "" }: RevealProps) {
   return (
     <div
       ref={ref}
+      data-no-reveal=""
       className={[
-        "transition-[opacity,transform] duration-500 ease-out",
-        inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4",
+        "transition-[opacity,transform] duration-[600ms] ease-[cubic-bezier(0.2,0.8,0.2,1)]",
+        inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-[18px]",
         className,
       ]
         .filter(Boolean)

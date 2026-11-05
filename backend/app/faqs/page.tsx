@@ -24,7 +24,7 @@ export default async function FAQsPage() {
           <span className="text-primary font-bold uppercase tracking-widest text-sm mb-4 block">
             Help &amp; Support
           </span>
-          <h1 className="text-4xl md:text-6xl font-black uppercase tracking-tighter mb-3">
+          <h1 className="page-title text-4xl md:text-6xl font-black uppercase tracking-tighter mb-3">
             Frequently Asked Questions
           </h1>
           <p className="text-gray-400 text-lg">Valencia Basket Academy UAE</p>

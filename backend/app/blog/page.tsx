@@ -34,7 +34,7 @@ export default async function BlogPage() {
               <BookOpen className="h-4 w-4" />
               {c("blog.hero.eyebrow")}
             </span>
-            <h1 className="text-5xl md:text-7xl font-black uppercase tracking-tighter leading-[0.95] mb-7">
+            <h1 className="page-title text-5xl md:text-7xl font-black uppercase tracking-tighter leading-[0.95] mb-7">
               {c("blog.hero.title")}
             </h1>
             <p className="text-xl md:text-2xl text-gray-400 max-w-2xl leading-relaxed">

@@ -414,3 +414,75 @@
       filter 0.2s ease;
   }
 }
+
+/* ===== Motion kit =====
+   One set of entrance animations for the whole site. Page titles animate on load (CSS only); everything
+   else is revealed as it scrolls in by components/shared/MotionKit.tsx, which adds `rv-in` to each unit
+   (rv-photo, rv-stagger, rv-item, rv-fade, rv-check, rv-num, rv-step). Everything is off for reduced
+   motion, and the hidden starting states only apply when scripts are on. */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes heroRise {
+    from { transform: translateY(105%); }
+    to { transform: none; }
+  }
+  @keyframes heroFade {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: none; }
+  }
+  @keyframes pageTitle {
+    from { opacity: 0; transform: translateY(26px); }
+    to { opacity: 1; transform: none; }
+  }
+  .hero-rise { animation: heroRise 0.85s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+  .hero-rise-2 { animation-delay: 0.12s; }
+  .hero-fade { animation: heroFade 0.7s 0.5s ease-out both; }
+  .page-title { animation: pageTitle 0.85s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+  .page-title + p { animation: heroFade 0.7s 0.4s ease-out both; }
+  /* Arriving through the orange page wipe: hold the title until the panel has cleared. */
+  html.wipe-pending .hero-rise,
+  html.wipe-pending .hero-fade,
+  html.wipe-pending .page-title,
+  html.wipe-pending .page-title + p { animation-play-state: paused; }
+}
+@media (prefers-reduced-motion: no-preference) and (scripting: enabled) {
+  /* photos wipe open with a slow zoom-out */
+  .rv-photo { clip-path: inset(-40px); transition: clip-path 0.95s cubic-bezier(0.7, 0, 0.3, 1); }
+  .rv-photo:not(.rv-in) { clip-path: inset(0 100% 0 0); }
+  .rv-photo img { scale: 1; transition: scale 1.5s cubic-bezier(0.2, 0.8, 0.2, 1), transform 0.7s; }
+  .rv-photo:not(.rv-in) img { scale: 1.18; }
+  /* single blocks and grid cards fade up (cards are delayed along their row via --rv-delay) */
+  .rv-fade, .rv-item { transition: opacity 0.6s ease, transform 0.6s ease; transition-delay: var(--rv-delay, 0s); }
+  .rv-fade:not(.rv-in), .rv-item:not(.rv-in) { opacity: 0; transform: translateY(18px); }
+  /* text groups arrive in order (--rv-base lets a group wait for a photo beside it) */
+  .rv-stagger > * { transition: opacity 0.55s ease, transform 0.55s ease; }
+  .rv-stagger:not(.rv-in) > * { opacity: 0; transform: translateY(14px); }
+  .rv-stagger.rv-in > :nth-child(1) { transition-delay: calc(var(--rv-base, 0s) + 0.05s); }
+  .rv-stagger.rv-in > :nth-child(2) { transition-delay: calc(var(--rv-base, 0s) + 0.13s); }
+  .rv-stagger.rv-in > :nth-child(3) { transition-delay: calc(var(--rv-base, 0s) + 0.21s); }
+  .rv-stagger.rv-in > :nth-child(4) { transition-delay: calc(var(--rv-base, 0s) + 0.29s); }
+  .rv-stagger.rv-in > :nth-child(5) { transition-delay: calc(var(--rv-base, 0s) + 0.37s); }
+  .rv-stagger.rv-in > :nth-child(n + 6) { transition-delay: calc(var(--rv-base, 0s) + 0.45s); }
+  .rv-late { --rv-base: 0.3s; }
+  /* ticks pop in one by one */
+  .rv-check svg { transition: scale 0.4s cubic-bezier(0.3, 1.6, 0.5, 1); }
+  .rv-check:not(.rv-in) svg { scale: 0; }
+  .rv-check.rv-in li:nth-child(1) svg { transition-delay: 0.1s; }
+  .rv-check.rv-in li:nth-child(2) svg { transition-delay: 0.18s; }
+  .rv-check.rv-in li:nth-child(3) svg { transition-delay: 0.26s; }
+  .rv-check.rv-in li:nth-child(4) svg { transition-delay: 0.34s; }
+  .rv-check.rv-in li:nth-child(n + 5) svg { transition-delay: 0.42s; }
+  /* the big faded number and the step label */
+  .rv-num { transition: opacity 0.9s ease 0.1s, transform 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) 0.1s; }
+  .rv-num:not(.rv-in) { opacity: 0; transform: translateX(40px); }
+  .rv-step .rv-step-line { transition: width 0.6s cubic-bezier(0.2, 0.8, 0.2, 1); }
+  .rv-step:not(.rv-in) .rv-step-line { width: 0; }
+}
+/* Phones: photos rise from their bottom edge instead of wiping sideways, and text arrives in three beats. */
+@media (prefers-reduced-motion: no-preference) and (scripting: enabled) and (max-width: 767.98px) {
+  .rv-photo:not(.rv-in) { clip-path: inset(100% 0 0 0); }
+  .rv-stagger.rv-in > :nth-child(1),
+  .rv-stagger.rv-in > :nth-child(2),
+  .rv-stagger.rv-in > :nth-child(3) { transition-delay: calc(var(--rv-base, 0s) + 0.05s); }
+  .rv-stagger.rv-in > :nth-child(4) { transition-delay: calc(var(--rv-base, 0s) + 0.12s); }
+  .rv-stagger.rv-in > :nth-child(n + 5) { transition-delay: calc(var(--rv-base, 0s) + 0.2s); }
+}

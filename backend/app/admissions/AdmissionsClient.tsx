@@ -16,7 +16,7 @@ export default function AdmissionsClient({ t }: { t: Record<string, string> }) {
     <>
        <div className="bg-black text-white py-20">
         <div className="container mx-auto px-4 md:px-6 text-center">
-          <h1 className="text-5xl md:text-7xl font-black uppercase tracking-tighter mb-6">{t["admissions.hero.title"]}</h1>
+          <h1 className="page-title text-5xl md:text-7xl font-black uppercase tracking-tighter mb-6">{t["admissions.hero.title"]}</h1>
           <p className="text-xl text-gray-400 max-w-2xl mx-auto">
             {t["admissions.hero.subtext"]}
           </p>

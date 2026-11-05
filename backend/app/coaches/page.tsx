@@ -133,7 +133,7 @@ export default async function Coaches() {
       <div className="bg-black text-white py-20">
         <div className="container mx-auto px-4 md:px-6 text-center">
           <span className="text-primary font-bold uppercase tracking-widest text-sm mb-4 block">{c("staff.hero.eyebrow")}</span>
-          <h1 className="text-5xl md:text-7xl font-black uppercase tracking-tighter mb-6">{c("staff.hero.title")}</h1>
+          <h1 className="page-title text-5xl md:text-7xl font-black uppercase tracking-tighter mb-6">{c("staff.hero.title")}</h1>
           <p className="text-xl text-gray-400 max-w-2xl mx-auto">
             {c("staff.hero.subtext")}
           </p>

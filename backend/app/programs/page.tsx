@@ -67,10 +67,10 @@ export default async function Programs() {
       <div className="bg-black text-white py-20">
         <div className="container mx-auto px-4 md:px-6 text-center">
           <h1 className="text-5xl md:text-7xl font-black uppercase tracking-tighter mb-6">
-            <span className="block">{c("programs.hero.line1")}</span>
-            <span className="block">{c("programs.hero.line2")}</span>
+            <span className="block overflow-hidden pb-[0.06em]"><span className="hero-rise block">{c("programs.hero.line1")}</span></span>
+            <span className="block overflow-hidden pb-[0.06em]"><span className="hero-rise hero-rise-2 block">{c("programs.hero.line2")}</span></span>
           </h1>
-          <p className="text-xl text-gray-400 max-w-2xl mx-auto">
+          <p className="hero-fade text-xl text-gray-400 max-w-2xl mx-auto">
             {c("programs.intro")}
           </p>
         </div>
@@ -79,11 +79,18 @@ export default async function Programs() {
       <div className="container mx-auto px-4 md:px-6 py-20">
         <div className="space-y-20">
           {programs.map((program, idx) => (
-            <div key={program.id} id={program.id} className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center border-b border-gray-100 pb-20 last:border-0 last:pb-0">
-              <div className={`order-2 ${idx % 2 === 1 ? "md:order-1" : "md:order-2"}`}>
+            <div key={program.id} id={program.id} className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center border-b border-gray-100 pb-20 last:border-0 last:pb-0 relative isolate overflow-x-clip">
+              <span aria-hidden="true" className={`rv-num pointer-events-none absolute top-0 -z-10 hidden select-none text-[200px] font-black leading-none tracking-tighter text-primary opacity-[0.07] md:block ${idx % 2 === 1 ? "right-0" : "left-0"}`}>
+                {String(idx + 1).padStart(2, "0")}
+              </span>
+              <div className={`order-1 ${idx % 2 === 1 ? "md:order-1" : "md:order-2"}`}>
+                <div className="rv-step mb-3 flex items-center gap-2 text-xs font-extrabold tracking-[0.16em] text-primary md:hidden" aria-hidden="true">
+                  {String(idx + 1).padStart(2, "0")} / {String(programs.length).padStart(2, "0")}
+                  <i className="rv-step-line block h-0.5 w-7 bg-primary" />
+                </div>
                 {(() => {
                   const photo = (
-                    <div className="aspect-video w-full rounded-sm overflow-hidden relative group shadow-xl">
+                    <div className="rv-photo aspect-video w-full rounded-sm overflow-hidden relative group shadow-xl">
                       <Image
                         src={program.image}
                         alt={alt(program.imageKey)}
@@ -102,7 +109,7 @@ export default async function Programs() {
                 })()}
               </div>
               
-              <div className={`order-1 ${idx % 2 === 1 ? "md:order-2" : "md:order-1"}`}>
+              <div className={`rv-stagger rv-late order-2 ${idx % 2 === 1 ? "md:order-2" : "md:order-1"}`}>
                 <div className="inline-block py-1 px-3 bg-primary/10 text-primary rounded-full text-xs font-bold uppercase tracking-widest mb-4">
                   {program.age}
                 </div>
@@ -122,7 +129,7 @@ export default async function Programs() {
                 
                 <div className="mb-8">
                   <h4 className="font-bold uppercase text-sm mb-4 border-b pb-2">{c("programs.focus-heading")}</h4>
-                  <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <ul className="rv-check grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {program.features.map((feat, i) => (
                       <li key={i} className="flex items-center gap-2 text-sm font-medium text-gray-700">
                         <Check className="h-4 w-4 text-primary" /> {feat}

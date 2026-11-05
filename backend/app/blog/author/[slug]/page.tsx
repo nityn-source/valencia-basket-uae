@@ -51,7 +51,7 @@ export default async function BlogAuthorPage({ params }: { params: Promise<{ slu
             </div>
             <div>
               <span className="mb-4 block text-sm font-bold uppercase tracking-widest text-primary">Author</span>
-              <h1 className="mb-3 text-4xl font-black uppercase leading-none tracking-tighter md:text-6xl">{author.name}</h1>
+              <h1 className="page-title mb-3 text-4xl font-black uppercase leading-none tracking-tighter md:text-6xl">{author.name}</h1>
               <p className="mb-6 text-sm font-bold uppercase tracking-widest text-primary">{author.role}</p>
               <SocialIcons links={socials} personName={name} tone="dark" className="mb-6" />
               <div className="max-w-2xl space-y-4 text-lg leading-relaxed text-gray-300">

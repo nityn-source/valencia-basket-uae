@@ -40,7 +40,7 @@ export function CampEventPage({ event, details }: { event: Event; details: CampD
             {event.location} · {event.date}
           </Eyebrow>
           <h1
-            className="mb-5 text-4xl font-black uppercase leading-[0.95] tracking-tighter sm:text-5xl lg:text-7xl"
+            className="page-title mb-5 text-4xl font-black uppercase leading-[0.95] tracking-tighter sm:text-5xl lg:text-7xl"
             data-testid="text-event-detail-title"
           >
             {d.headline || event.title}

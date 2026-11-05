@@ -86,7 +86,7 @@ export default async function Facilities() {
           <span className="inline-block rounded-full bg-primary text-white px-4 py-1.5 font-bold uppercase text-xs tracking-widest mb-6" data-testid="badge-main-venue">
             {c("facilities.hero.badge")}
           </span>
-          <h1 className="text-5xl md:text-7xl font-black uppercase tracking-tighter mb-6" data-testid="text-facilities-title">
+          <h1 className="page-title text-5xl md:text-7xl font-black uppercase tracking-tighter mb-6" data-testid="text-facilities-title">
             {c("facilities.hero.title")}
           </h1>
           <p className="text-xl text-gray-400 max-w-2xl mx-auto">

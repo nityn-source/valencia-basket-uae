@@ -63,7 +63,7 @@ export default async function Contact() {
           <span className="inline-block bg-primary text-white text-xs font-bold uppercase tracking-widest py-1.5 px-4 rounded-full mb-6">
             {c("contact.hero.badge")}
           </span>
-          <h1 className="text-4xl md:text-6xl font-black uppercase tracking-tighter mb-4">{c("contact.hero.title")}</h1>
+          <h1 className="page-title text-4xl md:text-6xl font-black uppercase tracking-tighter mb-4">{c("contact.hero.title")}</h1>
           <p className="text-lg md:text-xl text-gray-400 max-w-2xl mx-auto">
             {c("contact.hero.subtext")}
           </p>

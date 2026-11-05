@@ -80,7 +80,7 @@ export default async function Events() {
       <StructuredData data={schema} />
       <div className="bg-black text-white py-20">
         <div className="container mx-auto px-4 md:px-6 text-center">
-          <h1 className="text-5xl md:text-7xl font-black uppercase tracking-tighter mb-6">{c("events.hero.title")}</h1>
+          <h1 className="page-title text-5xl md:text-7xl font-black uppercase tracking-tighter mb-6">{c("events.hero.title")}</h1>
           <p className="text-xl text-gray-400 max-w-2xl mx-auto">
             {c("events.intro")}
           </p>

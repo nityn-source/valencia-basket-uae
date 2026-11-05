@@ -58,7 +58,7 @@ export default async function EventDetail({ params }: PageProps) {
           <div className="inline-block px-3 py-1 bg-black text-white text-xs font-bold uppercase tracking-widest mb-6">
              {event.status}
           </div>
-          <h1 className="text-5xl md:text-7xl font-black uppercase tracking-tighter mb-6" data-testid="text-event-detail-title">{event.title}</h1>
+          <h1 className="page-title text-5xl md:text-7xl font-black uppercase tracking-tighter mb-6" data-testid="text-event-detail-title">{event.title}</h1>
           <div className="flex flex-col md:flex-row items-center justify-center gap-6 text-white/90 font-bold uppercase tracking-widest text-sm">
             <div className="flex items-center gap-2"><CalendarDays className="h-5 w-5" /> {event.date}</div>
             <div className="flex items-center gap-2"><Clock className="h-5 w-5" /> {event.time}</div>

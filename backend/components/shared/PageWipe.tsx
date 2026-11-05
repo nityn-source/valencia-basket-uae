@@ -20,6 +20,8 @@ declare global {
 const IN_MS = 480;
 const HOLD_MS = 300;
 const OUT_MS = 560;
+/** The page behind starts its own entrance animation once the panel has mostly cleared, so it is seen. */
+const REVEAL_AFTER_MS = 380;
 const EASING = "cubic-bezier(.7,0,.3,1)";
 
 function finish() {
@@ -29,6 +31,7 @@ function finish() {
   window.__pageWipe = undefined;
   const slideOut = wipe.el.animate([{ transform: "translateX(0)" }, { transform: "translateX(100%)" }], { duration: OUT_MS, easing: EASING, fill: "forwards" });
   slideOut.finished.then(() => wipe.el.remove(), () => wipe.el.remove());
+  window.setTimeout(() => document.documentElement.classList.remove("wipe-pending"), REVEAL_AFTER_MS);
 }
 
 /**
@@ -48,6 +51,8 @@ export function wipeNavigate(e: React.MouseEvent, router: Router, href: string, 
     "position:fixed;inset:0;z-index:100;background:#FF6C0E;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:clamp(40px,9vw,120px);letter-spacing:-0.04em;text-transform:uppercase;transform:translateX(-100%)";
   el.textContent = label;
   document.body.appendChild(el);
+  // While the panel covers the screen, entrance animations on the next page wait (see globals.css).
+  document.documentElement.classList.add("wipe-pending");
   // Safety net: never leave the screen covered if the page is slow or fails to load.
   const timer = window.setTimeout(finish, 6000);
   window.__pageWipe = { el, href, timer };

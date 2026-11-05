@@ -104,7 +104,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
                 {author ? <Link href={authorPath(author.slug)} className="text-white underline-offset-4 hover:text-primary hover:underline">{authorName}</Link> : post.authorName}
               </span>
             </div>
-            <h1 className="text-4xl font-black uppercase leading-tight tracking-tight md:text-6xl">{post.title}</h1>
+            <h1 className="page-title text-4xl font-black uppercase leading-tight tracking-tight md:text-6xl">{post.title}</h1>
             {post.excerpt && <p className="mt-6 max-w-3xl text-xl leading-relaxed text-gray-400">{post.excerpt}</p>}
           </div>
         </header>
