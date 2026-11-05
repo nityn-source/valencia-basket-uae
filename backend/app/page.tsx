@@ -73,18 +73,9 @@ export default async function Home() {
 
       {/* PROGRAMS SECTION — a pinned, scroll-driven pathway (plain cards for reduced motion) */}
       <section id="programs" className="bg-white pt-14 md:pt-32">
-        <Reveal>
-          <div className="container mx-auto px-4 md:px-6">
-            <SectionHeader
-              title={c("home.programs.title")}
-              subtitle={c("home.programs.subtitle")}
-              description={c("home.programs.description")}
-              className="mb-4 md:mb-6"
-            />
-          </div>
-        </Reveal>
         <PlayerPathway
           buttonLabel={cardButton}
+          heading={{ eyebrow: c("home.programs.subtitle"), title: c("home.programs.title"), description: c("home.programs.description") }}
           programs={[
             { title: c("programs.future-ballers.title"), age: c("programs.future-ballers.age"), description: c("home.program.future-ballers.description"), image: futureBallersImage, imageAlt: alt("home.future-ballers"), imageKey: "home.future-ballers", href: "/programs/future-ballers" },
             { title: c("programs.mini-basket.title"), age: c("programs.mini-basket.age"), description: c("home.program.mini-basket.description"), image: miniBasketImage, imageAlt: alt("home.mini-basket"), imageKey: "home.mini-basket", href: "/programs/mini-basket" },
