@@ -93,9 +93,13 @@ export function PlayerPathway({ programs, buttonLabel, heading }: PlayerPathwayP
     if (!wrap || !stage || !rail) return;
 
     let mobile = false;
+    let compact = false;
     let railLeft = 28;
+    let railRight = 28;
     let railWidth = 0;
     let target = 0;
+    let prevStage = 0;
+    let motion = 0;
     let current = -1;
     let last = performance.now();
     let frame = 0;
@@ -104,8 +108,11 @@ export function PlayerPathway({ programs, buttonLabel, heading }: PlayerPathwayP
 
     const measure = () => {
       mobile = window.innerWidth <= 860;
+      compact = mobile && window.innerHeight <= 860;
       railLeft = mobile ? 22 : 28;
-      railWidth = Math.max(0, rail.clientWidth - railLeft * 2);
+      // On short phones the WhatsApp bubble sits low on the right, so the bar stops short of it.
+      railRight = compact ? 78 : railLeft;
+      railWidth = Math.max(0, rail.clientWidth - railLeft - railRight);
       nodeRefs.current.forEach((node, index) => {
         if (node) node.style.left = `${railLeft + (railWidth * index) / Math.max(1, count - 1)}px`;
       });
@@ -141,10 +148,13 @@ export function PlayerPathway({ programs, buttonLabel, heading }: PlayerPathwayP
       const x = railLeft + railWidth * (s / stages);
       const phase = s * HOPS_PER_STAGE * Math.PI;
       const hop = Math.abs(Math.sin(phase));
-      const ground = mobile ? 48 : 62;
-      const y = ground - hop * (mobile ? 34 : 50);
-      const squash = Math.pow(1 - hop, 5) * 0.22;
-      const transform = `scale(${1 + squash},${1 - squash}) rotate(${s * 540}deg)`;
+      const ground = compact ? 30 : mobile ? 48 : 62;
+      const y = ground - hop * (compact ? 20 : mobile ? 34 : 50);
+      // Squash only while the ball is travelling and touching down; at rest (first/last stop included) it stays round.
+      motion = motion * 0.8 + clamp(Math.abs(s - prevStage) / 0.004) * 0.2;
+      prevStage = s;
+      const squash = Math.pow(1 - hop, 4) * 0.16 * motion;
+      const transform = `scale(${1 + squash},${1 - squash * 0.9}) rotate(${s * 540}deg)`;
       const [ball, ...ghosts] = ballRefs.current;
       if (ball) ball.style.transform = `translate3d(${x}px,${y}px,0) ${transform}`;
       history.unshift({ x, y, transform });
@@ -376,7 +386,7 @@ export function PlayerPathway({ programs, buttonLabel, heading }: PlayerPathwayP
     <div ref={wrapRef} className="relative" style={{ height: `${(count - 1) * SCREENS_PER_STAGE * 100 + 100}svh` }} data-testid="player-pathway">
       <div
         ref={stageRef}
-        className="sticky top-0 mx-auto grid h-[100svh] max-w-[1240px] grid-cols-1 grid-rows-[40%_1fr_auto] gap-y-3 max-md:[@media(max-height:860px)]:grid-rows-[minmax(0,30%)_1fr_auto] max-md:[@media(max-height:860px)]:gap-y-2 overflow-hidden px-4 pb-20 pt-[178px] max-md:[@media(max-height:860px)]:pt-[128px] md:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] md:grid-rows-[1fr_auto] md:gap-x-10 md:gap-y-0 md:px-5 md:pb-6 md:pt-[186px] md:[@media(max-height:820px)]:pt-[176px]"
+        className="sticky top-0 mx-auto grid h-[100svh] max-w-[1240px] grid-cols-1 grid-rows-[40%_1fr_auto] gap-y-3 max-md:[@media(max-height:860px)]:grid-rows-[minmax(0,1fr)_auto_auto] max-md:[@media(max-height:860px)]:gap-y-2 overflow-hidden px-4 pb-20 max-md:[@media(max-height:860px)]:pb-[44px] pt-[178px] max-md:[@media(max-height:860px)]:pt-[124px] md:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] md:grid-rows-[1fr_auto] md:gap-x-10 md:gap-y-0 md:px-5 md:pb-6 md:pt-[186px] md:[@media(max-height:820px)]:pt-[176px]"
       >
         {heading && (
           <div className="absolute inset-x-4 top-[78px] z-10 md:inset-x-5 md:top-[98px]">
@@ -385,7 +395,7 @@ export function PlayerPathway({ programs, buttonLabel, heading }: PlayerPathwayP
             {heading.description && <p className="mt-1.5 block max-md:[@media(max-height:860px)]:hidden max-w-[640px] text-[12.5px] leading-snug text-gray-600 md:mt-2 md:text-[15px]">{heading.description}</p>}
           </div>
         )}
-        <div className="relative row-start-2 min-h-0 self-stretch md:row-start-1 md:min-h-[380px] md:[@media(max-height:820px)]:min-h-[330px] md:self-center">
+        <div className="relative row-start-2 min-h-0 max-md:[@media(max-height:860px)]:min-h-[192px] self-stretch md:row-start-1 md:min-h-[380px] md:[@media(max-height:820px)]:min-h-[330px] md:self-center">
           {programs.map((program, index) => (
             <div
               key={program.href}
@@ -399,7 +409,7 @@ export function PlayerPathway({ programs, buttonLabel, heading }: PlayerPathwayP
               <div aria-hidden="true" className="-ml-[0.015em] whitespace-nowrap text-[64px] max-md:[@media(max-height:860px)]:text-[46px] uppercase font-black leading-[0.9] tracking-[-0.05em] text-black md:text-[clamp(72px,9vw,128px)]">
                 {heroMark(program).text.split("–").map((part, i) => (i === 0 ? part : <span key={i}><span className="mx-[0.06em] text-primary">–</span>{part}</span>))}
               </div>
-              <div className="mt-3 flex items-center gap-2.5 md:mt-3.5">
+              <div className="mt-3 max-md:[@media(max-height:860px)]:mt-2 flex items-center gap-2.5 md:mt-3.5">
                 <span aria-hidden="true" className="h-1 w-8 bg-primary md:w-9" />
                 <span className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-black md:text-[13px]">{heroMark(program).tag}</span>
               </div>
@@ -410,12 +420,14 @@ export function PlayerPathway({ programs, buttonLabel, heading }: PlayerPathwayP
               </h3>
               <p className="line-clamp-3 max-md:[@media(max-height:860px)]:line-clamp-2 max-w-[440px] text-[13.5px] max-md:[@media(max-height:860px)]:text-[12.5px] leading-snug text-gray-600 md:line-clamp-none md:text-[17px] md:leading-relaxed">{program.description}</p>
               <div className="mt-3 max-md:[@media(max-height:860px)]:mt-2 flex flex-wrap items-center gap-3 md:mt-5">
-                <Link href={program.href} className="inline-flex min-h-[44px] max-md:[@media(max-height:860px)]:min-h-[40px] items-center gap-2 bg-primary px-5 text-xs font-bold uppercase tracking-widest text-white transition-colors hover:bg-orange-600 md:min-h-[46px]">
+                <Link href={program.href} className="inline-flex min-h-[44px] max-md:[@media(max-height:860px)]:min-h-[40px] items-center gap-2 bg-primary px-4 text-[11px] font-bold uppercase tracking-[0.12em] text-white transition-colors hover:bg-orange-600 md:min-h-[46px] md:px-5 md:text-xs md:tracking-widest">
                   {buttonLabel}
                   <span className="sr-only"> about {program.title}</span> <ArrowRight className="h-4 w-4" aria-hidden="true" />
                 </Link>
-                <Link href="/programs" onClick={toAllPrograms} className="group/skip hidden min-h-[46px] items-center gap-2 bg-black px-5 text-xs font-bold uppercase tracking-widest text-white transition-colors hover:bg-[#1f1b16] md:inline-flex">
-                  See all programs <ArrowRight className="h-4 w-4 text-primary transition-transform group-hover/skip:translate-x-0.5" aria-hidden="true" />
+                <Link href="/programs" onClick={toAllPrograms} className="group/skip inline-flex min-h-[44px] max-md:[@media(max-height:860px)]:min-h-[40px] items-center gap-2 whitespace-nowrap bg-black px-4 text-[11px] font-bold uppercase tracking-[0.12em] text-white transition-colors hover:bg-[#1f1b16] md:min-h-[46px] md:px-5 md:text-xs md:tracking-widest">
+                  <span className="md:hidden">All programs</span>
+                  <span className="hidden md:inline">See all programs</span>
+                  <ArrowRight className="h-4 w-4 text-primary transition-transform group-hover/skip:translate-x-0.5" aria-hidden="true" />
                 </Link>
               </div>
             </div>
@@ -448,11 +460,11 @@ export function PlayerPathway({ programs, buttonLabel, heading }: PlayerPathwayP
           </span>
         </div>
 
-        <div ref={railRef} className="relative col-span-full mt-0 h-[124px] max-md:[@media(max-height:860px)]:h-[98px] md:mt-3.5 md:h-[132px]">
-          <div className="absolute inset-x-[22px] top-12 h-1 rounded-full bg-[#e6e1da] md:inset-x-[28px] md:top-[62px]">
+        <div ref={railRef} className="relative col-span-full mt-0 h-[124px] max-md:[@media(max-height:860px)]:h-[76px] md:mt-3.5 md:h-[132px]">
+          <div className="absolute inset-x-[22px] top-12 max-md:[@media(max-height:860px)]:top-[28px] max-md:[@media(max-height:860px)]:right-[78px] h-1 rounded-full bg-[#e6e1da] md:inset-x-[28px] md:top-[62px]">
             <div ref={fillRef} className="h-full w-0 rounded-full bg-primary" />
           </div>
-          <div ref={shadowRef} className="absolute left-0 top-[46px] -ml-5 h-2.5 w-10 rounded-full bg-[#16130F]/30 blur-[2px] md:top-[60px]" aria-hidden="true" />
+          <div ref={shadowRef} className="absolute left-0 top-[46px] max-md:[@media(max-height:860px)]:top-[26px] -ml-5 h-2.5 w-10 rounded-full bg-[#16130F]/30 blur-[2px] md:top-[60px]" aria-hidden="true" />
           {programs.map((program, index) => (
             <button
               key={program.href}
@@ -462,13 +474,13 @@ export function PlayerPathway({ programs, buttonLabel, heading }: PlayerPathwayP
               }}
               onClick={() => jumpTo(index)}
               aria-label={`${railLabel(program)}: ${program.title}`}
-              className="group absolute top-[50px] h-0 w-0 cursor-pointer md:top-[64px]"
+              className="group absolute top-[50px] max-md:[@media(max-height:860px)]:top-[30px] h-0 w-0 cursor-pointer md:top-[64px]"
             >
               <span aria-hidden="true" className="absolute -left-10 -top-6 h-16 w-20" />
               <span className="absolute -left-[9px] -top-[9px] h-[18px] w-[18px] rounded-full border-4 border-[#d4cec5] bg-white transition-all group-hover:scale-125 group-hover:border-primary group-data-[on=true]:border-primary group-data-[on=true]:bg-primary" />
               <span
-                className={`absolute top-[15px] text-[10px] font-extrabold uppercase leading-[1.15] tracking-[0.03em] text-[#6b6258] underline-offset-4 transition-colors group-hover:text-black group-hover:underline group-data-[on=true]:text-black md:top-[18px] md:whitespace-nowrap md:text-[11.5px] md:tracking-[0.08em] ${
-                  index === 0 ? "-left-2 w-[68px] text-left md:w-auto" : index === count - 1 ? "-right-2 w-[68px] text-right md:w-auto" : "left-1/2 w-[68px] -translate-x-1/2 text-center md:w-auto"
+                className={`absolute top-[15px] text-[10px] max-md:[@media(max-height:860px)]:text-[9px] font-extrabold uppercase leading-[1.15] tracking-[0.03em] max-md:[@media(max-height:860px)]:tracking-normal text-[#6b6258] underline-offset-4 transition-colors group-hover:text-black group-hover:underline group-data-[on=true]:text-black md:top-[18px] md:whitespace-nowrap md:text-[11.5px] md:tracking-[0.08em] ${
+                  index === 0 ? "-left-2 w-[68px] max-md:[@media(max-height:860px)]:w-[52px] text-left md:w-auto" : index === count - 1 ? "-right-2 w-[68px] max-md:[@media(max-height:860px)]:w-[52px] text-right md:w-auto" : "left-1/2 w-[68px] max-md:[@media(max-height:860px)]:w-[52px] -translate-x-1/2 text-center md:w-auto"
                 }`}
               >
                 {railLabel(program)}
@@ -493,15 +505,10 @@ export function PlayerPathway({ programs, buttonLabel, heading }: PlayerPathwayP
           ))}
         </div>
 
-        <div className="absolute inset-x-0 bottom-3 flex flex-col items-center gap-2 text-[11px] font-bold uppercase tracking-[0.12em] text-[#6b6258] md:bottom-4 md:flex-row md:justify-center md:gap-4 md:tracking-[0.16em]">
-          <span aria-hidden="true" className="pointer-events-none">
-            <span className="md:hidden">Swipe, or tap a program</span>
-            <span className="hidden md:inline">Scroll or swipe, or tap a program</span>
-          </span>
-          <Link href="/programs" onClick={toAllPrograms} className="group/skip inline-flex min-h-[44px] items-center gap-2 bg-black px-6 text-xs font-extrabold uppercase tracking-[0.14em] text-white transition-colors hover:bg-[#1f1b16] md:hidden">
-            See all programs <ArrowRight className="h-4 w-4 text-primary transition-transform group-hover/skip:translate-x-0.5" aria-hidden="true" />
-          </Link>
-        </div>
+        <p aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-3 text-center text-[11px] font-bold uppercase tracking-[0.12em] text-[#6b6258] md:bottom-4 md:tracking-[0.16em]">
+          <span className="md:hidden">Swipe, or tap a program</span>
+          <span className="hidden md:inline">Scroll or swipe, or tap a program</span>
+        </p>
       </div>
     </div>
   );
