@@ -332,3 +332,85 @@
 .blog-content td p { margin: 0; }
 .blog-content th p + p,
 .blog-content td p + p { margin-top: 0.5rem; }
+
+/* Button micro-interactions (behaviour in components/shared/ButtonFeedback.tsx). Skipped entirely for reduced motion. */
+@media (prefers-reduced-motion: no-preference) {
+  [data-cta]:not(.absolute):not(.fixed):not(.sticky) {
+    position: relative;
+  }
+  [data-cta] {
+    isolation: isolate;
+    overflow: hidden;
+    -webkit-tap-highlight-color: transparent;
+    transition:
+      transform 0.14s ease,
+      box-shadow 0.2s ease,
+      background-color 0.2s ease,
+      border-color 0.2s ease,
+      color 0.2s ease,
+      opacity 0.2s ease,
+      filter 0.2s ease;
+  }
+  [data-cta]::before,
+  [data-cta]::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+  }
+  /* Hover (mouse screens): a darker layer sweeps in from the left. */
+  [data-cta]::before {
+    background: rgba(0, 0, 0, 0.18);
+    transform: translateX(-101%);
+    transition: transform 0.28s cubic-bezier(0.7, 0, 0.3, 1);
+  }
+  [data-cta].bg-black::before {
+    background: rgba(255, 255, 255, 0.12);
+  }
+  @media (hover: hover) {
+    [data-cta]:hover::before {
+      transform: translateX(0);
+    }
+  }
+  /* Touch: a ripple grows from the finger while the button is held, then fades. */
+  [data-cta]::after {
+    background: currentColor;
+    opacity: 0;
+    clip-path: circle(0 at var(--rx, 50%) var(--ry, 50%));
+    transition:
+      opacity 0.3s ease,
+      clip-path 0s linear 0.3s;
+  }
+  [data-cta].cta-down::after {
+    opacity: 0.2;
+    clip-path: circle(150% at var(--rx, 50%) var(--ry, 50%));
+    transition:
+      clip-path 0.45s cubic-bezier(0.3, 0.7, 0.3, 1),
+      opacity 0s;
+  }
+  [data-cta].cta-down {
+    transform: scale(0.96);
+  }
+  /* Arrow: grows as the mouse approaches (--k), pops when pressed. */
+  [data-cta] svg.lucide-arrow-right {
+    transform: translateX(calc(4px * var(--k, 0))) scale(calc(1 + 0.6 * var(--k, 0)));
+    transition: transform 0.18s cubic-bezier(0.3, 1.5, 0.5, 1);
+  }
+  [data-cta].cta-down svg.lucide-arrow-right {
+    transform: translateX(3px) scale(1.5);
+  }
+  /* Main "Book a free trial" buttons that start below the fold settle in once. */
+  [data-cta-settle]:not(.cta-in) {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  [data-cta-settle] {
+    transition:
+      opacity 0.5s ease,
+      transform 0.5s ease,
+      box-shadow 0.2s ease,
+      background-color 0.2s ease,
+      filter 0.2s ease;
+  }
+}

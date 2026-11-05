@@ -262,7 +262,7 @@ export default async function Home() {
 
       {/* BOOK TRIAL SECTION */}
       <Reveal>
-        <section id="book-trial" className="py-20 md:py-32 bg-primary relative">
+        <section className="py-20 md:py-32 bg-primary relative">
           <div className="absolute inset-0 bg-[url('/images/team-spirit.jpg')] bg-cover bg-center mix-blend-multiply opacity-20" />
           <div className="container mx-auto px-4 md:px-6 relative z-10">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
@@ -281,7 +281,10 @@ export default async function Home() {
                   ))}
                 </ul>
               </div>
-              <BookTrialForm heading={c("home.form.heading")} subheading={c("home.form.subheading")} submitLabel={c("home.form.submit")} />
+              {/* "Book a free trial" links (#book-trial) land on the form itself, clear of the fixed navbar. */}
+              <div id="book-trial" className="scroll-mt-24 md:scroll-mt-28">
+                <BookTrialForm heading={c("home.form.heading")} subheading={c("home.form.subheading")} submitLabel={c("home.form.submit")} />
+              </div>
             </div>
           </div>
         </section>

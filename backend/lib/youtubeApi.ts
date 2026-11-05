@@ -3,6 +3,8 @@ export interface YTPlayer {
   playVideo(): void;
   pauseVideo(): void;
   mute(): void;
+  getCurrentTime(): number;
+  getDuration(): number;
   destroy(): void;
 }
 
@@ -31,6 +33,7 @@ declare global {
 }
 
 /** YT.Player state codes we care about. */
+export const YT_ENDED = 0;
 export const YT_PLAYING = 1;
 export const YT_BUFFERING = 3;
 

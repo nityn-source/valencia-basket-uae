@@ -2,11 +2,18 @@
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal, preconnect } from "react-dom";
-import { ArrowRight, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Play, X } from "lucide-react";
-import { YT_BUFFERING, YT_PLAYING, loadYouTubeApi, type YTPlayer } from "@/lib/youtubeApi";
+import { ArrowRight, ChevronLeft, ChevronRight, Pause, Play, X } from "lucide-react";
+import { YT_BUFFERING, YT_ENDED, YT_PLAYING, loadYouTubeApi, type YTPlayer } from "@/lib/youtubeApi";
 import { videoSource, type VideoTestimonial } from "@/lib/videoTestimonials";
 
 const GAP = 20;
+
+/** What the story viewer needs from a playing video: pause/resume (press and hold) and how far along it is. */
+interface StoryControl {
+  pause: () => void;
+  resume: () => void;
+  progress: () => number;
+}
 
 /**
  * A YouTube video that starts on the first tap. The player loads quietly behind
@@ -14,12 +21,14 @@ const GAP = 20;
  * (a freshly created embed would otherwise show YouTube's own start button and
  * need a second tap). If the browser refuses to start with sound, it starts muted.
  */
-function YouTubeFrame({ id, title, active, cover, onTap, className = "aspect-[9/16] rounded-xl bg-[#2b251e]", children }: { id: string; title: string; active: boolean; cover: ReactNode; onTap: () => void; className?: string; children?: ReactNode }) {
+function YouTubeFrame({ id, title, active, cover, onTap, className = "aspect-[9/16] rounded-xl bg-[#2b251e]", children, chromeless = false, control, onEnded }: { id: string; title: string; active: boolean; cover: ReactNode; onTap: () => void; className?: string; children?: ReactNode; chromeless?: boolean; control?: React.MutableRefObject<StoryControl | null>; onEnded?: () => void }) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<YTPlayer | null>(null);
   const readyRef = useRef(false);
   const stateRef = useRef(-1);
   const wantPlayRef = useRef(false);
+  const endedRef = useRef(onEnded);
+  endedRef.current = onEnded;
   const [near, setNear] = useState(false);
   const [covered, setCovered] = useState(true);
 
@@ -66,14 +75,26 @@ function YouTubeFrame({ id, title, active, cover, onTap, className = "aspect-[9/
         playerRef.current = new YT.Player(mount, {
           videoId: id,
           host: "https://www.youtube-nocookie.com",
-          playerVars: { rel: 0, modestbranding: 1, playsinline: 1 },
+          playerVars: chromeless ? { rel: 0, modestbranding: 1, playsinline: 1, controls: 0, disablekb: 1, fs: 0, iv_load_policy: 3 } : { rel: 0, modestbranding: 1, playsinline: 1 },
           events: {
             onReady: () => {
               readyRef.current = true;
+              if (control) {
+                control.current = {
+                  pause: () => playerRef.current?.pauseVideo(),
+                  resume: () => playerRef.current?.playVideo(),
+                  progress: () => {
+                    const player = playerRef.current;
+                    const duration = player?.getDuration?.() ?? 0;
+                    return duration > 0 ? (player?.getCurrentTime?.() ?? 0) / duration : 0;
+                  },
+                };
+              }
               if (wantPlayRef.current) play();
             },
             onStateChange: (event) => {
               stateRef.current = event.data;
+              if (event.data === YT_ENDED) endedRef.current?.();
               if (event.data === YT_PLAYING || event.data === YT_BUFFERING) setCovered(false);
             },
           },
@@ -82,11 +103,12 @@ function YouTubeFrame({ id, title, active, cover, onTap, className = "aspect-[9/
       .catch(() => {});
     return () => {
       cancelled = true;
+      if (control) control.current = null;
       playerRef.current?.destroy();
       playerRef.current = null;
       readyRef.current = false;
     };
-  }, [near, id, play]);
+  }, [near, id, play, chromeless, control]);
 
   // Tapped: play now, and drop the cover after a moment even if playback hasn't begun (so YouTube's own controls can be used).
   useEffect(() => {
@@ -175,28 +197,35 @@ function VideoCard({ video, inline, playing, onPlay }: { video: VideoTestimonial
   );
 }
 
-/** The video in the viewer: a YouTube player (started straight away) or a Google Drive preview. */
-function ViewerVideo({ video }: { video: VideoTestimonial }) {
+/** The video in the viewer: a YouTube player (started straight away, no on-video controls) or a Google Drive preview. */
+function ViewerVideo({ video, control, onEnded }: { video: VideoTestimonial; control: React.MutableRefObject<StoryControl | null>; onEnded: () => void }) {
   const { source, cover, onError } = useCover(video);
   if (!source) return null;
   if (source.kind === "youtube") {
     const coverImage = cover && <img src={cover} alt="" onError={onError} className="absolute inset-0 h-full w-full object-contain" />;
-    return <YouTubeFrame id={source.id} title={video.name || "Community story"} active cover={coverImage} onTap={() => {}} className="h-full w-full bg-black" />;
+    return <YouTubeFrame id={source.id} title={video.name || "Community story"} active cover={coverImage} onTap={() => {}} className="h-full w-full bg-black" chromeless control={control} onEnded={onEnded} />;
   }
   return <iframe src={source.embedSrc} title={`Video testimonial${video.name ? `: ${video.name}` : ""}`} allow="autoplay; fullscreen; picture-in-picture" allowFullScreen className="h-full w-full border-0" />;
 }
 
 /**
- * Full-screen viewer: one story at a time, tall on phones. Move with the arrows,
- * the keyboard, or by swiping the bars above and below the video (a video itself
- * swallows touches). Every story has the booking button right under it.
+ * Full-screen viewer, like Instagram stories: tap the left third for the previous story and the
+ * rest for the next, press and hold to pause, swipe up to leave. A story moves on by itself when
+ * its video ends. Google Drive videos keep their own controls in the middle, so for those only the
+ * outer edges are tap zones. Every story has the booking button right under it.
  */
 function StoryViewer({ videos, start, ctaLabel, onClose }: { videos: VideoTestimonial[]; start: number; ctaLabel: string; onClose: () => void }) {
   const [index, setIndex] = useState(start);
+  const [progress, setProgress] = useState(0);
+  const [held, setHeld] = useState(false);
+  const [hint, setHint] = useState(true);
   const closeRef = useRef<HTMLButtonElement>(null);
-  const swipeY = useRef<number | null>(null);
+  const controlRef = useRef<StoryControl | null>(null);
+  const barSwipe = useRef<number | null>(null);
+  const gesture = useRef<{ x: number; y: number; held: boolean; timer: number } | null>(null);
   const last = videos.length - 1;
   const go = useCallback((to: number) => setIndex(Math.max(0, Math.min(last, to))), [last]);
+  const next = useCallback(() => setIndex((current) => Math.min(last, current + 1)), [last]);
 
   useEffect(() => {
     const opener = document.activeElement as HTMLElement | null;
@@ -209,8 +238,10 @@ function StoryViewer({ videos, start, ctaLabel, onClose }: { videos: VideoTestim
       else if (event.key === "ArrowUp" || event.key === "ArrowLeft") setIndex((current) => Math.max(0, current - 1));
     };
     window.addEventListener("keydown", onKey);
+    const hintTimer = window.setTimeout(() => setHint(false), 3200);
     return () => {
       window.removeEventListener("keydown", onKey);
+      window.clearTimeout(hintTimer);
       document.body.style.overflow = overflow;
       opener?.focus?.();
     };
@@ -218,22 +249,82 @@ function StoryViewer({ videos, start, ctaLabel, onClose }: { videos: VideoTestim
 
   // The next story's cover is fetched ahead so moving on feels instant.
   useEffect(() => {
-    const next = videos[index + 1];
-    const src = next && (next.poster || videoSource(next.url)?.thumbnail);
+    const upcoming = videos[index + 1];
+    const src = upcoming && (upcoming.poster || videoSource(upcoming.url)?.thumbnail);
     if (src) new Image().src = src;
   }, [index, videos]);
 
+  // The current story's progress bar fills as its video plays.
+  useEffect(() => {
+    setProgress(0);
+    let frame = 0;
+    let lastTick = 0;
+    const tick = (now: number) => {
+      if (now - lastTick > 100) {
+        lastTick = now;
+        const value = controlRef.current?.progress();
+        if (typeof value === "number") setProgress(Math.max(0, Math.min(1, value)));
+      }
+      frame = requestAnimationFrame(tick);
+    };
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [index]);
+
   const video = videos[index];
-  const swipe = {
+  const timed = videoSource(video.url)?.kind === "youtube";
+
+  const endGesture = (event: React.PointerEvent<HTMLElement>, cancelled: boolean) => {
+    const g = gesture.current;
+    if (!g) return;
+    window.clearTimeout(g.timer);
+    gesture.current = null;
+    if (g.held) {
+      controlRef.current?.resume();
+      setHeld(false);
+    }
+    if (cancelled) return;
+    const dx = event.clientX - g.x;
+    const dy = event.clientY - g.y;
+    if (dy < -60 && Math.abs(dy) > Math.abs(dx) * 1.2) {
+      onClose();
+      return;
+    }
+    if (g.held || Math.abs(dx) > 14 || Math.abs(dy) > 14) return;
+    const box = event.currentTarget.parentElement?.getBoundingClientRect() ?? event.currentTarget.getBoundingClientRect();
+    if ((event.clientX - box.left) / box.width < 0.33) go(index - 1);
+    else if (index === last) onClose();
+    else next();
+  };
+  const zone = {
+    onPointerDown: (event: React.PointerEvent<HTMLElement>) => {
+      try {
+        event.currentTarget.setPointerCapture(event.pointerId);
+      } catch {
+        // Capture is only a nicety (keeps the gesture if the finger drifts off the zone).
+      }
+      gesture.current = {
+        x: event.clientX,
+        y: event.clientY,
+        held: false,
+        timer: window.setTimeout(() => {
+          if (!gesture.current) return;
+          gesture.current.held = true;
+          controlRef.current?.pause();
+          setHeld(true);
+        }, 260),
+      };
+    },
+    onPointerUp: (event: React.PointerEvent<HTMLElement>) => endGesture(event, false),
+    onPointerCancel: (event: React.PointerEvent<HTMLElement>) => endGesture(event, true),
+  };
+  const bar = {
     onPointerDown: (event: React.PointerEvent) => {
-      swipeY.current = event.clientY;
+      barSwipe.current = event.clientY;
     },
     onPointerUp: (event: React.PointerEvent) => {
-      if (swipeY.current === null) return;
-      const distance = event.clientY - swipeY.current;
-      swipeY.current = null;
-      if (distance < -50) go(index + 1);
-      else if (distance > 50) go(index - 1);
+      if (barSwipe.current !== null && event.clientY - barSwipe.current < -50) onClose();
+      barSwipe.current = null;
     },
   };
 
@@ -249,10 +340,12 @@ function StoryViewer({ videos, start, ctaLabel, onClose }: { videos: VideoTestim
       data-testid="story-viewer"
     >
       <div className="relative flex h-[100dvh] w-screen flex-col overflow-hidden bg-[#16130F] text-white sm:h-[min(92vh,820px)] sm:w-auto sm:max-w-[94vw] sm:rounded-2xl sm:aspect-[9/17]">
-        <div className="shrink-0 touch-none px-3 pb-2 pt-3" {...swipe}>
+        <div className="shrink-0 touch-none px-3 pb-2 pt-3" {...bar}>
           <div className="flex gap-1" aria-hidden="true">
             {videos.map((item, i) => (
-              <span key={item.id ?? item.url} className={`h-[3px] flex-1 rounded-full ${i <= index ? "bg-white" : "bg-white/30"}`} />
+              <span key={item.id ?? item.url} className="h-[3px] flex-1 overflow-hidden rounded-full bg-white/30">
+                <span className="block h-full rounded-full bg-white" style={{ width: `${i < index ? 100 : i === index ? (timed ? progress * 100 : 100) : 0}%` }} />
+              </span>
             ))}
           </div>
           <div className="mt-2 flex items-center justify-between">
@@ -265,25 +358,27 @@ function StoryViewer({ videos, start, ctaLabel, onClose }: { videos: VideoTestim
           </div>
         </div>
 
-        <div className="min-h-0 flex-1 bg-black">
-          <ViewerVideo key={video.id ?? video.url} video={video} />
+        <div className="relative min-h-0 flex-1 bg-black">
+          <ViewerVideo key={video.id ?? video.url} video={video} control={controlRef} onEnded={next} />
+          {timed ? (
+            <div className="absolute inset-0 z-10 touch-none select-none" data-testid="story-zone" {...zone} />
+          ) : (
+            <>
+              <div className="absolute inset-y-0 left-0 z-10 w-[22%] touch-none select-none" data-testid="story-zone" {...zone} />
+              <div className="absolute inset-y-0 right-0 z-10 w-[22%] touch-none select-none" {...zone} />
+            </>
+          )}
+          {held && <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center"><span className="flex h-16 w-16 items-center justify-center rounded-full bg-black/50"><Pause className="h-7 w-7 fill-current text-white" aria-hidden="true" /></span></div>}
+          <p className={`pointer-events-none absolute inset-x-0 bottom-3 z-20 text-center text-xs font-semibold text-white drop-shadow-[0_1px_6px_rgba(0,0,0,0.8)] transition-opacity duration-700 ${hint ? "opacity-100" : "opacity-0"}`}>Tap left or right &middot; Swipe up to close</p>
         </div>
 
-        <div className="shrink-0 touch-none px-4 pb-4 pt-3" {...swipe}>
+        <div className="shrink-0 touch-none px-4 pb-4 pt-3" {...bar}>
           {video.name && <p className="text-lg font-bold leading-tight">{video.name}</p>}
           {video.role && <p className="text-sm text-white/70">{video.role}</p>}
           {video.quote && <p className="mt-2 line-clamp-3 text-sm italic leading-snug text-white/85">&ldquo;{stripQuotes(video.quote)}&rdquo;</p>}
-          <div className="mt-3 flex items-stretch gap-2">
-            <button type="button" onClick={() => go(index - 1)} disabled={index === 0} aria-label="Previous story" className="flex w-12 items-center justify-center rounded-sm bg-white/15 transition-colors hover:bg-white/25 disabled:opacity-30" data-testid="story-prev">
-              <ChevronUp className="h-5 w-5" />
-            </button>
-            <button type="button" onClick={() => go(index + 1)} disabled={index === last} aria-label="Next story" className="flex w-12 items-center justify-center rounded-sm bg-white/15 transition-colors hover:bg-white/25 disabled:opacity-30" data-testid="story-next">
-              <ChevronDown className="h-5 w-5" />
-            </button>
-            <a href="#book-trial" onClick={onClose} className="flex min-h-[48px] flex-1 items-center justify-center gap-2 bg-[#E8722C] px-4 text-sm font-bold uppercase tracking-wider text-white transition-colors hover:bg-orange-600" data-testid="story-book">
-              {ctaLabel} <ArrowRight className="h-4 w-4" aria-hidden="true" />
-            </a>
-          </div>
+          <a href="#book-trial" onClick={onClose} className="mt-3 flex min-h-[48px] items-center justify-center gap-2 bg-[#E8722C] px-4 text-sm font-bold uppercase tracking-wider text-white transition-colors hover:bg-orange-600" data-testid="story-book">
+            {ctaLabel} <ArrowRight className="h-4 w-4" aria-hidden="true" />
+          </a>
         </div>
       </div>
     </div>,
