@@ -112,7 +112,7 @@ export function PlayerPathway({ programs, buttonLabel }: PlayerPathwayProps) {
         const inner = innerRefs.current[index];
         if (inner) {
           const local = s - index;
-          inner.style.transform = `translate3d(${clamp(local, -1, 1) * -4 + (index === 0 ? 0 : (1 - reveal) * 8)}%,0,0) scale(${1.08 - 0.04 * clamp(1 - Math.abs(local), 0, 1)})`;
+          inner.style.transform = `translate3d(${clamp(local, -1, 1) * -1.5 + (index === 0 ? 0 : (1 - reveal) * 4)}%,0,0) scale(${1.04 - 0.02 * clamp(1 - Math.abs(local), 0, 1)})`;
         }
       });
 
@@ -246,7 +246,7 @@ export function PlayerPathway({ programs, buttonLabel }: PlayerPathwayProps) {
           ))}
         </div>
 
-        <div className="relative row-start-1 overflow-hidden rounded-2xl bg-gray-100 md:col-start-2">
+        <div className="relative row-start-1 overflow-hidden rounded-2xl bg-gray-100 md:col-start-2 md:aspect-[4/3] md:max-h-full md:self-center">
           {programs.map((program, index) => (
             <div
               key={program.href}
@@ -260,9 +260,9 @@ export function PlayerPathway({ programs, buttonLabel }: PlayerPathwayProps) {
                 ref={(node) => {
                   innerRefs.current[index] = node;
                 }}
-                className="absolute -inset-x-[10%] -inset-y-[6%] will-change-transform"
+                className="absolute -inset-x-[4%] -inset-y-[2%] will-change-transform"
               >
-                <Image src={program.image} alt={program.imageAlt} fill sizes="(min-width: 1024px) 55vw, 100vw" className="object-cover" priority={index === 0} />
+                <Image src={program.image} alt={program.imageAlt} fill sizes="(min-width: 1024px) 55vw, 100vw" className="object-cover object-[50%_30%]" priority={index === 0} />
               </div>
               <div className="absolute inset-0 bg-gradient-to-t from-black/35 to-transparent" />
             </div>
