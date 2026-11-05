@@ -3,6 +3,11 @@ export interface YTPlayer {
   playVideo(): void;
   pauseVideo(): void;
   mute(): void;
+  unMute(): void;
+  setVolume(volume: number): void;
+  loadVideoById(videoId: string): void;
+  cueVideoById(videoId: string): void;
+  getPlayerState(): number;
   getCurrentTime(): number;
   getDuration(): number;
   destroy(): void;
