@@ -49,6 +49,7 @@ import type {
   LeadStatus,
 } from "@shared/schema";
 import { LEAD_STATUS_VALUES, HOW_HEARD_OPTIONS } from "@shared/schema";
+import { EVENT_PAGE_SOURCE, leadSource, registrationSource } from "@/lib/leadSource";
 import { useCoverHealth } from "./reelCoverHealth";
 
 const ADMIN_TABS = [
@@ -895,7 +896,7 @@ function AdminDashboard({ authUser, onLogout }: { authUser: AdminAuthUser; onLog
     const query = trialSearch.trim().toLowerCase();
     return trialBookings.filter((booking) => {
       if (trialStatusFilter !== "all" && booking.status !== trialStatusFilter) return false;
-      if (trialSourceFilter !== "all" && booking.howHeard !== trialSourceFilter) return false;
+      if (trialSourceFilter !== "all" && leadSource(booking) !== trialSourceFilter) return false;
       if (!isWithinDatePreset(booking.createdAt, trialDatePreset, trialCustomFrom, trialCustomTo)) return false;
       if (query) {
         const haystack = `${booking.parentName} ${booking.playerName} ${booking.email} ${booking.phone}`.toLowerCase();
@@ -1116,7 +1117,7 @@ function AdminDashboard({ authUser, onLogout }: { authUser: AdminAuthUser; onLog
                   onCustomToChange={setTrialCustomTo}
                   extraLabel="Source"
                   extraValue={trialSourceFilter}
-                  extraOptions={HOW_HEARD_OPTIONS}
+                  extraOptions={[...HOW_HEARD_OPTIONS, EVENT_PAGE_SOURCE]}
                   onExtraChange={setTrialSourceFilter}
                   resultCount={filteredTrialBookings.length}
                 />
@@ -1150,7 +1151,7 @@ function AdminDashboard({ authUser, onLogout }: { authUser: AdminAuthUser; onLog
                         <TableCell>{booking.phone}{booking.whatsapp ? " ✓WA" : ""}</TableCell>
                         <TableCell>{booking.area || "—"}</TableCell>
                         <TableCell className="capitalize">{booking.programInterest || "—"}</TableCell>
-                        <TableCell>{booking.howHeard || "—"}</TableCell>
+                        <TableCell>{leadSource(booking) || "—"}</TableCell>
                         <TableCell className="text-sm text-gray-500">
                           {new Date(booking.createdAt).toLocaleDateString()}
                         </TableCell>
@@ -1228,11 +1229,14 @@ function AdminDashboard({ authUser, onLogout }: { authUser: AdminAuthUser; onLog
                   <TableHeader className="bg-gray-100">
                     <TableRow>
                       <TableHead className="font-bold">Event</TableHead>
+                      <TableHead className="font-bold">Camp</TableHead>
                       <TableHead className="font-bold">Player Name</TableHead>
                       <TableHead className="font-bold">Age</TableHead>
+                      <TableHead className="font-bold">Girl/Boy</TableHead>
                       <TableHead className="font-bold">Parent</TableHead>
                       <TableHead className="font-bold">Email</TableHead>
                       <TableHead className="font-bold">Phone</TableHead>
+                      <TableHead className="font-bold">Source</TableHead>
                       <TableHead className="font-bold">Date</TableHead>
                       <TableHead className="font-bold">Status</TableHead>
                       <TableHead className="font-bold">Actions</TableHead>
@@ -1242,11 +1246,14 @@ function AdminDashboard({ authUser, onLogout }: { authUser: AdminAuthUser; onLog
                     {filteredEventRegistrations.map((registration) => (
                       <TableRow key={registration.id} className="hover:bg-gray-50">
                         <TableCell className="font-medium">{registration.eventTitle}</TableCell>
+                        <TableCell>{registration.camp || "—"}</TableCell>
                         <TableCell>{registration.playerName}</TableCell>
                         <TableCell>{registration.playerAge}</TableCell>
+                        <TableCell>{registration.gender || "—"}</TableCell>
                         <TableCell>{registration.parentName}</TableCell>
                         <TableCell>{registration.email}</TableCell>
                         <TableCell>{registration.phone}</TableCell>
+                        <TableCell>{registrationSource(registration)}</TableCell>
                         <TableCell className="text-sm text-gray-500">
                           {new Date(registration.createdAt).toLocaleDateString()}
                         </TableCell>

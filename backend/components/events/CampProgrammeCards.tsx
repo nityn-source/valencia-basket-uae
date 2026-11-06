@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { CalendarDays, MapPin, Clock, ArrowRight } from "lucide-react";
-import { chooseCamp } from "@/lib/campPick";
+import { CalendarDays, MapPin, Clock, ArrowRight, Info } from "lucide-react";
+import { chooseCamp, scrollToSection } from "@/lib/campPick";
 import { compactDates } from "@/lib/campDays";
 
 export interface CampCard {
@@ -14,6 +14,8 @@ export interface CampCard {
   dates: string;
   timeLines: string[];
   fee: string;
+  /** Id of the section further down with this week's full drill list, if there is one. */
+  infoTarget?: string;
 }
 
 export interface CampBundle {
@@ -114,12 +116,27 @@ export function CampProgrammeCards({ cards, bundle, openFor, registerOpen }: { c
       <div ref={listRef} className="mx-auto flex max-w-5xl flex-col gap-[24vh] pb-[10vh] md:gap-[28vh]">
         {cards.map((p, i) => (
           <div key={p.id} className="sticky" style={{ top: stickTop(i), zIndex: i + 1 }}>
+            {p.infoTarget && (
+              // A sibling of the card link (not inside it), so it can be clicked on its own, also while the card is stacked.
+              <a
+                href={`#${p.infoTarget}`}
+                onClick={(e) => {
+                  e.preventDefault();
+                  scrollToSection(p.infoTarget!);
+                }}
+                aria-label={`What is in ${p.name}: see the full week`}
+                data-testid={`camp-info-${p.id}`}
+                className="absolute right-3 top-[14px] z-10 inline-flex h-9 items-center gap-1.5 border-2 border-black bg-white px-3 text-[11px] font-extrabold uppercase tracking-widest text-black transition-colors hover:border-primary hover:bg-primary hover:text-white md:right-6"
+              >
+                <Info className="h-4 w-4" aria-hidden="true" /> Info
+              </a>
+            )}
             {shell(
               p.id,
               [p.weekLabel, p.name, p.dates].filter(Boolean).join(", "),
               "relative border-2 border-black bg-white transition-shadow duration-300 group-hover:shadow-xl",
               <>
-                <div className="flex items-center justify-between gap-3 border-b-2 border-black px-5 md:px-9" style={{ height: HEAD }}>
+                <div className={`flex items-center justify-between gap-3 border-b-2 border-black px-5 md:px-9 ${p.infoTarget ? "pr-[92px] md:pr-[130px]" : ""}`} style={{ height: HEAD }}>
                   <div className="min-w-0">
                     {p.weekLabel && <div className="text-[10px] font-extrabold uppercase leading-none tracking-[0.2em] text-primary md:text-xs">{p.weekLabel}</div>}
                     <div className="truncate text-xl font-black uppercase leading-tight md:text-2xl">{p.name}</div>

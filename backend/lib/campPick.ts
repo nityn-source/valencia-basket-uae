@@ -12,3 +12,10 @@ export function chooseCamp(id: string) {
   document.getElementById("register")?.scrollIntoView({ behavior: calm ? "auto" : "smooth", block: "start" });
   history.replaceState(null, "", "#register");
 }
+
+/** Smooth-scroll to a section of the camp page by id (the Info buttons on the camp cards). */
+export function scrollToSection(id: string) {
+  const calm = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  document.getElementById(id)?.scrollIntoView({ behavior: calm ? "auto" : "smooth", block: "start" });
+  history.replaceState(null, "", `#${id}`);
+}

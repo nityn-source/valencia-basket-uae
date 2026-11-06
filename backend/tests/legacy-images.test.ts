@@ -14,7 +14,7 @@ function filesUnder(dir: string): string[] {
 
 test("every original photo is restored at its old address, and listed", () => {
   const onDisk = filesUnder(join(process.cwd(), "public/images")).map((path) => relative(join(process.cwd(), "public/images"), path)).sort();
-  assert.equal(onDisk.length, 34);
+  assert.equal(onDisk.length, 35);
   assert.deepEqual(onDisk, [...LEGACY_IMAGES].sort(), "public/images and LEGACY_IMAGES must list the same files");
 });
 

@@ -45,11 +45,6 @@ function EventCard({ event, past = false, buttonLabel, completedLabel }: { event
                   <div className="flex items-center gap-2">
                       <MapPin className="h-4 w-4 text-primary" /> {event.location}
                   </div>
-                  {!past && event.price && (
-                    <div className="flex items-center gap-2 font-bold text-primary">
-                        {event.price}
-                    </div>
-                  )}
               </div>
 
               <p className="text-gray-600 mb-8 max-w-2xl text-lg">

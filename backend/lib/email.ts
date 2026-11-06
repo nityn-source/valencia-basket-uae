@@ -201,6 +201,9 @@ export async function sendEventRegistrationNotification(registration: {
   phone: string;
   playerName: string;
   playerAge: number;
+  /** Camp sign-ups: the camp chosen and girl/boy. */
+  camp?: string;
+  gender?: string;
 }) {
   if (!isEmailConfigured()) {
     console.log("Email not configured — skipping event registration notification");
@@ -219,6 +222,11 @@ export async function sendEventRegistrationNotification(registration: {
             <td style="padding: 8px 12px; font-weight: bold; color: #555; border-bottom: 1px solid #eee; width: 40%;">Event</td>
             <td style="padding: 8px 12px; border-bottom: 1px solid #eee; font-weight: bold; color: #FF6C0E;">${esc(registration.eventTitle)}</td>
           </tr>
+          ${registration.camp ? `
+          <tr>
+            <td style="padding: 8px 12px; font-weight: bold; color: #555; border-bottom: 1px solid #eee;">Camp</td>
+            <td style="padding: 8px 12px; border-bottom: 1px solid #eee; font-weight: bold;">${esc(registration.camp)}</td>
+          </tr>` : ""}
           <tr>
             <td style="padding: 8px 12px; font-weight: bold; color: #555; border-bottom: 1px solid #eee;">Parent Name</td>
             <td style="padding: 8px 12px; border-bottom: 1px solid #eee;">${esc(registration.parentName)}</td>
@@ -239,6 +247,11 @@ export async function sendEventRegistrationNotification(registration: {
             <td style="padding: 8px 12px; font-weight: bold; color: #555; border-bottom: 1px solid #eee;">Player Age</td>
             <td style="padding: 8px 12px; border-bottom: 1px solid #eee;">${esc(registration.playerAge)}</td>
           </tr>
+          ${registration.gender ? `
+          <tr>
+            <td style="padding: 8px 12px; font-weight: bold; color: #555; border-bottom: 1px solid #eee;">Girl / Boy</td>
+            <td style="padding: 8px 12px; border-bottom: 1px solid #eee;">${esc(registration.gender)}</td>
+          </tr>` : ""}
         </table>
         <p style="color: #888; font-size: 12px; margin-top: 20px;">This is an automated notification from Valencia Basket UAE.</p>
       </div>

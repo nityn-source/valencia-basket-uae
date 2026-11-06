@@ -43,6 +43,8 @@ export const LEGACY_IMAGES: readonly string[] = [
   "tournament-team.jpg",
   "youth-program.jpeg",
   "youth-team-small.jpg",
+  // Not an original: added later and committed here (rather than uploaded to R2) so it is served at /images/<name>.
+  "winter-camp-coaching.jpg",
 ];
 
 const legacy = new Set(LEGACY_IMAGES);

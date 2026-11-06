@@ -36,3 +36,20 @@ test("the exact age maps onto the age groups the admin already uses", () => {
   assert.equal(ageGroupFor(8), "7–10 years");
   assert.equal(ageGroupFor(14), "11–18 years");
 });
+
+test("the event registration migration only adds columns, with defaults, and is in the journal", async () => {
+  const { readFileSync } = await import("node:fs");
+  const sql = readFileSync("migrations/0017_event_registration_camp_fields.sql", "utf8");
+  assert.doesNotMatch(sql, /DROP|TRUNCATE|DELETE|RENAME|ALTER COLUMN/i);
+  const adds = sql.match(/ADD COLUMN IF NOT EXISTS "[a-z_]+" [a-z]+ DEFAULT [^;]+? NOT NULL/g) ?? [];
+  assert.equal(adds.length, 9, "every new column is NOT NULL with a default, so existing rows and old sign-ups keep working");
+  const journal = JSON.parse(readFileSync("migrations/meta/_journal.json", "utf8")) as { entries: { tag: string }[] };
+  assert.equal(journal.entries.at(-1)?.tag, "0017_event_registration_camp_fields");
+});
+
+test("event sign-ups that don't use the camp form still validate without the new fields", async () => {
+  const { insertEventRegistrationSchema } = await import("@shared/schema");
+  assert.doesNotThrow(() =>
+    insertEventRegistrationSchema.parse({ eventId: "e1", eventTitle: "Summer Camp", parentName: "Jane Doe", email: "j@example.com", phone: "+971501234567", playerName: "Kid", playerAge: 9 }),
+  );
+});

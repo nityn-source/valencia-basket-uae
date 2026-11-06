@@ -14,6 +14,7 @@ const SERVICE_ACCOUNT_JSON = process.env.GOOGLE_SERVICE_ACCOUNT_JSON || "";
 
 const TRIAL_SHEET = "Trial Bookings";
 const ENQUIRY_SHEET = "Contact Enquiries";
+const EVENT_SHEET = "Event Registrations";
 
 const TRIAL_HEADERS = [
   "Timestamp",
@@ -33,6 +34,25 @@ const TRIAL_HEADERS = [
   "Landing Page",
   "Referrer",
   "Notes",
+];
+
+const EVENT_HEADERS = [
+  "Timestamp",
+  "Event",
+  "Camp",
+  "Parent Name",
+  "Child Name",
+  "Child Age",
+  "Girl/Boy",
+  "Phone",
+  "WhatsApp",
+  "Email",
+  "Source Page",
+  "UTM Source",
+  "UTM Medium",
+  "UTM Campaign",
+  "Landing Page",
+  "Referrer",
 ];
 
 const ENQUIRY_HEADERS = [
@@ -79,6 +99,78 @@ async function ensureHeaderRow(
       valueInputOption: "RAW",
       requestBody: { values: [headers] },
     });
+  }
+}
+
+/** Creates the sheet tab the first time it is needed (the spreadsheet may only have the older tabs). */
+async function ensureSheetTab(sheets: ReturnType<typeof google.sheets>, title: string): Promise<void> {
+  const meta = await sheets.spreadsheets.get({ spreadsheetId: SPREADSHEET_ID, fields: "sheets.properties.title" });
+  if (meta.data.sheets?.some((sheet) => sheet.properties?.title === title)) return;
+  await sheets.spreadsheets.batchUpdate({
+    spreadsheetId: SPREADSHEET_ID,
+    requestBody: { requests: [{ addSheet: { properties: { title } } }] },
+  });
+}
+
+export async function appendEventRegistrationToSheet(registration: {
+  createdAt?: Date | string;
+  eventTitle: string;
+  camp?: string;
+  parentName: string;
+  playerName: string;
+  playerAge: number;
+  gender?: string;
+  phone: string;
+  whatsapp?: boolean;
+  email: string;
+  sourcePage?: string;
+  utmSource?: string;
+  utmMedium?: string;
+  utmCampaign?: string;
+  landingPage?: string;
+  referrer?: string;
+}): Promise<void> {
+  if (!isConfigured()) {
+    console.log("[Sheets] Not configured — skipping event registration sync");
+    return;
+  }
+  try {
+    const auth = getAuth();
+    const sheets = google.sheets({ version: "v4", auth });
+
+    await ensureSheetTab(sheets, EVENT_SHEET);
+    await ensureHeaderRow(sheets, EVENT_SHEET, EVENT_HEADERS);
+
+    const row = [
+      registration.createdAt ? new Date(registration.createdAt).toISOString() : new Date().toISOString(),
+      registration.eventTitle,
+      registration.camp || "",
+      registration.parentName,
+      registration.playerName,
+      registration.playerAge,
+      registration.gender || "",
+      registration.phone,
+      registration.whatsapp ? "Yes" : "No",
+      registration.email,
+      registration.sourcePage || "",
+      registration.utmSource || "direct",
+      registration.utmMedium || "direct",
+      registration.utmCampaign || "direct",
+      registration.landingPage || "",
+      registration.referrer || "",
+    ];
+
+    await sheets.spreadsheets.values.append({
+      spreadsheetId: SPREADSHEET_ID,
+      range: `${EVENT_SHEET}!A1`,
+      valueInputOption: "RAW",
+      insertDataOption: "INSERT_ROWS",
+      requestBody: { values: [row] },
+    });
+
+    console.log("[Sheets] Event registration row appended");
+  } catch (err) {
+    console.error("[Sheets] Failed to append event registration:", err);
   }
 }
 

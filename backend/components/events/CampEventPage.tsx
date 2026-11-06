@@ -10,6 +10,7 @@ import { ScheduleTabs } from "./ScheduleTabs";
 import { CampCountdown } from "./CampCountdown";
 import { CampProgrammeCards } from "./CampProgrammeCards";
 import { CampFeeCards } from "./CampFeeCards";
+import { CampReserveButton } from "./CampReserveButton";
 import { DrillTimeline } from "./DrillTimeline";
 import { buildDays, campStart, compactDates } from "@/lib/campDays";
 
@@ -129,19 +130,9 @@ export function CampEventPage({ event, details }: { event: Event; details: CampD
         </div>
       )}
 
-      {/* PROGRAMME CARDS: a vertical stack that builds as you scroll, ending with the best-value both-weeks option */}
-      {cards.length > 0 && (
-        <CampProgrammeCards
-          cards={cards.map((p) => ({ id: p.id, weekLabel: p.weekLabel, name: p.name, tagline: p.tagline, venue: p.venue, dates: p.dates, timeLines: p.timeLines, fee: p.fee }))}
-          bundle={bundle}
-          openFor={d.openFor}
-          registerOpen={open}
-        />
-      )}
-
       {/* INTRO */}
       {(d.introTitle || d.introText) && (
-        <section className={`${SECTION} mt-8 bg-[#f6f1e8]`}>
+        <section className={`${SECTION} bg-[#f6f1e8]`}>
           <div className="px-4 md:px-10 lg:px-16">
             {d.introTitle && <h2 className={H2}>{d.introTitle}</h2>}
             {d.introText && <p className={`${LEAD} max-w-3xl`}>{d.introText}</p>}
@@ -149,17 +140,28 @@ export function CampEventPage({ event, details }: { event: Event; details: CampD
         </section>
       )}
 
+      {/* PROGRAMME CARDS: a vertical stack that builds as you scroll, ending with the best-value both-weeks option */}
+      {cards.length > 0 && (
+        <CampProgrammeCards
+          cards={cards.map((p) => ({ id: p.id, weekLabel: p.weekLabel, name: p.name, tagline: p.tagline, venue: p.venue, dates: p.dates, timeLines: p.timeLines, fee: p.fee, infoTarget: p.bullets.length > 0 ? `week-${p.id}` : undefined }))}
+          bundle={bundle}
+          openFor={d.openFor}
+          registerOpen={open}
+        />
+      )}
+
       {/* PROGRAMME DETAILS: each week's drills as a timeline that fills as you scroll; the week title stays pinned beside it on desktop */}
       {programmes
         .filter((p) => p.bullets.length > 0)
         .map((p, i) => (
-          <section key={p.id} className={`${SECTION} ${i % 2 === 0 ? "" : "bg-[#f6f1e8]"}`}>
+          <section key={p.id} id={`week-${p.id}`} className={`${SECTION} scroll-mt-20 ${i % 2 === 0 ? "" : "bg-[#f6f1e8]"}`}>
             <div className="grid gap-8 px-4 md:px-10 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] lg:gap-16 lg:px-16">
               <div className="relative lg:sticky lg:top-28 lg:self-start">
                 <span aria-hidden="true" className="pointer-events-none absolute -top-10 right-0 hidden select-none text-[190px] font-black leading-none text-primary opacity-[0.08] lg:block">{i + 1}</span>
                 {p.weekLabel && <Eyebrow>{p.weekLabel} · {p.name}</Eyebrow>}
                 <h2 className="mb-4 text-3xl font-black uppercase leading-[1.02] md:text-5xl">{weekHeading(p)}</h2>
                 {p.intro && <p className={`${LEAD} max-w-md`}>{p.intro}</p>}
+                {open && <CampReserveButton id={p.id} label={`Reserve ${p.weekLabel || p.name}`} />}
               </div>
               <DrillTimeline drills={p.bullets} />
             </div>
