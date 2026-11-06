@@ -1,5 +1,5 @@
 import { storage } from "@/lib/storage";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
@@ -12,6 +12,7 @@ import { eventPageDefaults } from "@/lib/seo/eventSeo";
 import { getStructuredData } from "@/lib/seo/structuredDataResolve";
 import { StructuredData } from "@/components/seo/StructuredData";
 import { CampEventPage } from "@/components/events/CampEventPage";
+import { renamedEventSlug } from "@/lib/eventSlugs";
 
 export const revalidate = 60;
 
@@ -34,6 +35,9 @@ export default async function EventDetail({ params }: PageProps) {
   const event = await storage.getEventBySlug(id);
 
   if (!event) {
+    // An old address of a renamed event goes to the new one (only when the new page exists).
+    const renamed = renamedEventSlug(id);
+    if (renamed && (await storage.getEventBySlug(renamed))) permanentRedirect(`/events/${renamed}`);
     notFound();
   }
 

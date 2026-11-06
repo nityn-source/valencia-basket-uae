@@ -4,6 +4,7 @@ import { campEnquiryFormSchema } from "@shared/schema";
 import { sendEventRegistrationNotification, sendCustomerAutoReply } from "@/lib/email";
 import { appendEventRegistrationToSheet } from "@/lib/sheets";
 import { isRegistrationOpen } from "@/lib/campRegistration";
+import { renamedEventSlug } from "@/lib/eventSlugs";
 
 /** Camp page sign-up: saved as an event registration for that camp (admin: Event Registrations), with the camp chosen. */
 export async function POST(request: NextRequest) {
@@ -27,7 +28,10 @@ export async function POST(request: NextRequest) {
     const { website, formStartedAt, camp, gender, playerAge, sourcePage, ...data } = parsed.data;
 
     // The source page names the event ("camp-<slug>"); the sign-up belongs to that event and only while it is open.
-    const event = await storage.getEventBySlug(sourcePage.slice("camp-".length));
+    // (A page opened before the event was renamed may still send the old slug.)
+    const slug = sourcePage.slice("camp-".length);
+    const renamed = renamedEventSlug(slug);
+    const event = (await storage.getEventBySlug(slug)) ?? (renamed ? await storage.getEventBySlug(renamed) : undefined);
     if (!event) {
       return NextResponse.json({ error: "Event not found" }, { status: 404 });
     }

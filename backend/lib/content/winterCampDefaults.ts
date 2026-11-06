@@ -213,7 +213,7 @@ export const WINTER_CAMP_DETAILS: CampDetails = {
 /** The standard event fields that go with the camp content. */
 export const WINTER_CAMP_EVENT = {
   title: "Basketball Winter Camp 2026",
-  slug: "winter-camp-2026",
+  slug: "winter-camp",
   date: "7th - 18th December 2026",
   endDate: "2026-12-18",
   time: "Skill Lab: Mon-Fri evenings · Shooting Lab: Mon-Fri 9 AM - 12 PM",

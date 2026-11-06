@@ -17,6 +17,11 @@ export const EVENT_SEO: Record<string, { title: string; description: string }> =
     description:
       "Two specialist basketball camps in Dubai this winter break: Skill Lab and Shooting Lab for ages 8-18, coached the Valencia way. From AED 1,000. Register now!",
   },
+  "winter-camp": {
+    title: "Basketball Winter Camp 2026 for Kids & Youth in Dubai (7th - 18th Dec)",
+    description:
+      "Two specialist basketball camps in Dubai this winter break: Skill Lab and Shooting Lab for ages 8-18, coached the Valencia way. From AED 1,000. Register now!",
+  },
   "summer-camp": {
     title: "Basketball Summer Camp for Kids in Dubai (July - August 2026)",
     description:
