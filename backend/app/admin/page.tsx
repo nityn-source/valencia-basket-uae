@@ -49,7 +49,7 @@ import type {
   LeadStatus,
 } from "@shared/schema";
 import { LEAD_STATUS_VALUES, HOW_HEARD_OPTIONS } from "@shared/schema";
-import { EVENT_PAGE_SOURCE, leadSource, registrationSource } from "@/lib/leadSource";
+import { EVENT_PAGE_SOURCE, leadCamp, leadGender, leadLevel, leadPage, leadSource } from "@/lib/leadSource";
 import { useCoverHealth } from "./reelCoverHealth";
 
 const ADMIN_TABS = [
@@ -1135,7 +1135,10 @@ function AdminDashboard({ authUser, onLogout }: { authUser: AdminAuthUser; onLog
                       <TableHead className="font-bold">Phone</TableHead>
                       <TableHead className="font-bold">Area</TableHead>
                       <TableHead className="font-bold">Level</TableHead>
+                      <TableHead className="font-bold">Camp</TableHead>
+                      <TableHead className="font-bold">Girl/Boy</TableHead>
                       <TableHead className="font-bold">Source</TableHead>
+                      <TableHead className="font-bold">Page</TableHead>
                       <TableHead className="font-bold">Date</TableHead>
                       <TableHead className="font-bold">Status</TableHead>
                       <TableHead className="font-bold">Actions</TableHead>
@@ -1150,8 +1153,11 @@ function AdminDashboard({ authUser, onLogout }: { authUser: AdminAuthUser; onLog
                         <TableCell>{booking.email}</TableCell>
                         <TableCell>{booking.phone}{booking.whatsapp ? " ✓WA" : ""}</TableCell>
                         <TableCell>{booking.area || "—"}</TableCell>
-                        <TableCell className="capitalize">{booking.programInterest || "—"}</TableCell>
+                        <TableCell className="capitalize">{leadLevel(booking) || "—"}</TableCell>
+                        <TableCell>{leadCamp(booking) || "—"}</TableCell>
+                        <TableCell>{leadGender(booking) || "—"}</TableCell>
                         <TableCell>{leadSource(booking) || "—"}</TableCell>
+                        <TableCell>{leadPage(booking) || "—"}</TableCell>
                         <TableCell className="text-sm text-gray-500">
                           {new Date(booking.createdAt).toLocaleDateString()}
                         </TableCell>
@@ -1229,14 +1235,11 @@ function AdminDashboard({ authUser, onLogout }: { authUser: AdminAuthUser; onLog
                   <TableHeader className="bg-gray-100">
                     <TableRow>
                       <TableHead className="font-bold">Event</TableHead>
-                      <TableHead className="font-bold">Camp</TableHead>
                       <TableHead className="font-bold">Player Name</TableHead>
                       <TableHead className="font-bold">Age</TableHead>
-                      <TableHead className="font-bold">Girl/Boy</TableHead>
                       <TableHead className="font-bold">Parent</TableHead>
                       <TableHead className="font-bold">Email</TableHead>
                       <TableHead className="font-bold">Phone</TableHead>
-                      <TableHead className="font-bold">Source</TableHead>
                       <TableHead className="font-bold">Date</TableHead>
                       <TableHead className="font-bold">Status</TableHead>
                       <TableHead className="font-bold">Actions</TableHead>
@@ -1246,14 +1249,11 @@ function AdminDashboard({ authUser, onLogout }: { authUser: AdminAuthUser; onLog
                     {filteredEventRegistrations.map((registration) => (
                       <TableRow key={registration.id} className="hover:bg-gray-50">
                         <TableCell className="font-medium">{registration.eventTitle}</TableCell>
-                        <TableCell>{registration.camp || "—"}</TableCell>
                         <TableCell>{registration.playerName}</TableCell>
                         <TableCell>{registration.playerAge}</TableCell>
-                        <TableCell>{registration.gender || "—"}</TableCell>
                         <TableCell>{registration.parentName}</TableCell>
                         <TableCell>{registration.email}</TableCell>
                         <TableCell>{registration.phone}</TableCell>
-                        <TableCell>{registrationSource(registration)}</TableCell>
                         <TableCell className="text-sm text-gray-500">
                           {new Date(registration.createdAt).toLocaleDateString()}
                         </TableCell>

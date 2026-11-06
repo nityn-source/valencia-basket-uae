@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { storage } from "@/lib/storage";
-import { campEnquiryFormSchema } from "@shared/schema";
-import { sendEventRegistrationNotification, sendCustomerAutoReply } from "@/lib/email";
-import { appendEventRegistrationToSheet } from "@/lib/sheets";
-import { isRegistrationOpen } from "@/lib/campRegistration";
-import { renamedEventSlug } from "@/lib/eventSlugs";
+import { campEnquiryFormSchema, ageGroupFor } from "@shared/schema";
+import { sendTrialBookingNotification, sendCustomerAutoReply } from "@/lib/email";
+import { appendTrialBookingToSheet } from "@/lib/sheets";
+import { EVENT_PAGE_SOURCE } from "@/lib/leadSource";
 
-/** Camp page sign-up: saved as an event registration for that camp (admin: Event Registrations), with the camp chosen. */
+/** Short camp enquiry: saved as a trial booking so it shows up in the admin leads, tagged with the camp page and the camp chosen. */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -25,55 +24,24 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Invalid enquiry data", details: parsed.error.flatten().fieldErrors }, { status: 400 });
     }
 
-    const { website, formStartedAt, camp, gender, playerAge, sourcePage, ...data } = parsed.data;
-
-    // The source page names the event ("camp-<slug>"); the sign-up belongs to that event and only while it is open.
-    // (A page opened before the event was renamed may still send the old slug.)
-    const slug = sourcePage.slice("camp-".length);
-    const renamed = renamedEventSlug(slug);
-    const event = (await storage.getEventBySlug(slug)) ?? (renamed ? await storage.getEventBySlug(renamed) : undefined);
-    if (!event) {
-      return NextResponse.json({ error: "Event not found" }, { status: 404 });
-    }
-    if (!isRegistrationOpen(event)) {
-      return NextResponse.json({ error: "Registration for this camp is closed" }, { status: 400 });
-    }
-
-    const registration = await storage.createEventRegistration({
-      eventId: event.id,
-      eventTitle: event.title,
-      parentName: data.parentName,
-      email: data.email,
-      phone: data.phone,
-      playerName: data.playerName,
+    const { website, formStartedAt, camp, gender, playerAge, ...data } = parsed.data;
+    const booking = await storage.createTrialBooking({
+      ...data,
       playerAge,
-      camp,
-      gender,
-      whatsapp: data.whatsapp,
-      utmSource: data.utmSource,
-      utmMedium: data.utmMedium,
-      utmCampaign: data.utmCampaign,
-      landingPage: data.landingPage,
-      referrer: data.referrer,
-      sourcePage,
+      ageGroup: ageGroupFor(playerAge),
+      area: "",
+      howHeard: EVENT_PAGE_SOURCE,
+      programInterest: camp,
+      additionalInfo: `Camp: ${camp} · ${gender}, age ${playerAge}`,
     });
 
-    sendEventRegistrationNotification({
-      eventTitle: registration.eventTitle,
-      parentName: registration.parentName,
-      email: registration.email,
-      phone: registration.phone,
-      playerName: registration.playerName,
-      playerAge: registration.playerAge,
-      camp: registration.camp,
-      gender: registration.gender,
-    }).catch((err) => console.error("Email notification failed for camp registration:", err));
-    sendCustomerAutoReply({ email: registration.email, name: registration.parentName, form: "camp enquiry" });
-    appendEventRegistrationToSheet(registration).catch((err) => console.error("Sheets sync failed for camp registration:", err));
+    sendTrialBookingNotification(booking).catch((err) => console.error("Email notification failed for camp enquiry:", err));
+    sendCustomerAutoReply({ email: booking.email, name: booking.parentName, form: "camp enquiry" });
+    appendTrialBookingToSheet(booking).catch((err) => console.error("Sheets sync failed for camp enquiry:", err));
 
-    return NextResponse.json({ id: registration.id }, { status: 201 });
+    return NextResponse.json({ id: booking.id }, { status: 201 });
   } catch (error) {
-    console.error("Error creating camp registration:", error);
+    console.error("Error creating camp enquiry:", error);
     return NextResponse.json({ error: "Invalid enquiry data" }, { status: 400 });
   }
 }
