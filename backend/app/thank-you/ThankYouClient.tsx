@@ -1,9 +1,11 @@
 "use client";
 
+import { useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Check, CalendarDays } from "lucide-react";
 import { WhatsAppIcon } from "@/components/shared/WhatsAppIcon";
+import { trackCampEvent } from "@/lib/campTrack";
 
 const WHATSAPP_NUMBER = "971544386838";
 
@@ -47,8 +49,15 @@ const steps = [
   },
 ];
 
+const campSteps = [
+  { Icon: WhatsAppIcon, primary: "We message you to confirm", secondary: "Within 24 hours on WhatsApp or email" },
+  { Icon: CalendarDays, primary: "Confirm your spot and pay", secondary: "We send the payment details" },
+  { Icon: BasketballIcon, primary: "Show up ready to train", secondary: "AllSports Arena, Al Quoz" },
+];
+
 export default function ThankYouClient({
   source,
+  camp = "",
   logoAlt,
 }: {
   /** Full URL of the originating page (e.g. "https://valenciabasket.ae/contact").
@@ -58,9 +67,26 @@ export default function ThankYouClient({
    *    useEffect(() => { gtag("event", "trial_booking_complete", { source }); }, [source]);
    */
   source: string;
+  /** Set when the sign-up came from a camp page: the camp's name, e.g. "Week 1 Skill Lab". */
+  camp?: string;
   logoAlt: string;
 }) {
-  const waMessage = encodeURIComponent("Hi, I just booked a free trial");
+  const isCamp = camp.length > 0;
+  const waMessage = encodeURIComponent(isCamp ? `Hi, I just registered for ${camp}` : "Hi, I just booked a free trial");
+  const shownSteps = isCamp ? campSteps : steps;
+
+  // Count the camp sign-up once per visit (a refresh or back button must not count it again).
+  useEffect(() => {
+    if (!isCamp) return;
+    try {
+      const key = `camp-enquiry-counted:${camp}`;
+      if (sessionStorage.getItem(key)) return;
+      sessionStorage.setItem(key, "1");
+    } catch {
+      // Storage can be blocked; counting it is better than losing it.
+    }
+    trackCampEvent("camp_enquiry", camp);
+  }, [isCamp, camp]);
 
   return (
     <div
@@ -122,7 +148,7 @@ export default function ThankYouClient({
               className="mb-3 font-medium text-white"
               style={{ fontSize: "clamp(26px, 3.5vw, 34px)", letterSpacing: "-0.5px", lineHeight: 1.15 }}
             >
-              You&apos;re all set
+              {isCamp ? "Your spot request is in" : "You're all set"}
             </h1>
 
             {/* Sub-line */}
@@ -130,7 +156,9 @@ export default function ThankYouClient({
               className="max-w-[290px] text-[15px]"
               style={{ color: "rgba(255,255,255,0.6)", lineHeight: 1.65 }}
             >
-              Thanks for booking your free trial. Our team will reach out on WhatsApp within 24 hours to confirm the details.
+              {isCamp
+                ? `Thanks for registering for ${camp}. Our team will message you within 24 hours to confirm your spot and payment details.`
+                : "Thanks for booking your free trial. Our team will reach out on WhatsApp within 24 hours to confirm the details."}
             </p>
           </div>
 
@@ -150,7 +178,7 @@ export default function ThankYouClient({
 
               {/* Step cards */}
               <div className="mb-8 flex flex-col gap-3">
-                {steps.map(({ Icon, primary, secondary }, i) => (
+                {shownSteps.map(({ Icon, primary, secondary }, i) => (
                   <div
                     key={primary}
                     className="flex items-center gap-4 px-4 py-3.5 animate-fade-in-up"

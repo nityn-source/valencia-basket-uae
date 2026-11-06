@@ -101,7 +101,8 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
         <Providers>
           <div className="min-h-screen bg-background font-sans antialiased flex flex-col">
             <Navbar logoAlt={alt("site.logo")} />
-            <main className="flex-grow" style={{ paddingTop: "var(--navbar-height, 72px)" }}>{children}</main>
+            {/* overflow-x-clip: photo reveals scale images past the screen edge, which must not let the page pan sideways on phones */}
+            <main className="flex-grow overflow-x-clip" style={{ paddingTop: "var(--navbar-height, 72px)" }}>{children}</main>
             <Footer logoAlt={alt("site.logo")} />
             <WhatsAppFloat />
             <Toaster />

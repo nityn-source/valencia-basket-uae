@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { CAMP_GENDERS, nameField } from "@shared/schema";
 import { WhatsAppIcon } from "@/components/shared/WhatsAppIcon";
 import { CAMP_PICK_EVENT } from "@/lib/campPick";
+import { trackCampEvent } from "@/lib/campTrack";
 
 export interface CampChoice {
   id: string;
@@ -31,14 +32,6 @@ interface Props {
 }
 
 const COUNTRY_CODES = ["+971", "+966", "+974", "+973", "+968", "+965", "+20", "+91", "+92", "+63", "+44", "+1", "+33", "+34", "+7", "+86", "+27", "+61"];
-
-/** Ad platforms and analytics: send an event if a tag is on the page; does nothing otherwise. */
-function track(event: string, camp: string) {
-  const w = window as unknown as { dataLayer?: unknown[]; fbq?: (...a: unknown[]) => void; gtag?: (...a: unknown[]) => void };
-  w.dataLayer?.push({ event, camp });
-  w.fbq?.("track", event === "camp_enquiry" ? "Lead" : "Contact", { content_name: camp });
-  w.gtag?.("event", event, { camp });
-}
 
 const labelClass = "mb-1.5 block text-xs font-bold uppercase tracking-wider";
 const fieldClass = "rounded-none border-gray-300 focus:border-primary";
@@ -134,8 +127,8 @@ export function CampEnquiryForm({ slug, eventTitle, heading, choices, ages, what
         }),
       });
       if (!res.ok) throw new Error("failed");
-      track("camp_enquiry", chosen.label);
-      router.push(`/thank-you?source=${encodeURIComponent(hidden.current.landingPage || window.location.href)}`);
+      // The sign-up itself is counted on the thank-you page, so a refresh or a back button can't count it twice.
+      router.push(`/thank-you?source=${encodeURIComponent(hidden.current.landingPage || window.location.href)}&camp=${encodeURIComponent(chosen.label)}`);
     } catch {
       setFailed(true);
       setSubmitting(false);
@@ -288,7 +281,7 @@ export function CampEnquiryForm({ slug, eventTitle, heading, choices, ages, what
         href={waLink}
         target="_blank"
         rel="noopener noreferrer"
-        onClick={() => chosen && track("camp_whatsapp_click", chosen.label)}
+        onClick={() => chosen && trackCampEvent("camp_whatsapp_click", chosen.label)}
         data-testid="link-camp-whatsapp"
         className="flex h-14 items-center justify-center gap-2.5 bg-[#25D366] text-sm font-extrabold uppercase tracking-wider text-[#073b1b] transition-opacity hover:opacity-90"
       >

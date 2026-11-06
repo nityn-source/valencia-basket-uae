@@ -9,9 +9,11 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function ThankYouPage({
   searchParams,
 }: {
-  searchParams: Promise<{ source?: string }>;
+  searchParams: Promise<{ source?: string; camp?: string }>;
 }) {
   const params = await searchParams;
   const alt = await getAltResolver();
-  return <ThankYouClient source={params.source || "direct"} logoAlt={alt("thank-you.logo")} />;
+  // A camp sign-up arrives with the camp's name; it is only ever shown as text, so keep it short and plain.
+  const camp = (params.camp ?? "").replace(/[<>]/g, "").trim().slice(0, 120);
+  return <ThankYouClient source={params.source || "direct"} camp={camp} logoAlt={alt("thank-you.logo")} />;
 }
