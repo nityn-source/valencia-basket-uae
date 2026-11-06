@@ -173,6 +173,35 @@ export const trialBookingFormSchema = z.object({
   formStartedAt: z.number().optional(),
 });
 
+/** The short camp enquiry form (camp pages). Saved as a trial booking tagged with the camp's page. */
+export const CAMP_GENDERS = ["Girl", "Boy"] as const;
+
+export const campEnquiryFormSchema = z.object({
+  /** Which camp the parent picked, e.g. "Week 1: Skill Lab" or "Both weeks". */
+  camp: z.string().trim().min(1, "Please choose a camp").max(120),
+  playerName: nameField("Child's name"),
+  playerAge: z.number({ invalid_type_error: "Please select your child's age" }).int().min(4, "Please select your child's age").max(19, "Please select your child's age"),
+  gender: z.enum(CAMP_GENDERS, { errorMap: () => ({ message: "Please choose Girl or Boy" }) }),
+  parentName: nameField("Parent/Guardian name"),
+  email: z.string().trim().toLowerCase().email("Please enter a valid email address"),
+  phone: phoneField,
+  whatsapp: z.boolean().default(true),
+  utmSource: z.string().trim().max(200).optional().transform((v) => v || "direct"),
+  utmMedium: z.string().trim().max(200).optional().transform((v) => v || "direct"),
+  utmCampaign: z.string().trim().max(200).optional().transform((v) => v || "direct"),
+  landingPage: z.string().trim().max(1000).optional().transform((v) => v || ""),
+  referrer: z.string().trim().max(1000).optional().transform((v) => v || ""),
+  sourcePage: z.string().trim().max(100).regex(/^camp-[a-z0-9-]+$/, "Invalid source"),
+  // Spam protection
+  website: z.string().max(0, "Invalid submission").optional().or(z.literal("")),
+  formStartedAt: z.number().optional(),
+});
+
+/** Age group the admin's lead list already uses, worked out from the exact age. */
+export function ageGroupFor(age: number): (typeof AGE_GROUPS)[number] {
+  return age <= 6 ? AGE_GROUPS[0] : age <= 10 ? AGE_GROUPS[1] : AGE_GROUPS[2];
+}
+
 export type TrialBookingFormInput = z.input<typeof trialBookingFormSchema>;
 export type TrialBookingFormData = z.output<typeof trialBookingFormSchema>;
 

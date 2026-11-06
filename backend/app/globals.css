@@ -486,3 +486,31 @@
   .rv-stagger.rv-in > :nth-child(4) { transition-delay: calc(var(--rv-base, 0s) + 0.12s); }
   .rv-stagger.rv-in > :nth-child(n + 5) { transition-delay: calc(var(--rv-base, 0s) + 0.2s); }
 }
+
+/* ===== Winter Camp page ===== */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes campWipeSide { from { clip-path: inset(0 0 0 100%); } to { clip-path: inset(0); } }
+  @keyframes campWipeUp { from { clip-path: inset(100% 0 0 0); } to { clip-path: inset(0); } }
+  @keyframes campZoom { from { scale: 1.16; } to { scale: 1; } }
+  @keyframes campTick { from { opacity: 0.3; transform: translateY(-5px); } to { opacity: 1; transform: none; } }
+  @keyframes campStepIn { from { opacity: 0; transform: translateX(14px); } to { opacity: 1; transform: none; } }
+  .camp-photo { animation: campWipeUp 0.95s cubic-bezier(0.7, 0, 0.3, 1) both; }
+  .camp-photo-img { animation: campZoom 1.6s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+  .camp-tick { animation: campTick 0.35s ease-out; }
+  .camp-step-in { animation: campStepIn 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+  html.wipe-pending .camp-photo,
+  html.wipe-pending .camp-photo-img { animation-play-state: paused; }
+  @media (min-width: 1024px) {
+    .camp-photo { animation-name: campWipeSide; }
+  }
+}
+
+/* Camp form: the chip a fee card just selected pops once so the choice is obvious. */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes campChipPop {
+    0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 108, 14, 0.55); }
+    40% { transform: scale(1.07); box-shadow: 0 0 0 8px rgba(255, 108, 14, 0.25); }
+    100% { transform: scale(1); box-shadow: 0 0 0 14px rgba(255, 108, 14, 0); }
+  }
+  .camp-chip-pop { animation: campChipPop 0.9s ease-out; }
+}

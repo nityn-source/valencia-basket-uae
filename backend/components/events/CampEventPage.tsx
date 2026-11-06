@@ -1,17 +1,31 @@
 import Image from "next/image";
-import { CalendarDays, MapPin, Clock } from "lucide-react";
+import { MapPin, CalendarDays, Clock } from "lucide-react";
 import type { Event } from "@shared/schema";
 import type { CampDetails } from "@shared/campDetails";
 import { ReelsCarousel } from "@/components/reels/ReelsCarousel";
 import { reelId, type Reel } from "@/lib/reels";
-import { classcardLink, isRegistrationOpen } from "@/lib/campRegistration";
-import { CampRegisterForm } from "./CampRegisterForm";
+import { isRegistrationOpen } from "@/lib/campRegistration";
+import { CampEnquiryForm, type CampChoice } from "./CampEnquiryForm";
 import { ScheduleTabs } from "./ScheduleTabs";
+import { CampCountdown } from "./CampCountdown";
+import { CampProgrammeCards } from "./CampProgrammeCards";
+import { CampFeeCards } from "./CampFeeCards";
+import { DrillTimeline } from "./DrillTimeline";
+import { buildDays, campStart, compactDates } from "@/lib/campDays";
 
 const H2 = "text-3xl md:text-5xl font-black uppercase tracking-tight leading-none mb-5";
 const EYEBROW = "mb-3 text-xs font-extrabold uppercase tracking-[0.2em] text-primary";
 const LEAD = "text-base md:text-lg leading-relaxed text-[#4a4339]";
 const SECTION = "py-12 md:py-20";
+
+const escapeRegex = (t: string) => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+/** The week's heading without the "Week 1 Skill Lab:" lead-in, which the label above it already says. */
+function weekHeading(p: { heading: string; name: string; weekLabel: string }) {
+  const base = p.heading || p.name;
+  const lead = new RegExp(`^\\s*${escapeRegex(`${p.weekLabel} ${p.name}`.trim())}\\s*[:\\-–]\\s*`, "i");
+  return base.replace(lead, "") || base;
+}
 
 function Eyebrow({ children }: { children: React.ReactNode }) {
   return <div className={EYEBROW}>{children}</div>;
@@ -22,18 +36,38 @@ export function CampEventPage({ event, details }: { event: Event; details: CampD
   const d = details;
   const programmes = d.programmes;
   const cards = programmes.filter((p) => p.weekLabel || p.timeLines.length > 0);
-  const options = programmes
-    .filter((p) => p.classcardUrl)
-    .map((p) => ({ id: p.id, label: p.optionLabel, url: classcardLink(p.classcardUrl, event.slug, p.id) }));
   const reels: Reel[] = d.reels
     .filter((r) => reelId(r.url))
     .map((r, i) => ({ url: r.url, caption: r.caption, target: "homepage", sortOrder: i, visible: true }));
   const heroImage = d.heroImage || event.image || "";
   const whatsapp = d.whatsappUrl || "https://wa.me/971544386838";
+  // "Starts in" clock: only while the camp is still ahead (the client hides it the moment it starts).
+  const start = campStart(d.startDate, [...programmes.map((p) => p.dates), event.date]);
+  const upcoming = open && start !== null && new Date(`${start}T00:00:00+04:00`).getTime() > Date.now() ? start : null;
+  // Day tiles above each timetable, read from the programme dates and times (schedule i belongs to card i).
+  const scheduleDays = d.schedules.length === cards.length ? cards.map((p) => buildDays(p.dates, p.timeLines)) : d.schedules.map(() => null);
+  // The "both weeks" option comes from the Fees section's best-value row.
+  const bestFee = d.fees.rows.find((r) => r.best);
+  const bundle = bestFee ? { name: bestFee.name, dates: bestFee.dates, fee: bestFee.fee, note: d.fees.note } : null;
+  // The camps a parent can pick in the form: each week, then both weeks.
+  const choices: CampChoice[] = [
+    ...cards.map((p) => ({ id: p.id, title: p.weekLabel || p.name, sub: p.weekLabel ? p.name : "", dates: compactDates(p.dates), label: [p.weekLabel, p.name].filter(Boolean).join(" ") })),
+    ...(bundle ? [{ id: "both", title: "Both weeks", sub: "Best value", dates: compactDates(bundle.dates), label: bundle.name || "Both weeks" }] : []),
+  ];
+  // Each fee card selects a form chip: the best-value row is "both weeks", the others follow the week order.
+  const weekIds = cards.map((p) => p.id);
+  let weekIndex = 0;
+  const feePickId = (row: { best: boolean }) => {
+    if (row.best) return bundle ? "both" : null;
+    return weekIds[weekIndex++] ?? null;
+  };
+  const ageRange = d.openFor.match(/(\d{1,2})\s*[-–]\s*(\d{1,2})/);
+  const ages = Array.from({ length: (ageRange ? Number(ageRange[2]) : 18) - (ageRange ? Number(ageRange[1]) : 5) + 1 }, (_, i) => (ageRange ? Number(ageRange[1]) : 5) + i);
+
 
   return (
     <div className="bg-white text-[#111]">
-      {/* HERO */}
+      {/* HERO: photo first on phones; on desktop the text sits left and the photo wipes open on the right */}
       <div className="grid lg:grid-cols-[1.05fr_.95fr]">
         <div className="flex flex-col justify-center px-4 py-10 md:px-10 lg:px-16 lg:py-20">
           <Eyebrow>
@@ -46,17 +80,12 @@ export function CampEventPage({ event, details }: { event: Event; details: CampD
             {d.headline || event.title}
           </h1>
           {d.subtext && <p className={`${LEAD} max-w-xl`}>{d.subtext}</p>}
-          {d.strip.length > 0 && (
-            <ul className="my-6 flex flex-wrap gap-x-4 gap-y-2 text-xs font-extrabold uppercase tracking-wider">
-              {d.strip.map((item, i) => (
-                <li key={item} className="flex items-center gap-4">
-                  {item}
-                  {i < d.strip.length - 1 && <span aria-hidden="true" className="text-primary">●</span>}
-                </li>
-              ))}
-            </ul>
+          {upcoming && (
+            <div className="hero-fade" style={{ animationDelay: "0.6s" }}>
+              <CampCountdown start={upcoming} />
+            </div>
           )}
-          <div className="flex flex-wrap gap-3">
+          <div className="hero-fade mt-6 flex flex-wrap gap-3" style={{ animationDelay: "0.75s" }}>
             {open ? (
               <a href="#register" className="bg-primary px-7 py-4 text-sm font-extrabold uppercase tracking-widest text-white hover:bg-orange-600" data-testid="link-register-now">
                 {d.ctaLabel || "Register Now"}
@@ -72,35 +101,42 @@ export function CampEventPage({ event, details }: { event: Event; details: CampD
           </div>
         </div>
         {heroImage && (
-          <div className="relative min-h-[260px] border-l-0 border-primary lg:min-h-[640px] lg:border-l-[10px]">
-            <Image src={heroImage} alt={event.imageAlt?.trim() || event.title} fill priority sizes="(min-width:1024px) 48vw, 100vw" className="object-cover" />
+          <div className="camp-photo relative min-h-[280px] border-l-0 border-primary max-lg:order-first lg:min-h-[640px] lg:border-l-[10px]">
+            <Image src={heroImage} alt={event.imageAlt?.trim() || event.title} fill priority sizes="(min-width:1024px) 48vw, 100vw" className="camp-photo-img object-cover" />
           </div>
         )}
       </div>
 
-      {/* PROGRAMME CARDS */}
-      {cards.length > 0 && (
-        <section className="px-4 pb-4 pt-12 md:px-10 lg:px-16">
-          <div className="grid gap-5 md:grid-cols-2">
-            {cards.map((p, i) => (
-              <div key={p.id} className="relative overflow-hidden border-2 border-black bg-white p-7 md:p-8">
-                <span aria-hidden="true" className="absolute -top-8 right-3 text-[150px] font-black leading-none text-primary opacity-10">{i + 1}</span>
-                {p.weekLabel && <Eyebrow>{p.weekLabel}</Eyebrow>}
-                <h2 className="mb-2 text-4xl font-black uppercase leading-none">{p.name}</h2>
-                {p.tagline && <p className="text-base text-[#4a4339]">{p.tagline}</p>}
-                <div className="my-4 space-y-1.5 text-[15px] font-bold">
-                  {p.venue && <div className="flex gap-2"><MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary" />{p.venue}</div>}
-                  {p.dates && <div className="flex gap-2"><CalendarDays className="mt-0.5 h-4 w-4 shrink-0 text-primary" />{p.dates}</div>}
-                  {p.timeLines.map((line) => (
-                    <div key={line} className="flex gap-2"><Clock className="mt-0.5 h-4 w-4 shrink-0 text-primary" />{line}</div>
+      {/* HIGHLIGHTS BANNER: sliding strip like the homepage trust bar (pauses on hover; still and scrollable with reduced motion) */}
+      {d.strip.length > 0 && (
+        <div className="bg-primary py-5 md:py-6" data-testid="camp-highlights-banner">
+          <div className="marquee-container overflow-hidden">
+            <div className="marquee-track flex w-max items-center hover:[animation-play-state:paused]" aria-label="Camp highlights">
+              {[0, 1, 2, 3, 4, 5].map((copy) => (
+                <div key={copy} className={copy === 0 ? "contents" : "marquee-duplicate contents"} aria-hidden={copy === 0 ? undefined : true}>
+                  {d.strip.map((item) => (
+                    <div key={`${copy}-${item}`} className="group flex items-center gap-3 px-8 md:px-12">
+                      <span aria-hidden="true" className="flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-full bg-black/20 transition-colors group-hover:bg-black">
+                        <span className="h-[7px] w-[7px] rounded-full bg-white" />
+                      </span>
+                      <span className="whitespace-nowrap text-sm font-bold uppercase tracking-wider text-white">{item}</span>
+                    </div>
                   ))}
                 </div>
-                {p.fee && <span className="text-2xl font-black text-primary">{p.fee}</span>}
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-          {d.openFor && <p className="mt-5 text-sm font-extrabold uppercase tracking-widest">{d.openFor}</p>}
-        </section>
+        </div>
+      )}
+
+      {/* PROGRAMME CARDS: a vertical stack that builds as you scroll, ending with the best-value both-weeks option */}
+      {cards.length > 0 && (
+        <CampProgrammeCards
+          cards={cards.map((p) => ({ id: p.id, weekLabel: p.weekLabel, name: p.name, tagline: p.tagline, venue: p.venue, dates: p.dates, timeLines: p.timeLines, fee: p.fee }))}
+          bundle={bundle}
+          openFor={d.openFor}
+          registerOpen={open}
+        />
       )}
 
       {/* INTRO */}
@@ -113,47 +149,32 @@ export function CampEventPage({ event, details }: { event: Event; details: CampD
         </section>
       )}
 
-      {/* PROGRAMME DETAILS */}
-      {programmes.some((p) => p.bullets.length > 0) && (
-        <section className={SECTION}>
-          <div className="grid gap-14 px-4 md:px-10 lg:grid-cols-2 lg:gap-16 lg:px-16">
-            {programmes
-              .filter((p) => p.bullets.length > 0)
-              .map((p) => (
-                <div key={p.id}>
-                  {p.weekLabel && <Eyebrow>{p.weekLabel} · {p.name}</Eyebrow>}
-                  <h2 className="mb-4 text-2xl font-black uppercase leading-tight md:text-4xl">{p.heading || p.name}</h2>
-                  {p.intro && <p className={`${LEAD} mb-3`}>{p.intro}</p>}
-                  <ul>
-                    {p.bullets.map((b) => (
-                      <li key={b.title} className="relative border-b border-[#e8e2d6] py-4 pl-10">
-                        <span aria-hidden="true" className="absolute left-0 top-[18px] flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[11px] font-bold text-white">✓</span>
-                        <strong className="block text-[17px]">{b.title}</strong>
-                        {b.text && <span className="text-[15px] text-[#5b5348]">{b.text}</span>}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
-          </div>
-        </section>
-      )}
+      {/* PROGRAMME DETAILS: each week's drills as a timeline that fills as you scroll; the week title stays pinned beside it on desktop */}
+      {programmes
+        .filter((p) => p.bullets.length > 0)
+        .map((p, i) => (
+          <section key={p.id} className={`${SECTION} ${i % 2 === 0 ? "" : "bg-[#f6f1e8]"}`}>
+            <div className="grid gap-8 px-4 md:px-10 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] lg:gap-16 lg:px-16">
+              <div className="relative lg:sticky lg:top-28 lg:self-start">
+                <span aria-hidden="true" className="pointer-events-none absolute -top-10 right-0 hidden select-none text-[190px] font-black leading-none text-primary opacity-[0.08] lg:block">{i + 1}</span>
+                {p.weekLabel && <Eyebrow>{p.weekLabel} · {p.name}</Eyebrow>}
+                <h2 className="mb-4 text-3xl font-black uppercase leading-[1.02] md:text-5xl">{weekHeading(p)}</h2>
+                {p.intro && <p className={`${LEAD} max-w-md`}>{p.intro}</p>}
+              </div>
+              <DrillTimeline drills={p.bullets} />
+            </div>
+          </section>
+        ))}
 
       {/* FEES */}
       {d.fees.rows.length > 0 && (
         <section className={`${SECTION} bg-[#f6f1e8]`}>
           <div className="px-4 md:px-10 lg:px-16">
             <h2 className={H2}>{d.fees.title || "Camp Fees"}</h2>
-            <div className="grid gap-5 md:grid-cols-3">
-              {d.fees.rows.map((row) => (
-                <div key={row.name} className={`flex flex-col justify-center border-2 p-7 text-center ${row.best ? "border-primary bg-[#fff5ec]" : "border-[#e8e2d6] bg-white"}`}>
-                  {row.best && <span className="mb-3 inline-block bg-primary px-2.5 py-1 text-[11px] font-black tracking-widest text-white">BEST VALUE</span>}
-                  <div className="font-bold">{row.name}</div>
-                  <div className="mt-1 text-sm text-[#6b6258]">{row.dates}</div>
-                  <div className="mt-2 text-4xl font-black text-primary md:text-5xl">{row.fee}</div>
-                </div>
-              ))}
-            </div>
+            <CampFeeCards
+              clickable={open}
+              rows={d.fees.rows.map((row) => ({ ...row, pickId: feePickId(row) }))}
+            />
             {d.fees.note && <p className="mt-5 text-lg font-extrabold">{d.fees.note}</p>}
           </div>
         </section>
@@ -164,7 +185,7 @@ export function CampEventPage({ event, details }: { event: Event; details: CampD
         <section className={SECTION}>
           <div className="px-4 md:px-10 lg:px-16">
             <h2 className={H2}>{d.scheduleTitle || "Schedule"}</h2>
-            <ScheduleTabs schedules={d.schedules} />
+            <ScheduleTabs schedules={d.schedules} days={scheduleDays} />
           </div>
         </section>
       )}
@@ -285,33 +306,6 @@ export function CampEventPage({ event, details }: { event: Event; details: CampD
         </section>
       )}
 
-      {/* REGISTER */}
-      <section id="register" className={`${SECTION} scroll-mt-20 bg-[#f6f1e8]`}>
-        <div className="px-4 md:px-10 lg:px-16">
-          <div className="mx-auto max-w-2xl bg-[#111] p-7 text-white md:p-12">
-            <Eyebrow>{event.title}</Eyebrow>
-            <h2 className="mb-3 text-3xl font-black uppercase leading-none md:text-4xl">{d.formTitle || "Claim your spot"}</h2>
-            {open && options.length > 0 ? (
-              <>
-                {d.formIntro && <p className="mb-6 text-[#cfc7ba]">{d.formIntro}</p>}
-                <CampRegisterForm
-                  options={options}
-                  label={d.formLabel || "Select your programme"}
-                  placeholder={d.formPlaceholder || "Select a programme"}
-                  button={d.formButton || "Continue to Registration"}
-                  error={d.formError || "Please select a programme to continue."}
-                />
-              </>
-            ) : (
-              <p className="text-[#cfc7ba]" data-testid="text-registration-closed-note">
-                Registration for this camp is now closed.{" "}
-                <a href={whatsapp} className="font-bold text-primary underline" target="_blank" rel="noopener noreferrer">Message us on WhatsApp</a> and we’ll let you know about the next one.
-              </p>
-            )}
-          </div>
-        </div>
-      </section>
-
       {/* FAQ */}
       {d.faqs.length > 0 && (
         <section className={SECTION}>
@@ -341,11 +335,57 @@ export function CampEventPage({ event, details }: { event: Event; details: CampD
         </section>
       )}
 
+      {/* REGISTER: the enquiry form closes the page; every Register Now button points here.
+          A short one-screen form (with a WhatsApp shortcut); desktop adds a sticky summary of the camp beside it. */}
+      <section id="register" className={`${SECTION} scroll-mt-20 bg-[#f6f1e8]`}>
+        <div className="px-4 md:px-10 lg:px-16">
+          {open ? (
+            <div className="mx-auto grid max-w-5xl items-start gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
+              <CampEnquiryForm
+                slug={event.slug}
+                eventTitle={event.title}
+                heading={d.formTitle || "Claim your spot"}
+                choices={choices}
+                ages={ages}
+                whatsappUrl={whatsapp}
+              />
+              <aside className="hidden bg-[#111] p-7 text-white lg:sticky lg:top-28 lg:block" aria-label="Camp summary">
+                <Eyebrow>{event.location}</Eyebrow>
+                <h3 className="mb-5 text-2xl font-black uppercase leading-tight">{event.title}</h3>
+                <div className="space-y-5">
+                  {programmes.filter((p) => p.dates || p.fee).map((p) => (
+                    <div key={p.id} className="border-t border-white/15 pt-4">
+                      <div className="text-xs font-extrabold uppercase tracking-widest text-primary">{p.weekLabel || p.name}</div>
+                      {p.weekLabel && <div className="font-bold">{p.name}</div>}
+                      {p.dates && <div className="mt-1 flex gap-2 text-sm text-[#cfc7ba]"><CalendarDays className="mt-0.5 h-4 w-4 shrink-0 text-primary" />{p.dates}</div>}
+                      {p.fee && <div className="mt-1 text-xl font-black">{p.fee}</div>}
+                    </div>
+                  ))}
+                </div>
+                {cards[0]?.venue && <div className="mt-5 flex gap-2 border-t border-white/15 pt-4 text-sm text-[#cfc7ba]"><MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary" />{cards[0].venue}</div>}
+              </aside>
+            </div>
+          ) : (
+            <div className="mx-auto max-w-2xl bg-[#111] p-7 text-white md:p-12">
+              <Eyebrow>{event.title}</Eyebrow>
+              <h2 className="mb-3 text-3xl font-black uppercase leading-none md:text-4xl">{d.formTitle || "Claim your spot"}</h2>
+              <p className="text-[#cfc7ba]" data-testid="text-registration-closed-note">
+                Registration for this camp is now closed.{" "}
+                <a href={whatsapp} className="font-bold text-primary underline" target="_blank" rel="noopener noreferrer">Message us on WhatsApp</a> and we’ll let you know about the next one.
+              </p>
+            </div>
+          )}
+        </div>
+      </section>
+
       {/* Mobile register bar (kept clear of the WhatsApp button on the right) */}
       {open && (
         <div className="sticky bottom-0 z-10 flex items-center justify-between gap-3 bg-primary py-3 pl-4 pr-24 text-sm font-black uppercase text-white md:hidden">
-          <span>{event.price || "Winter Camp"}</span>
-          <a href="#register" className="bg-black px-4 py-3 text-xs tracking-widest">{d.ctaLabel || "Register Now"}</a>
+          <span>
+            {upcoming && <CampCountdown start={upcoming} variant="bar" />}
+            {event.price || "Winter Camp"}
+          </span>
+          <a href="#register" className="whitespace-nowrap bg-black px-4 py-3 text-xs tracking-widest">{d.ctaLabel || "Register Now"}</a>
         </div>
       )}
     </div>

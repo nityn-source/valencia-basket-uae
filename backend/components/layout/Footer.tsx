@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { Facebook, Instagram, Linkedin, MapPin, Mail, Phone } from "lucide-react";
+import { Facebook, Instagram, Linkedin, MapPin, Mail, Phone, Youtube } from "lucide-react";
 import { TikTokIcon } from "@/components/shared/TikTokIcon";
 import { WhatsAppIcon } from "@/components/shared/WhatsAppIcon";
 
@@ -32,6 +32,9 @@ export function Footer({ logoAlt }: { logoAlt: string }) {
               </a>
               <a href="https://www.facebook.com/profile.php?id=61587608243652" target="_blank" rel="noopener noreferrer" aria-label="Facebook" className="p-2 bg-neutral-800 hover:bg-primary transition-colors text-white rounded-full">
                 <Facebook className="h-5 w-5" />
+              </a>
+              <a href="https://www.youtube.com/@ValenciaBasketuae" target="_blank" rel="noopener noreferrer" aria-label="YouTube" className="p-2 bg-neutral-800 hover:bg-primary transition-colors text-white rounded-full">
+                <Youtube className="h-5 w-5" />
               </a>
               <a href="https://www.linkedin.com/company/valencia-basket-academy-uae/" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn" className="p-2 bg-neutral-800 hover:bg-primary transition-colors text-white rounded-full">
                 <Linkedin className="h-5 w-5" />
