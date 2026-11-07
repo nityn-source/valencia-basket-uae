@@ -18,6 +18,7 @@ const isCampLead = (booking: LeadPageFields) => Boolean(booking.sourcePage?.star
 export function leadPage(booking: { sourcePage?: string | null }): string {
   const page = booking.sourcePage?.trim();
   if (!page) return "";
+  if (page === "home-quick") return "Home (quick form)";
   if (page.startsWith("camp-")) {
     const words = page.slice("camp-".length).split("-").filter(Boolean).map((w) => w[0].toUpperCase() + w.slice(1));
     return `Event: ${words.join(" ")}`;

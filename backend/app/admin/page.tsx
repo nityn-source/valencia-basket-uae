@@ -49,6 +49,7 @@ import type {
   LeadStatus,
 } from "@shared/schema";
 import { LEAD_STATUS_VALUES, HOW_HEARD_OPTIONS } from "@shared/schema";
+import { QUICK_FORM_SOURCE } from "@shared/schema";
 import { EVENT_PAGE_SOURCE, leadCamp, leadGender, leadLevel, leadPage, leadSource } from "@/lib/leadSource";
 import { useCoverHealth } from "./reelCoverHealth";
 
@@ -1117,7 +1118,7 @@ function AdminDashboard({ authUser, onLogout }: { authUser: AdminAuthUser; onLog
                   onCustomToChange={setTrialCustomTo}
                   extraLabel="Source"
                   extraValue={trialSourceFilter}
-                  extraOptions={[...HOW_HEARD_OPTIONS, EVENT_PAGE_SOURCE]}
+                  extraOptions={[...HOW_HEARD_OPTIONS, EVENT_PAGE_SOURCE, QUICK_FORM_SOURCE]}
                   onExtraChange={setTrialSourceFilter}
                   resultCount={filteredTrialBookings.length}
                 />

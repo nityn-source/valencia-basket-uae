@@ -197,6 +197,23 @@ export const campEnquiryFormSchema = z.object({
   formStartedAt: z.number().optional(),
 });
 
+/** The short "try a free session" strip on the home page: a name, a WhatsApp number and the child's age group. */
+export const QUICK_FORM_SOURCE = "Quick enquiry";
+
+export const quickEnquiryFormSchema = z.object({
+  parentName: nameField("Your name"),
+  phone: phoneField,
+  ageGroup: z.enum(AGE_GROUPS, { errorMap: () => ({ message: "Please select an age group" }) }),
+  utmSource: z.string().trim().max(200).optional().transform((v) => v || "direct"),
+  utmMedium: z.string().trim().max(200).optional().transform((v) => v || "direct"),
+  utmCampaign: z.string().trim().max(200).optional().transform((v) => v || "direct"),
+  landingPage: z.string().trim().max(1000).optional().transform((v) => v || ""),
+  referrer: z.string().trim().max(1000).optional().transform((v) => v || ""),
+  // Spam protection
+  website: z.string().max(0, "Invalid submission").optional().or(z.literal("")),
+  formStartedAt: z.number().optional(),
+});
+
 /** Age group the admin's lead list already uses, worked out from the exact age. */
 export function ageGroupFor(age: number): (typeof AGE_GROUPS)[number] {
   return age <= 6 ? AGE_GROUPS[0] : age <= 10 ? AGE_GROUPS[1] : AGE_GROUPS[2];

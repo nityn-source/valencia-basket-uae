@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { MapPin, CalendarDays, Clock } from "lucide-react";
+import { MapPin, CalendarDays, Clock, ExternalLink } from "lucide-react";
 import type { Event } from "@shared/schema";
 import type { CampDetails } from "@shared/campDetails";
 import { ReelsCarousel } from "@/components/reels/ReelsCarousel";
@@ -9,10 +9,11 @@ import { CampEnquiryForm, type CampChoice } from "./CampEnquiryForm";
 import { ScheduleTabs } from "./ScheduleTabs";
 import { CampCountdown } from "./CampCountdown";
 import { CampProgrammeCards } from "./CampProgrammeCards";
-import { CampFeeCards } from "./CampFeeCards";
+import { CampFeeCards, type FeeCompare } from "./CampFeeCards";
 import { CampReserveButton } from "./CampReserveButton";
 import { DrillTimeline } from "./DrillTimeline";
 import { buildDays, campStart, compactDates } from "@/lib/campDays";
+import { mapsSearchUrl } from "@/lib/maps";
 
 const H2 = "text-3xl md:text-5xl font-black uppercase tracking-tight leading-none mb-5";
 const EYEBROW = "mb-3 text-xs font-extrabold uppercase tracking-[0.2em] text-primary";
@@ -49,11 +50,13 @@ export function CampEventPage({ event, details }: { event: Event; details: CampD
   const scheduleDays = d.schedules.length === cards.length ? cards.map((p) => buildDays(p.dates, p.timeLines)) : d.schedules.map(() => null);
   // The "both weeks" option comes from the Fees section's best-value row.
   const bestFee = d.fees.rows.find((r) => r.best);
-  const bundle = bestFee ? { name: bestFee.name, dates: bestFee.dates, fee: bestFee.fee, note: d.fees.note } : null;
+  const weekNames = d.fees.rows.filter((r) => !r.best).map((r) => r.name);
+  const bothName = bestFee ? (weekNames.length === 2 ? weekNames.join(" + ") : bestFee.name) : "";
+  const bundle = bestFee ? { name: bothName, dates: bestFee.dates, fee: bestFee.fee, note: d.fees.note } : null;
   // The camps a parent can pick in the form: each week, then both weeks.
   const choices: CampChoice[] = [
     ...cards.map((p) => ({ id: p.id, title: p.weekLabel || p.name, sub: p.weekLabel ? p.name : "", dates: compactDates(p.dates), label: [p.weekLabel, p.name].filter(Boolean).join(" ") })),
-    ...(bundle ? [{ id: "both", title: "Both weeks", sub: "Best value", dates: compactDates(bundle.dates), label: bundle.name || "Both weeks" }] : []),
+    ...(bundle ? [{ id: "both", title: bothName || "Both weeks", sub: "Best value", dates: compactDates(bundle.dates), label: bundle.name || "Both weeks" }] : []),
   ];
   // Each fee card selects a form chip: the best-value row is "both weeks", the others follow the week order.
   const weekIds = cards.map((p) => p.id);
@@ -62,6 +65,30 @@ export function CampEventPage({ event, details }: { event: Event; details: CampD
     if (row.best) return bundle ? "both" : null;
     return weekIds[weekIndex++] ?? null;
   };
+  // What booking both weeks saves, from the fees shown on the page ("AED 1,000" + "AED 1,000" against "AED 1,600").
+  const amount = (fee: string) => Number(fee.replace(/[^\d.]/g, "")) || 0;
+  const money = (fee: string, n: number) => `${fee.match(/^\D*/)?.[0] ?? ""}${n.toLocaleString("en-US")}`;
+  const weeklyFees = d.fees.rows.filter((r) => !r.best).map((r) => r.fee);
+  const wasTotal = weeklyFees.reduce((sum, f) => sum + amount(f), 0);
+  const bothFee = d.fees.rows.find((r) => r.best)?.fee ?? "";
+  const feeCompare: FeeCompare | null =
+    weeklyFees.length === 2 && bothFee && wasTotal > amount(bothFee)
+      ? {
+          was: money(bothFee, wasTotal),
+          save: money(bothFee, wasTotal - amount(bothFee)),
+          pct: Math.round(((wasTotal - amount(bothFee)) / wasTotal) * 100),
+          weekOne: weeklyFees[0],
+          weekTwoNow: money(bothFee, amount(bothFee) - amount(weeklyFees[0])),
+          weekTwoWas: weeklyFees[1],
+        }
+      : null;
+  // Fee cards are named after what they are: "Camp 1 · Skill Lab", "Camp 2 · Shooting Lab" and "Camp 1 + Camp 2".
+  let feeWeek = 0;
+  const feeRows = d.fees.rows.map((row) => {
+    const card = row.best ? undefined : cards[feeWeek++];
+    const name = row.best ? bothName || row.name : card ? `${row.name} · ${card.name}` : row.name;
+    return { ...row, name, pickId: feePickId(row) };
+  });
   const ageRange = d.openFor.match(/(\d{1,2})\s*[-–]\s*(\d{1,2})/);
   const ages = Array.from({ length: (ageRange ? Number(ageRange[2]) : 18) - (ageRange ? Number(ageRange[1]) : 5) + 1 }, (_, i) => (ageRange ? Number(ageRange[1]) : 5) + i);
 
@@ -71,9 +98,6 @@ export function CampEventPage({ event, details }: { event: Event; details: CampD
       {/* HERO: photo first on phones; on desktop the text sits left and the photo wipes open on the right */}
       <div className="grid lg:grid-cols-[1.05fr_.95fr]">
         <div className="flex flex-col justify-center px-4 py-10 md:px-10 lg:px-16 lg:py-20">
-          <Eyebrow>
-            {event.location} · {event.date}
-          </Eyebrow>
           <h1
             className="page-title mb-5 text-4xl font-black uppercase leading-[0.95] tracking-tighter sm:text-5xl lg:text-7xl"
             data-testid="text-event-detail-title"
@@ -81,6 +105,57 @@ export function CampEventPage({ event, details }: { event: Event; details: CampD
             {d.headline || event.title}
           </h1>
           {d.subtext && <p className={`${LEAD} max-w-xl`}>{d.subtext}</p>}
+          {/* Dates and venue on one line (the venue opens Google Maps, the Maps app on a phone), then the two camps as small tiles. */}
+          <div className="hero-fade mt-5 max-w-xl" style={{ animationDelay: "0.3s" }} data-testid="hero-facts">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm font-extrabold">
+              <span className="inline-flex items-center gap-1.5"><CalendarDays className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />{event.date}</span>
+              <a
+                href={mapsSearchUrl(event.location)}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={`${event.location}: open in Google Maps (opens in a new tab)`}
+                className="inline-flex items-center gap-1.5 text-[#c2410c] underline decoration-[#c2410c]/40 underline-offset-4 transition-colors hover:decoration-[#c2410c]"
+                data-testid="link-venue-maps"
+              >
+                <MapPin className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+                {event.location}
+                <ExternalLink className="h-3 w-3 shrink-0" aria-hidden="true" />
+              </a>
+            </div>
+            {cards.length > 1 && (
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                {cards.slice(0, 2).map((p, i) => (
+                  <div key={p.id} className="border border-[#e7dfd2] px-3 py-2.5" data-testid={`hero-camp-${i + 1}`}>
+                    <span className="block text-[11px] font-extrabold uppercase tracking-widest text-[#6b6258]">Camp {i + 1}</span>
+                    <span className="block text-sm font-extrabold leading-tight">{p.name}</span>
+                    <span className="block text-[13px] text-[#6b6258]">{compactDates(p.dates)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          {d.coaches.length > 0 && (
+            // Who is coaching is a main reason to book, so it sits in the first screen and links down to the full profiles.
+            <a href="#coaches" className="hero-fade group mt-5 flex max-w-xl items-center gap-3.5" style={{ animationDelay: "0.5s" }} data-testid="hero-coaches">
+              <span className="flex shrink-0 -space-x-3" aria-hidden="true">
+                {d.coaches.slice(0, 3).map((c) =>
+                  c.photo ? (
+                    <Image key={c.name} src={c.photo} alt="" width={44} height={44} className="h-11 w-11 rounded-full border-2 border-white object-cover object-top" />
+                  ) : (
+                    <span key={c.name} className="h-11 w-11 rounded-full border-2 border-white bg-gray-200" />
+                  ),
+                )}
+              </span>
+              <span className="min-w-0 text-sm leading-snug">
+                <span className="block font-extrabold">
+                  Coached by {d.coaches.slice(0, 3).map((c) => c.name).join(" and ")}
+                </span>
+                <span className="line-clamp-2 block text-[13px] text-[#6b6258] group-hover:text-primary sm:line-clamp-none">
+                  {d.coaches.slice(0, 3).map((c) => c.credential).filter(Boolean).join(" · ")}
+                </span>
+              </span>
+            </a>
+          )}
           {upcoming && (
             <div className="hero-fade" style={{ animationDelay: "0.6s" }}>
               <CampCountdown start={upcoming} />
@@ -104,6 +179,18 @@ export function CampEventPage({ event, details }: { event: Event; details: CampD
         {heroImage && (
           <div className="camp-photo relative min-h-[280px] border-l-0 border-primary max-lg:order-first lg:min-h-[640px] lg:border-l-[10px]">
             <Image src={heroImage} alt={event.imageAlt?.trim() || event.title} fill priority sizes="(min-width:1024px) 48vw, 100vw" className="camp-photo-img object-cover" />
+            <a
+              href={mapsSearchUrl(event.location)}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={`${event.location}: open in Google Maps (opens in a new tab)`}
+              className="absolute bottom-3 left-3 z-10 inline-flex items-center gap-1.5 rounded-full bg-black/75 px-3 py-2 text-xs font-bold text-white backdrop-blur-sm transition-colors hover:bg-black"
+              data-testid="photo-venue-chip"
+            >
+              <MapPin className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
+              {event.location}
+              <ExternalLink className="h-3 w-3" aria-hidden="true" />
+            </a>
           </div>
         )}
       </div>
@@ -130,21 +217,13 @@ export function CampEventPage({ event, details }: { event: Event; details: CampD
         </div>
       )}
 
-      {/* INTRO */}
-      {(d.introTitle || d.introText) && (
-        <section className={`${SECTION} bg-[#f6f1e8]`}>
-          <div className="px-4 md:px-10 lg:px-16">
-            {d.introTitle && <h2 className={H2}>{d.introTitle}</h2>}
-            {d.introText && <p className={`${LEAD} max-w-3xl`}>{d.introText}</p>}
-          </div>
-        </section>
-      )}
-
       {/* PROGRAMME CARDS: a vertical stack that builds as you scroll, ending with the best-value both-weeks option */}
       {cards.length > 0 && (
         <CampProgrammeCards
           cards={cards.map((p) => ({ id: p.id, weekLabel: p.weekLabel, name: p.name, tagline: p.tagline, venue: p.venue, dates: p.dates, timeLines: p.timeLines, fee: p.fee, infoTarget: p.bullets.length > 0 ? `week-${p.id}` : undefined }))}
           bundle={bundle}
+          introTitle={d.introTitle}
+          introText={d.introText}
           openFor={d.openFor}
           registerOpen={open}
         />
@@ -175,7 +254,8 @@ export function CampEventPage({ event, details }: { event: Event; details: CampD
             <h2 className={H2}>{d.fees.title || "Camp Fees"}</h2>
             <CampFeeCards
               clickable={open}
-              rows={d.fees.rows.map((row) => ({ ...row, pickId: feePickId(row) }))}
+              compare={feeCompare}
+              rows={feeRows}
             />
             {d.fees.note && <p className="mt-5 text-lg font-extrabold">{d.fees.note}</p>}
           </div>
@@ -194,7 +274,7 @@ export function CampEventPage({ event, details }: { event: Event; details: CampD
 
       {/* COACHES */}
       {d.coaches.length > 0 && (
-        <section className={`${SECTION} bg-[#f6f1e8]`}>
+        <section id="coaches" className={`${SECTION} scroll-mt-20 bg-[#f6f1e8]`}>
           <div className="px-4 md:px-10 lg:px-16">
             <h2 className={H2}>{d.coachesTitle || "Your coaches"}</h2>
             <div className="grid gap-5 md:grid-cols-2">
@@ -364,7 +444,13 @@ export function CampEventPage({ event, details }: { event: Event; details: CampD
                     </div>
                   ))}
                 </div>
-                {cards[0]?.venue && <div className="mt-5 flex gap-2 border-t border-white/15 pt-4 text-sm text-[#cfc7ba]"><MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary" />{cards[0].venue}</div>}
+                {cards[0]?.venue && (
+                  <a href={mapsSearchUrl(cards[0].venue)} target="_blank" rel="noopener noreferrer" className="mt-5 flex gap-2 border-t border-white/15 pt-4 text-sm text-[#cfc7ba] underline-offset-4 hover:text-white hover:underline">
+                    <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+                    {cards[0].venue}
+                    <ExternalLink className="mt-1 h-3 w-3 shrink-0" aria-hidden="true" />
+                  </a>
+                )}
               </aside>
             </div>
           ) : (
@@ -382,7 +468,7 @@ export function CampEventPage({ event, details }: { event: Event; details: CampD
 
       {/* Mobile register bar (kept clear of the WhatsApp button on the right) */}
       {open && (
-        <div className="sticky bottom-0 z-10 flex items-center justify-between gap-3 bg-primary py-3 pl-4 pr-24 text-sm font-black uppercase text-white md:hidden">
+        <div data-camp-bar="" className="sticky bottom-0 z-10 flex items-center justify-between gap-3 bg-primary py-3 pl-4 pr-24 text-sm font-black uppercase text-white md:hidden">
           <span>
             {upcoming && <CampCountdown start={upcoming} variant="bar" />}
             {event.price || "Winter Camp"}

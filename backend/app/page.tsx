@@ -1,5 +1,6 @@
 import { Hero } from "@/components/home/Hero";
 import { TrustBar } from "@/components/shared/TrustBar";
+import { QuickEnquiry } from "@/components/home/QuickEnquiry";
 import { SectionHeader } from "@/components/shared/SectionHeader";
 import { PlayerPathway } from "@/components/home/PlayerPathway";
 import { BookTrialForm } from "@/components/home/BookTrialForm";
@@ -71,6 +72,9 @@ export default async function Home() {
 
       <Reveal><TrustBar /></Reveal>
 
+      {/* UPCOMING EVENTS: right under the trust bar, since a camp that is open now is the most time-sensitive offer on the site */}
+      <Reveal><EventStrip /></Reveal>
+
       {/* PROGRAMS SECTION — a pinned, scroll-driven pathway (plain cards for reduced motion) */}
       <section id="programs" className="bg-white pt-14 md:pt-32">
         <PlayerPathway
@@ -118,6 +122,13 @@ export default async function Home() {
           </div>
         </section>
       </Reveal>}
+
+      {/* QUICK ENQUIRY: three fields (name, WhatsApp number, child's age) for visitors who are ready now */}
+      <section id="quick-trial" className="relative scroll-mt-24 bg-primary py-10 md:py-12">
+        <div className="container mx-auto px-4 md:px-6">
+          <QuickEnquiry heading="Try a free session" text="Leave your number and we will message you on WhatsApp to pick a time." button="Get my free session" />
+        </div>
+      </section>
 
       {/* METHODOLOGY SECTION */}
       <Reveal>
@@ -257,8 +268,6 @@ export default async function Home() {
           </div>
         </section>
       </Reveal>
-
-      <Reveal><EventStrip /></Reveal>
 
       {/* BOOK TRIAL SECTION */}
       <Reveal>
