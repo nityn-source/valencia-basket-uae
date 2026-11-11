@@ -2,13 +2,13 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { AGE_GROUPS, nameField } from "@shared/schema";
+import { AGE_GROUPS, QUICK_FORM_PAGES, nameField } from "@shared/schema";
 import { Check, MessageCircle } from "lucide-react";
 
 const COUNTRY_CODES = ["+971", "+966", "+974", "+973", "+968", "+965", "+20", "+91", "+92", "+63", "+44", "+1", "+33", "+34", "+7", "+86", "+27", "+61"];
 
 /** A three-field "try a free session" band: name, WhatsApp number and the child's age group. The team replies on WhatsApp. */
-export function QuickEnquiry({ heading, text, button }: { heading: string; text: string; button: string }) {
+export function QuickEnquiry({ heading, text, button, sourcePage = "home-quick", ticks = ["Free, no commitment", "We reply personally on WhatsApp", "Girls' and boys' groups, ages 4–18"] }: { heading: string; text: string; button: string; sourcePage?: (typeof QUICK_FORM_PAGES)[number]; ticks?: string[] }) {
   const router = useRouter();
   const startedAt = useRef(0);
   const hidden = useRef({ utmSource: "", utmMedium: "", utmCampaign: "", landingPage: "", referrer: "" });
@@ -58,6 +58,7 @@ export function QuickEnquiry({ heading, text, button }: { heading: string; text:
           parentName: name.trim(),
           phone: `${countryCode}${phone.replace(/[\s\-()]/g, "").replace(/^0/, "")}`,
           ageGroup: age,
+          sourcePage,
           ...hidden.current,
           website,
           formStartedAt: startedAt.current,
@@ -82,7 +83,7 @@ export function QuickEnquiry({ heading, text, button }: { heading: string; text:
         <h2 className="text-4xl font-black uppercase leading-none tracking-tighter md:text-5xl">{heading}</h2>
         <p className="mt-3 max-w-md text-lg text-white/95">{text}</p>
         <ul className="mt-5 grid gap-2 text-sm font-bold">
-          {["Free, no commitment", "We reply personally on WhatsApp", "Girls' and boys' groups, ages 4–18"].map((t) => (
+          {ticks.map((t) => (
             <li key={t} className="flex items-start gap-2"><Check className="mt-0.5 h-4 w-4 shrink-0 text-black" aria-hidden="true" />{t}</li>
           ))}
         </ul>

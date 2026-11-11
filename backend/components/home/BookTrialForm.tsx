@@ -94,11 +94,14 @@ export function BookTrialForm({
   heading = "Book Your Free Trial",
   subheading = "Experience the Valencia Basket methodology firsthand.",
   submitLabel = "Submit Request",
+  headingAs: Heading = "h3",
 }: {
   sourcePage?: string;
   heading?: string;
   subheading?: string;
   submitLabel?: string;
+  /** Heading level, so a page can keep a proper outline (the girls page uses h2). */
+  headingAs?: "h2" | "h3";
 }) {
   const { toast } = useToast();
   const router = useRouter();
@@ -196,7 +199,7 @@ export function BookTrialForm({
   return (
     <div className="bg-white p-8 md:p-12 shadow-2xl border-t-4 border-primary">
       <div className="mb-8">
-        <h3 className="text-2xl font-black uppercase mb-2">{heading}</h3>
+        <Heading className="text-2xl font-black uppercase mb-2">{heading}</Heading>
         <p className="text-gray-500 text-sm">{subheading}</p>
       </div>
 

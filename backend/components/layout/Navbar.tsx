@@ -62,6 +62,7 @@ export function Navbar({ logoAlt }: { logoAlt: string }) {
     { name: "Mini Basket (7-10 yrs)", href: "/programs/mini-basket" },
     { name: "Youth Academy (11-18 yrs)", href: "/programs/youth-academy" },
     { name: "Elite / Select", href: "/programs#elite" },
+    { name: "Girls' Programs", href: "/programs/girls-basketball" },
     { name: "Private Training", href: "/programs/private-training" },
   ];
 

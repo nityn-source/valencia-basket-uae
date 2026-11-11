@@ -159,6 +159,24 @@ export default async function Programs() {
         </div>
       </div>
       
+      {/* GIRLS BANNER */}
+      <section className="bg-black py-14 text-white">
+        <div className="container mx-auto flex flex-col items-start gap-6 px-4 md:flex-row md:items-center md:justify-between md:px-6">
+          <div className="max-w-2xl">
+            <div className="mb-4 inline-block rounded-full bg-primary px-3 py-1 text-xs font-bold uppercase tracking-widest text-white">
+              {c("programs.girls.badge")}
+            </div>
+            <h2 className="mb-3 text-4xl font-black uppercase tracking-tighter md:text-5xl">{c("programs.girls.title")}</h2>
+            <p className="text-lg text-gray-400">{c("programs.girls.description")}</p>
+          </div>
+          <Link href="/programs/girls-basketball" className="shrink-0">
+            <Button size="lg" className="h-14 rounded-none px-8 font-bold uppercase tracking-wider">
+              {c("programs.girls.button")} <ArrowRight className="ml-2 h-5 w-5" />
+            </Button>
+          </Link>
+        </div>
+      </section>
+
       {/* PRIVATE TRAINING SECTION */}
       <section className="py-20 bg-gray-50 border-t-8 border-primary">
         <div className="container mx-auto px-4 md:px-6">

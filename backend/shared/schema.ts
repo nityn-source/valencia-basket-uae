@@ -200,7 +200,11 @@ export const campEnquiryFormSchema = z.object({
 /** The short "try a free session" strip on the home page: a name, a WhatsApp number and the child's age group. */
 export const QUICK_FORM_SOURCE = "Quick enquiry";
 
+/** Pages that carry the quick enquiry form; the lead keeps this as its source page. */
+export const QUICK_FORM_PAGES = ["home-quick", "programs-girls"] as const;
+
 export const quickEnquiryFormSchema = z.object({
+  sourcePage: z.enum(QUICK_FORM_PAGES).optional().default("home-quick"),
   parentName: nameField("Your name"),
   phone: phoneField,
   ageGroup: z.enum(AGE_GROUPS, { errorMap: () => ({ message: "Please select an age group" }) }),

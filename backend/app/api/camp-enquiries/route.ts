@@ -3,7 +3,8 @@ import { storage } from "@/lib/storage";
 import { campEnquiryFormSchema, ageGroupFor } from "@shared/schema";
 import { sendTrialBookingNotification, sendCustomerAutoReply } from "@/lib/email";
 import { appendTrialBookingToSheet } from "@/lib/sheets";
-import { EVENT_PAGE_SOURCE } from "@/lib/leadSource";
+import { EVENT_PAGE_SOURCE, leadEventSlug } from "@/lib/leadSource";
+import { renamedEventSlug } from "@/lib/eventSlugs";
 
 /** Short camp enquiry: saved as a trial booking so it shows up in the admin leads, tagged with the camp page and the camp chosen. */
 export async function POST(request: NextRequest) {
@@ -25,6 +26,9 @@ export async function POST(request: NextRequest) {
     }
 
     const { website, formStartedAt, camp, gender, playerAge, ...data } = parsed.data;
+    // Save the event's name with the lead, so a later rename of the event's address never leaves the lead unlabelled.
+    const slug = leadEventSlug(data);
+    const event = await storage.getEventBySlug(renamedEventSlug(slug) ?? slug).catch(() => undefined);
     const booking = await storage.createTrialBooking({
       ...data,
       playerAge,
@@ -32,7 +36,7 @@ export async function POST(request: NextRequest) {
       area: "",
       howHeard: EVENT_PAGE_SOURCE,
       programInterest: camp,
-      additionalInfo: `Camp: ${camp} · ${gender}, age ${playerAge}`,
+      additionalInfo: `Camp: ${camp} · ${gender}, age ${playerAge}${event ? ` · Event: ${event.title}` : ""}`,
     });
 
     sendTrialBookingNotification(booking).catch((err) => console.error("Email notification failed for camp enquiry:", err));

@@ -50,12 +50,12 @@ import type {
 } from "@shared/schema";
 import { LEAD_STATUS_VALUES, HOW_HEARD_OPTIONS } from "@shared/schema";
 import { QUICK_FORM_SOURCE } from "@shared/schema";
-import { EVENT_PAGE_SOURCE, leadCamp, leadGender, leadLevel, leadPage, leadSource } from "@/lib/leadSource";
+import { EVENT_PAGE_SOURCE, eventTitleForLead, isCampLead, leadCamp, leadGender, leadLevel, leadPage, leadSource } from "@/lib/leadSource";
 import { useCoverHealth } from "./reelCoverHealth";
 
 const ADMIN_TABS = [
   { value: "trials", testId: "tab-trigger-trials", short: "Trials", full: "Trial Bookings", Icon: Users },
-  { value: "events", testId: "tab-trigger-registrations", short: "Signups", full: "Event Registrations", Icon: ClipboardCheck },
+  { value: "events", testId: "tab-trigger-registrations", short: "Signups", full: "Event & Camp Sign-ups", Icon: ClipboardCheck },
   { value: "manage-events", testId: "tab-trigger-events", short: "Events", full: "Events", Icon: Calendar },
   { value: "blog", testId: "tab-trigger-blog", short: "Blog", full: "Blog", Icon: PenLine },
   { value: "staff", testId: "tab-trigger-staff", short: "Staff", full: "Staff", Icon: UserRound },
@@ -847,6 +847,23 @@ export default function Admin() {
   return <AdminDashboard authUser={authUser} onLogout={() => { fetch("/api/admin/auth", { method: "DELETE" }); setAuthUser(null); }} />;
 }
 
+interface SignupRow {
+  key: string;
+  kind: "camp" | "event";
+  id: string;
+  event: string;
+  camp: string;
+  player: string;
+  age: string;
+  gender: string;
+  parent: string;
+  email: string;
+  phone: string;
+  source: string;
+  createdAt: string | Date;
+  status: string;
+}
+
 function AdminDashboard({ authUser, onLogout }: { authUser: AdminAuthUser; onLogout: () => void }) {
   // Red "!" on the Content tab when automatic reel covers have stopped working.
   const coverBroken = useCoverHealth().data?.state === "failing";
@@ -907,6 +924,11 @@ function AdminDashboard({ authUser, onLogout }: { authUser: AdminAuthUser; onLog
     });
   }, [trialBookings, trialSearch, trialStatusFilter, trialSourceFilter, trialDatePreset, trialCustomFrom, trialCustomTo]);
 
+  // Leads from an event's own page (the camp form) go to the Event & Camp Sign-ups tab together with plain event
+  // registrations; every other form's leads stay in Trial Bookings.
+  const generalBookings = useMemo(() => trialBookings.filter((b) => !isCampLead(b)), [trialBookings]);
+  const filteredGeneral = useMemo(() => filteredTrialBookings.filter((b) => !isCampLead(b)), [filteredTrialBookings]);
+
   const [eventSearch, setEventSearch] = useState("");
   const [eventStatusFilter, setEventStatusFilter] = useState("all");
   const [eventTitleFilter, setEventTitleFilter] = useState("all");
@@ -914,24 +936,34 @@ function AdminDashboard({ authUser, onLogout }: { authUser: AdminAuthUser; onLog
   const [eventCustomFrom, setEventCustomFrom] = useState("");
   const [eventCustomTo, setEventCustomTo] = useState("");
 
-  const eventTitleOptions = useMemo(
-    () => [...new Set(eventRegistrations.map((registration) => registration.eventTitle))].sort(),
-    [eventRegistrations]
-  );
+  const signupRows = useMemo<SignupRow[]>(() => {
+    const camps: SignupRow[] = trialBookings.filter(isCampLead).map((b) => ({
+      key: `camp-${b.id}`, kind: "camp", id: b.id, event: eventTitleForLead(b, adminEvents), camp: leadCamp(b), player: b.playerName,
+      age: String(b.playerAge ?? b.ageGroup ?? ""), gender: leadGender(b), parent: b.parentName, email: b.email,
+      phone: `${b.phone}${b.whatsapp ? " ✓WA" : ""}`, source: leadSource(b) || EVENT_PAGE_SOURCE, createdAt: b.createdAt, status: b.status,
+    }));
+    const plain: SignupRow[] = eventRegistrations.map((r) => ({
+      key: `event-${r.id}`, kind: "event", id: r.id, event: r.eventTitle, camp: "", player: r.playerName, age: String(r.playerAge),
+      gender: "", parent: r.parentName, email: r.email, phone: r.phone, source: EVENT_PAGE_SOURCE, createdAt: r.createdAt, status: r.status,
+    }));
+    return [...camps, ...plain].sort((x, y) => new Date(y.createdAt).getTime() - new Date(x.createdAt).getTime());
+  }, [trialBookings, eventRegistrations, adminEvents]);
 
-  const filteredEventRegistrations = useMemo(() => {
+  const eventTitleOptions = useMemo(() => [...new Set(signupRows.map((row) => row.event))].sort(), [signupRows]);
+
+  const filteredSignups = useMemo(() => {
     const query = eventSearch.trim().toLowerCase();
-    return eventRegistrations.filter((registration) => {
-      if (eventStatusFilter !== "all" && registration.status !== eventStatusFilter) return false;
-      if (eventTitleFilter !== "all" && registration.eventTitle !== eventTitleFilter) return false;
-      if (!isWithinDatePreset(registration.createdAt, eventDatePreset, eventCustomFrom, eventCustomTo)) return false;
+    return signupRows.filter((row) => {
+      if (eventStatusFilter !== "all" && row.status !== eventStatusFilter) return false;
+      if (eventTitleFilter !== "all" && row.event !== eventTitleFilter) return false;
+      if (!isWithinDatePreset(row.createdAt, eventDatePreset, eventCustomFrom, eventCustomTo)) return false;
       if (query) {
-        const haystack = `${registration.parentName} ${registration.playerName} ${registration.email} ${registration.phone}`.toLowerCase();
+        const haystack = `${row.parent} ${row.player} ${row.email} ${row.phone}`.toLowerCase();
         if (!haystack.includes(query)) return false;
       }
       return true;
     });
-  }, [eventRegistrations, eventSearch, eventStatusFilter, eventTitleFilter, eventDatePreset, eventCustomFrom, eventCustomTo]);
+  }, [signupRows, eventSearch, eventStatusFilter, eventTitleFilter, eventDatePreset, eventCustomFrom, eventCustomTo]);
 
   const deleteEventMutation = useMutation({
     mutationFn: async (slug: string) => {
@@ -1053,20 +1085,20 @@ function AdminDashboard({ authUser, onLogout }: { authUser: AdminAuthUser; onLog
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
           <Card data-testid="card-trial-bookings-count">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Trial Bookings</CardTitle>
+              <CardTitle className="text-sm font-medium">Trial Bookings</CardTitle>
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold" data-testid="text-trial-count">{trialBookings.length}</div>
+              <div className="text-3xl font-bold" data-testid="text-trial-count">{generalBookings.length}</div>
             </CardContent>
           </Card>
           <Card data-testid="card-event-registrations-count">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Event Registrations</CardTitle>
+              <CardTitle className="text-sm font-medium">Event &amp; Camp Sign-ups</CardTitle>
               <Calendar className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold" data-testid="text-registrations-count">{eventRegistrations.length}</div>
+              <div className="text-3xl font-bold" data-testid="text-registrations-count">{signupRows.length}</div>
             </CardContent>
           </Card>
           <Card data-testid="card-events-count">
@@ -1101,7 +1133,7 @@ function AdminDashboard({ authUser, onLogout }: { authUser: AdminAuthUser; onLog
           <TabsContent value="trials" className="mt-6">
             {loadingTrials ? (
               <div className="text-center py-12 text-gray-500" data-testid="text-loading-trials">Loading...</div>
-            ) : trialBookings.length === 0 ? (
+            ) : generalBookings.length === 0 ? (
               <div className="text-center py-12 text-gray-500" data-testid="text-no-trials">No trial bookings yet</div>
             ) : (
               <>
@@ -1120,9 +1152,9 @@ function AdminDashboard({ authUser, onLogout }: { authUser: AdminAuthUser; onLog
                   extraValue={trialSourceFilter}
                   extraOptions={[...HOW_HEARD_OPTIONS, EVENT_PAGE_SOURCE, QUICK_FORM_SOURCE]}
                   onExtraChange={setTrialSourceFilter}
-                  resultCount={filteredTrialBookings.length}
+                  resultCount={filteredGeneral.length}
                 />
-                {filteredTrialBookings.length === 0 ? (
+                {filteredGeneral.length === 0 ? (
                   <div className="text-center py-12 text-gray-500">No trial bookings match these filters</div>
                 ) : (
               <div className="border border-gray-200 rounded-sm overflow-hidden">
@@ -1136,7 +1168,6 @@ function AdminDashboard({ authUser, onLogout }: { authUser: AdminAuthUser; onLog
                       <TableHead className="font-bold">Phone</TableHead>
                       <TableHead className="font-bold">Area</TableHead>
                       <TableHead className="font-bold">Level</TableHead>
-                      <TableHead className="font-bold">Camp</TableHead>
                       <TableHead className="font-bold">Girl/Boy</TableHead>
                       <TableHead className="font-bold">Source</TableHead>
                       <TableHead className="font-bold">Page</TableHead>
@@ -1146,7 +1177,7 @@ function AdminDashboard({ authUser, onLogout }: { authUser: AdminAuthUser; onLog
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredTrialBookings.map((booking) => (
+                    {filteredGeneral.map((booking) => (
                       <TableRow key={booking.id} className="hover:bg-gray-50">
                         <TableCell className="font-medium">{booking.playerName}</TableCell>
                         <TableCell>{booking.ageGroup || booking.playerAge || "—"}</TableCell>
@@ -1155,7 +1186,6 @@ function AdminDashboard({ authUser, onLogout }: { authUser: AdminAuthUser; onLog
                         <TableCell>{booking.phone}{booking.whatsapp ? " ✓WA" : ""}</TableCell>
                         <TableCell>{booking.area || "—"}</TableCell>
                         <TableCell className="capitalize">{leadLevel(booking) || "—"}</TableCell>
-                        <TableCell>{leadCamp(booking) || "—"}</TableCell>
                         <TableCell>{leadGender(booking) || "—"}</TableCell>
                         <TableCell>{leadSource(booking) || "—"}</TableCell>
                         <TableCell>{leadPage(booking) || "—"}</TableCell>
@@ -1205,10 +1235,10 @@ function AdminDashboard({ authUser, onLogout }: { authUser: AdminAuthUser; onLog
           </TabsContent>
 
           <TabsContent value="events" className="mt-6">
-            {loadingEventRegs ? (
+            {loadingEventRegs || loadingTrials ? (
               <div className="text-center py-12 text-gray-500" data-testid="text-loading-registrations">Loading...</div>
-            ) : eventRegistrations.length === 0 ? (
-              <div className="text-center py-12 text-gray-500" data-testid="text-no-registrations">No event registrations yet</div>
+            ) : signupRows.length === 0 ? (
+              <div className="text-center py-12 text-gray-500" data-testid="text-no-registrations">No event or camp sign-ups yet</div>
             ) : (
               <>
                 <LeadFilterBar
@@ -1226,46 +1256,52 @@ function AdminDashboard({ authUser, onLogout }: { authUser: AdminAuthUser; onLog
                   extraValue={eventTitleFilter}
                   extraOptions={eventTitleOptions}
                   onExtraChange={setEventTitleFilter}
-                  resultCount={filteredEventRegistrations.length}
+                  resultCount={filteredSignups.length}
                 />
-                {filteredEventRegistrations.length === 0 ? (
-                  <div className="text-center py-12 text-gray-500">No event registrations match these filters</div>
+                {filteredSignups.length === 0 ? (
+                  <div className="text-center py-12 text-gray-500">No sign-ups match these filters</div>
                 ) : (
               <div className="border border-gray-200 rounded-sm overflow-hidden">
                 <Table>
                   <TableHeader className="bg-gray-100">
                     <TableRow>
                       <TableHead className="font-bold">Event</TableHead>
+                      <TableHead className="font-bold">Camp</TableHead>
                       <TableHead className="font-bold">Player Name</TableHead>
                       <TableHead className="font-bold">Age</TableHead>
+                      <TableHead className="font-bold">Girl/Boy</TableHead>
                       <TableHead className="font-bold">Parent</TableHead>
                       <TableHead className="font-bold">Email</TableHead>
                       <TableHead className="font-bold">Phone</TableHead>
+                      <TableHead className="font-bold">Source</TableHead>
                       <TableHead className="font-bold">Date</TableHead>
                       <TableHead className="font-bold">Status</TableHead>
                       <TableHead className="font-bold">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredEventRegistrations.map((registration) => (
-                      <TableRow key={registration.id} className="hover:bg-gray-50">
-                        <TableCell className="font-medium">{registration.eventTitle}</TableCell>
-                        <TableCell>{registration.playerName}</TableCell>
-                        <TableCell>{registration.playerAge}</TableCell>
-                        <TableCell>{registration.parentName}</TableCell>
-                        <TableCell>{registration.email}</TableCell>
-                        <TableCell>{registration.phone}</TableCell>
+                    {filteredSignups.map((row) => (
+                      <TableRow key={row.key} className="hover:bg-gray-50">
+                        <TableCell className="font-medium">{row.event}</TableCell>
+                        <TableCell>{row.camp || "—"}</TableCell>
+                        <TableCell>{row.player}</TableCell>
+                        <TableCell>{row.age || "—"}</TableCell>
+                        <TableCell>{row.gender || "—"}</TableCell>
+                        <TableCell>{row.parent}</TableCell>
+                        <TableCell>{row.email}</TableCell>
+                        <TableCell>{row.phone}</TableCell>
+                        <TableCell>{row.source}</TableCell>
                         <TableCell className="text-sm text-gray-500">
-                          {new Date(registration.createdAt).toLocaleDateString()}
+                          {new Date(row.createdAt).toLocaleDateString()}
                         </TableCell>
                         <TableCell>
                           <Select
-                            value={registration.status}
+                            value={row.status}
                             onValueChange={(value) =>
-                              updateEventRegistrationStatusMutation.mutate({ id: registration.id, status: value as LeadStatus })
+                              (row.kind === "camp" ? updateTrialBookingStatusMutation : updateEventRegistrationStatusMutation).mutate({ id: row.id, status: value as LeadStatus })
                             }
                           >
-                            <SelectTrigger className="w-[200px]" data-testid={`select-status-event-${registration.id}`}>
+                            <SelectTrigger className="w-[200px]" data-testid={`select-status-${row.kind === "camp" ? "trial" : "event"}-${row.id}`}>
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -1280,10 +1316,10 @@ function AdminDashboard({ authUser, onLogout }: { authUser: AdminAuthUser; onLog
                             size="sm"
                             variant="ghost"
                             className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                            data-testid={`button-delete-event-registration-${registration.id}`}
+                            data-testid={`button-delete-${row.kind === "camp" ? "trial" : "event-registration"}-${row.id}`}
                             onClick={() => {
-                              if (confirm(`Delete this registration for "${registration.playerName}" (${registration.eventTitle})? This cannot be undone.`)) {
-                                deleteEventRegistrationMutation.mutate(registration.id);
+                              if (confirm(`Delete this sign-up for "${row.player}" (${row.event})? This cannot be undone.`)) {
+                                (row.kind === "camp" ? deleteTrialBookingMutation : deleteEventRegistrationMutation).mutate(row.id);
                               }
                             }}
                           >
@@ -1392,6 +1428,7 @@ function AdminDashboard({ authUser, onLogout }: { authUser: AdminAuthUser; onLog
             )}
 
             <EventFormDialog
+              key={editingEvent?.id ?? "new-event"}
               event={editingEvent}
               open={eventDialogOpen}
               onOpenChange={setEventDialogOpen}

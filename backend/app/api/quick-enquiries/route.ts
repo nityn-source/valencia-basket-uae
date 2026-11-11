@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Invalid enquiry data", details: parsed.error.flatten().fieldErrors }, { status: 400 });
     }
 
-    const { website, formStartedAt, ageGroup, ...data } = parsed.data;
+    const { website, formStartedAt, ageGroup, sourcePage, ...data } = parsed.data;
     const booking = await storage.createTrialBooking({
       ...data,
       email: "",
@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
       howHeard: QUICK_FORM_SOURCE,
       programInterest: null,
       additionalInfo: `Quick enquiry · age group ${ageGroup}`,
-      sourcePage: "home-quick",
+      sourcePage,
     });
 
     // No email was asked for, so there is no automatic reply; the team replies on WhatsApp.

@@ -134,28 +134,6 @@ export function CampEventPage({ event, details }: { event: Event; details: CampD
               </div>
             )}
           </div>
-          {d.coaches.length > 0 && (
-            // Who is coaching is a main reason to book, so it sits in the first screen and links down to the full profiles.
-            <a href="#coaches" className="hero-fade group mt-5 flex max-w-xl items-center gap-3.5" style={{ animationDelay: "0.5s" }} data-testid="hero-coaches">
-              <span className="flex shrink-0 -space-x-3" aria-hidden="true">
-                {d.coaches.slice(0, 3).map((c) =>
-                  c.photo ? (
-                    <Image key={c.name} src={c.photo} alt="" width={44} height={44} className="h-11 w-11 rounded-full border-2 border-white object-cover object-top" />
-                  ) : (
-                    <span key={c.name} className="h-11 w-11 rounded-full border-2 border-white bg-gray-200" />
-                  ),
-                )}
-              </span>
-              <span className="min-w-0 text-sm leading-snug">
-                <span className="block font-extrabold">
-                  Coached by {d.coaches.slice(0, 3).map((c) => c.name).join(" and ")}
-                </span>
-                <span className="line-clamp-2 block text-[13px] text-[#6b6258] group-hover:text-primary sm:line-clamp-none">
-                  {d.coaches.slice(0, 3).map((c) => c.credential).filter(Boolean).join(" · ")}
-                </span>
-              </span>
-            </a>
-          )}
           {upcoming && (
             <div className="hero-fade" style={{ animationDelay: "0.6s" }}>
               <CampCountdown start={upcoming} />

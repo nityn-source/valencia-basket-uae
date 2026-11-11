@@ -15,6 +15,7 @@ export const REEL_TARGETS = [
   { id: "mini-basket", label: "Mini Basket page" },
   { id: "youth-academy", label: "Youth Academy page" },
   { id: "private-training", label: "Private Training page" },
+  { id: "girls-basketball", label: "Girls' Programs page" },
 ] as const;
 
 export type ReelTarget = (typeof REEL_TARGETS)[number]["id"];

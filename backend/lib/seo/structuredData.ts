@@ -88,12 +88,14 @@ export const structuredDataRegistry: ManagedStructuredDataEntry[] = [
   { key: "future-ballers", path: "/programs/future-ballers", label: "Future Ballers", type: "Course", note: "Core program details.", json: { ...page("/programs/future-ballers", "Future Ballers", "Course"), description: "Basketball development program for ages 4 to 6." }, enabledByDefault: true, fields: [{ key: "description", label: "Description", type: "text", required: true }], lockedFields: ["name", "url"] },
   { key: "mini-basket", path: "/programs/mini-basket", label: "Mini Basket", type: "Course", note: "Core program details.", json: { ...page("/programs/mini-basket", "Mini Basket", "Course"), description: "Basketball development program for ages 7 to 10." }, enabledByDefault: true, fields: [{ key: "description", label: "Description", type: "text", required: true }], lockedFields: ["name", "url"] },
   { key: "youth-academy", path: "/programs/youth-academy", label: "Youth Academy", type: "Course", note: "Core program details.", json: { ...page("/programs/youth-academy", "Youth Academy", "Course"), description: "Basketball development program for ages 11 to 18." }, enabledByDefault: true, fields: [{ key: "description", label: "Description", type: "text", required: true }], lockedFields: ["name", "url"] },
+  { key: "girls-basketball", path: "/programs/girls-basketball", label: "Girls' Basketball Programs", type: "WebPage", note: "Girls' programs landing page. Its questions are added as FAQPage schema by the page.", json: page("/programs/girls-basketball", "Girls' Basketball Programs"), enabledByDefault: true, fields: [], lockedFields: ["name", "url"] },
   { key: "facilities", path: "/facilities", label: "Facilities", type: "SportsActivityLocation", note: "Academy's venue page.", json: { ...page("/facilities", "AllSports Arena", "SportsActivityLocation"), hasMap: CONTACT_MAPS_URL }, enabledByDefault: true, fields: [{ key: "hasMap", label: "Map URL", type: "url" }], lockedFields: ["name", "url"] },
   { key: "admissions", path: "/admissions", label: "Admissions", type: "WebPage", note: "Admissions page.", json: page("/admissions", "Admissions"), enabledByDefault: true, fields: [], lockedFields: ["name", "url"] },
 ];
 export const breadcrumbPages = [
   ["/programs", "Programs"], ["/programs/future-ballers", "Future Ballers"],
   ["/programs/mini-basket", "Mini Basket"], ["/programs/youth-academy", "Youth Academy"],
+  ["/programs/girls-basketball", "Girls' Basketball Programs"],
   ["/programs/private-training", "Private Training"], ["/methodology", "Methodology"],
   ["/coaches", "Coaches"], ["/facilities", "Facilities"], ["/admissions", "Admissions"],
   ["/events", "Events"], ["/contact", "Contact"], ["/faqs", "FAQs"], ["/blog", "Blog"],

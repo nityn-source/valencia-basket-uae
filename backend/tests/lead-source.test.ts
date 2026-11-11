@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { EVENT_PAGE_SOURCE, leadCamp, leadGender, leadLevel, leadPage, leadSource } from "@/lib/leadSource";
+import { EVENT_PAGE_SOURCE, eventTitleForLead, leadNotedEvent, leadCamp, leadGender, leadLevel, leadPage, leadSource } from "@/lib/leadSource";
 
 test("a lead keeps the source it gave", () => {
   assert.equal(leadSource({ howHeard: "Instagram", sourcePage: "home" }), "Instagram");
@@ -35,4 +35,16 @@ test("other leads keep their level and show no camp columns", () => {
   assert.equal(leadGender(trial), "", "only camp-page leads are read for girl/boy");
   assert.equal(leadPage({ sourcePage: "contact" }), "Contact");
   assert.equal(leadPage({ sourcePage: "" }), "");
+});
+
+test("a camp lead finds its event by exact address, following a renamed address, then the name saved with it", () => {
+  const events = [{ slug: "winter-camp", title: "Basketball Winter Camp 2026" }];
+  assert.equal(eventTitleForLead({ sourcePage: "camp-winter-camp" }, events), "Basketball Winter Camp 2026");
+  assert.equal(eventTitleForLead({ sourcePage: "camp-winter-camp-2026" }, events), "Basketball Winter Camp 2026", "old address is followed");
+  // A similar-looking address is not guessed at; the lead's own saved event name is used instead.
+  const lead = { sourcePage: "camp-winter-camp-kids", additionalInfo: "Camp: Week 1 · Girl, age 9 · Event: Kids Winter Camp" };
+  assert.equal(eventTitleForLead(lead, events), "Kids Winter Camp");
+  assert.equal(leadNotedEvent(lead), "Kids Winter Camp");
+  assert.equal(eventTitleForLead({ sourcePage: "camp-gone-event" }, events), "Gone Event");
+  assert.equal(leadGender(lead), "Girl", "the saved event name does not disturb the Girl/Boy read");
 });

@@ -65,3 +65,19 @@ export function scaleMarks(blocks: ScheduleBlock[]): { label: string; at: number
     .sort((a, b) => a - b)
     .map((t) => ({ label: clock(t), at: ((t - first) / total) * 100, suffix: t === last ? (t >= 12 * 60 && t < 24 * 60 ? " PM" : " AM") : "" }));
 }
+
+/** "5:00 PM" style clock text, for the session plan. */
+export function clockWithMeridiem(minutes: number): string {
+  const h24 = Math.floor(minutes / 60) % 24;
+  return `${clock(minutes)} ${h24 >= 12 ? "PM" : "AM"}`;
+}
+
+/** 180 -> "3 hours", 150 -> "2.5 hours", 100 -> "1 h 40 min". */
+export function formatDuration(minutes: number): string {
+  if (minutes % 60 === 0) {
+    const h = minutes / 60;
+    return `${h} ${h === 1 ? "hour" : "hours"}`;
+  }
+  if (minutes % 30 === 0) return `${minutes / 60} hours`;
+  return `${Math.floor(minutes / 60)} h ${minutes % 60} min`;
+}

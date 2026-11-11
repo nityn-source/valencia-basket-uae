@@ -83,6 +83,15 @@ export const PAGE_SEO_DEFAULTS: PageSeoDefaults[] = [
     canonical: "/programs/youth-academy",
   },
   {
+    path: "/programs/girls-basketball",
+    label: "Girls' Basketball Programs",
+    group: "Programs",
+    title: "Girls' Basketball Programs in Dubai | Basketball Training for Girls",
+    description:
+      "Girls' basketball academy in Dubai for ages 4-18. Build strength, confidence & real game skills with Spanish methodology & FIBA-certified coaches. Join today!",
+    canonical: "/programs/girls-basketball",
+  },
+  {
     path: "/programs/private-training",
     label: "Private Training",
     group: "Programs",

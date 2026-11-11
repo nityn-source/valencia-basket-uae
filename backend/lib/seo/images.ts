@@ -143,6 +143,12 @@ export const MANAGED_IMAGES: ManagedImage[] = [
     defaultAlt: "Mini Basket session",
   },
   {
+    key: "girls.intro",
+    page: "Girls Programs",
+    src: "/images/girls-game.jpg",
+    defaultAlt: "Girl driving to the basket in a girls' basketball league game in Dubai",
+  },
+  {
     key: "youth-academy.hero",
     page: "Youth Academy",
     src: "/images/youth-program.jpeg",

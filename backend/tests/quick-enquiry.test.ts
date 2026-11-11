@@ -20,3 +20,10 @@ test("each quick enquiry field is checked", () => {
 test("quick-form leads are labelled in the leads table", () => {
   assert.equal(leadPage({ sourcePage: "home-quick" }), "Home (quick form)");
 });
+
+test("the quick form defaults to the home source and accepts the girls page, nothing else", () => {
+  assert.equal(quickEnquiryFormSchema.parse(valid).sourcePage, "home-quick");
+  assert.equal(quickEnquiryFormSchema.parse({ ...valid, sourcePage: "programs-girls" }).sourcePage, "programs-girls");
+  assert.equal(quickEnquiryFormSchema.safeParse({ ...valid, sourcePage: "contact" }).success, false);
+  assert.equal(leadPage({ sourcePage: "programs-girls" }), "Girls programs");
+});

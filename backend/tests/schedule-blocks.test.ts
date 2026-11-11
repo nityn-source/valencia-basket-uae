@@ -38,3 +38,12 @@ test("the time scale marks the start, each whole hour and the end", () => {
   assert.equal(clock(9 * 60), "9:00");
   assert.equal(clock(12 * 60 + 5), "12:05");
 });
+
+test("the session plan shows clock times with AM/PM and a plain duration", async () => {
+  const { clockWithMeridiem, formatDuration } = await import("@/lib/scheduleBlocks");
+  assert.equal(clockWithMeridiem(17 * 60), "5:00 PM");
+  assert.equal(clockWithMeridiem(9 * 60 + 20), "9:20 AM");
+  assert.equal(formatDuration(180), "3 hours");
+  assert.equal(formatDuration(150), "2.5 hours");
+  assert.equal(formatDuration(100), "1 h 40 min");
+});
