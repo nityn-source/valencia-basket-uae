@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronDown, Pencil, Plus, Trash2 } from "lucide-react";
+import { ChevronDown, ExternalLink, Eye, Pencil, Plus, Trash2 } from "lucide-react";
+import { blogLivePath, blogPreviewPath, isOpenToVisitors } from "@/lib/blogPreview";
 import { BlogEditor } from "./BlogEditor";
 import { BlogAuthorSelect } from "./BlogAuthorSelect";
 import { Button } from "@/components/ui/button";
@@ -174,7 +175,15 @@ export function BlogManager({ adminName }: { adminName: string }) {
                     />
                   </TableCell>
                   <TableCell className="text-sm text-gray-500">{new Date(post.updatedAt).toLocaleDateString()}</TableCell>
-                  <TableCell className="text-right"><Button size="sm" variant="ghost" onClick={() => { setEditingPost(post); setEditorOpen(true); }} data-testid={`button-edit-blog-post-${post.id}`}><Pencil className="h-4 w-4" /></Button><Button size="sm" variant="ghost" className="text-red-600" onClick={() => window.confirm(`Move "${post.title}" to trash?`) && deleteMutation.mutate(post)} data-testid={`button-delete-blog-post-${post.id}`}><Trash2 className="h-4 w-4" /></Button></TableCell>
+                  <TableCell className="whitespace-nowrap text-right"><Button asChild size="sm" variant="ghost" title="Preview in a new tab"><a href={blogPreviewPath(post.id)} target="_blank" rel="noopener noreferrer" aria-label={`Preview ${post.title}`} data-testid={`link-preview-blog-post-${post.id}`}><Eye className="mr-1 h-4 w-4" /> Preview</a></Button><Button size="sm" variant="ghost" onClick={() => { setEditingPost(post); setEditorOpen(true); }} data-testid={`button-edit-blog-post-${post.id}`}><Pencil className="h-4 w-4" /></Button><Button size="sm" variant="ghost" className="text-red-600" onClick={() => window.confirm(`Move "${post.title}" to trash?`) && deleteMutation.mutate(post)} data-testid={`button-delete-blog-post-${post.id}`}><Trash2 className="h-4 w-4" /></Button>
+                    {isOpenToVisitors(post) ? (
+                      <Button asChild size="sm" variant="ghost" title="Open the live article in a new tab">
+                        <a href={blogLivePath(post.slug)} target="_blank" rel="noopener noreferrer" aria-label={`Open live article: ${post.title}`} data-testid={`link-live-blog-post-${post.id}`}><ExternalLink className="h-4 w-4" /></a>
+                      </Button>
+                    ) : (
+                      <Button size="sm" variant="ghost" disabled title="Not live yet, so visitors can't open it. Use Preview to see it." aria-label={`${post.title} is not live yet`} data-testid={`link-live-blog-post-${post.id}`}><ExternalLink className="h-4 w-4" /></Button>
+                    )}
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>

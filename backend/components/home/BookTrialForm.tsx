@@ -19,7 +19,11 @@ import {
   LEVELS,
   HOW_HEARD_OPTIONS,
   nameField,
+  PROGRAM_INTERESTS,
+  DEFAULT_PROGRAM_INTEREST,
 } from "@shared/schema";
+import { withInterest } from "@/lib/leadSource";
+import { cleanFrom } from "@/lib/bookTrial";
 
 const COUNTRY_CODES = [
   { code: "+971", label: "🇦🇪 +971", digits: 9 },
@@ -55,12 +59,13 @@ const clientSchema = z
     ageGroup: z.string().min(1, "Please select an age group"),
     area: z.string().min(1, "Please select your area"),
     level: z.string().optional(),
+    program: z.string().optional(),
     email: z.string().trim().email("Please enter a valid email address"),
     countryCode: z.string().min(1),
     phoneNumber: z.string().min(1, "Phone number is required"),
     whatsapp: z.boolean().default(false),
     howHeard: z.string().min(1, "Please tell us how you heard about us"),
-    notes: z.string().max(500, "Notes must be 500 characters or fewer").optional(),
+    notes: z.string().max(450, "Notes must be 450 characters or fewer").optional(),
     website: z.string().optional(), // honeypot
   })
   .superRefine((data, ctx) => {
@@ -95,6 +100,9 @@ export function BookTrialForm({
   subheading = "Experience the Valencia Basket methodology firsthand.",
   submitLabel = "Submit Request",
   headingAs: Heading = "h3",
+  defaultAgeGroup = "",
+  defaultProgram = DEFAULT_PROGRAM_INTEREST,
+  hideLevel = false,
 }: {
   sourcePage?: string;
   heading?: string;
@@ -102,16 +110,25 @@ export function BookTrialForm({
   submitLabel?: string;
   /** Heading level, so a page can keep a proper outline (the girls page uses h2). */
   headingAs?: "h2" | "h3";
+  /** Pre-selects the child's age group (a program page whose age range is fixed). */
+  defaultAgeGroup?: string;
+  /** Pre-selects "Interested program" (a program page). Anything else starts on "Not sure yet". */
+  defaultProgram?: string;
+  /** Leaves out "Current level", which a program page doesn't need for a first enquiry. */
+  hideLevel?: boolean;
 }) {
   const { toast } = useToast();
   const router = useRouter();
   const [emailSuggestion, setEmailSuggestion] = useState<string | null>(null);
   const startedAtRef = useRef<number>(0);
   const hiddenRef = useRef({ utmSource: "", utmMedium: "", utmCampaign: "", landingPage: "", referrer: "" });
+  // The homepage form is also where buttons on other pages lead ("/?from=methodology#book-trial"); those leads keep that page as their source.
+  const sourceRef = useRef(sourcePage);
 
   useEffect(() => {
     startedAtRef.current = Date.now();
     const params = new URLSearchParams(window.location.search);
+    if (sourcePage === "home") sourceRef.current = cleanFrom(params.get("from")) || "home";
     hiddenRef.current = {
       utmSource: params.get("utm_source") || "direct",
       utmMedium: params.get("utm_medium") || "direct",
@@ -119,7 +136,7 @@ export function BookTrialForm({
       landingPage: window.location.href,
       referrer: document.referrer || "",
     };
-  }, []);
+  }, [sourcePage]);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(clientSchema),
@@ -127,9 +144,10 @@ export function BookTrialForm({
     defaultValues: {
       parentName: "",
       playerName: "",
-      ageGroup: "",
+      ageGroup: defaultAgeGroup,
       area: "",
       level: "",
+      program: defaultProgram,
       email: "",
       countryCode: "+971",
       phoneNumber: "",
@@ -156,9 +174,9 @@ export function BookTrialForm({
           phone: `${values.countryCode}${digits}`,
           whatsapp: values.whatsapp,
           howHeard: values.howHeard,
-          additionalInfo: values.notes || "",
+          additionalInfo: withInterest(values.program || "", values.notes || ""),
           ...hiddenRef.current,
-          sourcePage,
+          sourcePage: sourceRef.current,
           website: values.website || "",
           formStartedAt: startedAtRef.current,
         }),
@@ -294,6 +312,32 @@ export function BookTrialForm({
             />
             <FormField
               control={form.control}
+              name="program"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className={labelClass}>Interested Program</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger className={selectClass} data-testid="select-program">
+                        <SelectValue placeholder="Select program" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {PROGRAM_INTERESTS.map((p) => (
+                        <SelectItem key={p} value={p}>{p}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+
+          {!hideLevel && (
+            <div>
+            <FormField
+              control={form.control}
               name="level"
               render={({ field }) => (
                 <FormItem>
@@ -314,7 +358,8 @@ export function BookTrialForm({
                 </FormItem>
               )}
             />
-          </div>
+            </div>
+          )}
 
           <div className="space-y-6 pt-4 border-t border-gray-100">
             <FormField

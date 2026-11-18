@@ -25,6 +25,7 @@ import {
   type VideoTestimonialRow,
   type InsertVideoTestimonialRow,
   type BlogPost,
+  type BlogPostRevision,
   type BlogCategory,
   type BlogTag,
   type InsertBlogPost,
@@ -49,7 +50,9 @@ import {
   blogPostCategories,
   blogPostTags,
   blogPasswordAttempts,
+  blogPostRevisions,
 } from "@shared/schema";
+import { MAX_REVISIONS, blogWordCount, planRevision, revisionFields, type RevisionFields, type RevisionReason } from "@/lib/blogRevisions";
 import { db } from "@/db";
 import { desc, eq, asc, isNotNull, isNull, lt, sql, and, or, lte } from "drizzle-orm";
 
@@ -64,6 +67,19 @@ export type BlogPostWriteInput = InsertBlogPost & {
   categoryNames?: string[];
   tagNames?: string[];
   password?: string | null;
+};
+
+/** Who is saving an article, for its revision history. */
+export type BlogSaveContext = { savedBy?: string | null; reason?: "update" | "restore"; restoredFromId?: number | null };
+
+export type BlogRevisionSummary = {
+  id: number;
+  createdAt: Date;
+  savedBy: string | null;
+  reason: string;
+  wordCount: number;
+  title: string;
+  restoredFromId: number | null;
 };
 
 export type BlogTagWithUsage = BlogTag & { usage: number };
@@ -146,8 +162,11 @@ export interface IStorage {
   getPublishedBlogPosts(): Promise<BlogPostWithTaxonomy[]>;
   getBlogPostBySlug(slug: string, includeUnpublished?: boolean): Promise<BlogPostWithTaxonomy | undefined>;
   getBlogPostById(id: number): Promise<BlogPostWithTaxonomy | undefined>;
-  createBlogPost(input: BlogPostWriteInput): Promise<BlogPostWithTaxonomy>;
-  updateBlogPost(id: number, input: Partial<BlogPostWriteInput>): Promise<BlogPostWithTaxonomy>;
+  createBlogPost(input: BlogPostWriteInput, context?: BlogSaveContext): Promise<BlogPostWithTaxonomy>;
+  updateBlogPost(id: number, input: Partial<BlogPostWriteInput>, context?: BlogSaveContext): Promise<BlogPostWithTaxonomy>;
+  listBlogRevisions(postId: number): Promise<BlogRevisionSummary[]>;
+  getBlogRevision(postId: number, revisionId: number): Promise<BlogPostRevision | undefined>;
+  restoreBlogRevision(postId: number, revisionId: number, savedBy: string | null): Promise<BlogPostWithTaxonomy | undefined>;
   deleteBlogPost(id: number): Promise<void>;
   consumeBlogPasswordAttempt(postId: number, clientKey: string, maximum: number, windowMinutes: number): Promise<{ allowed: boolean; retryAfterSeconds: number }>;
   clearBlogPasswordAttempts(postId: number, clientKey: string): Promise<void>;
@@ -349,9 +368,9 @@ export class DatabaseStorage implements IStorage {
     return post ? this.withBlogTaxonomy(post) : undefined;
   }
 
-  async createBlogPost(input: BlogPostWriteInput): Promise<BlogPostWithTaxonomy> {
+  async createBlogPost(input: BlogPostWriteInput, context: BlogSaveContext = {}): Promise<BlogPostWithTaxonomy> {
     const { categoryNames, tagNames, password, ...postInput } = input;
-    return db.transaction(async (tx) => {
+    const created = await db.transaction(async (tx) => {
       const [post] = await tx.insert(blogPosts).values(postInput).returning();
       await syncBlogTaxonomy(tx, post.id, categoryNames, tagNames);
       const [categories, tags] = await Promise.all([
@@ -360,11 +379,13 @@ export class DatabaseStorage implements IStorage {
       ]);
       return { ...post, categories: categories.map(({ category }) => category), tags: tags.map(({ tag }) => tag) };
     });
+    await this.recordBlogRevision(created.id, null, revisionFields(created), null, context);
+    return created;
   }
 
-  async updateBlogPost(id: number, input: Partial<BlogPostWriteInput>): Promise<BlogPostWithTaxonomy> {
+  async updateBlogPost(id: number, input: Partial<BlogPostWriteInput>, context: BlogSaveContext = {}): Promise<BlogPostWithTaxonomy> {
     const { categoryNames, tagNames, password, ...postInput } = input;
-    return db.transaction(async (tx) => {
+    const { updated, before, beforeUpdatedAt } = await db.transaction(async (tx) => {
       const [existing] = await tx.select().from(blogPosts).where(eq(blogPosts.id, id));
       if (!existing) throw new Error("Blog post not found");
       const [post] = await tx.update(blogPosts).set({
@@ -377,8 +398,86 @@ export class DatabaseStorage implements IStorage {
         tx.select({ category: blogCategories }).from(blogPostCategories).innerJoin(blogCategories, eq(blogPostCategories.categoryId, blogCategories.id)).where(eq(blogPostCategories.postId, id)),
         tx.select({ tag: blogTags }).from(blogPostTags).innerJoin(blogTags, eq(blogPostTags.tagId, blogTags.id)).where(eq(blogPostTags.postId, id)),
       ]);
-      return { ...post, categories: categories.map(({ category }) => category), tags: tags.map(({ tag }) => tag) };
+      return {
+        updated: { ...post, categories: categories.map(({ category }) => category), tags: tags.map(({ tag }) => tag) },
+        before: revisionFields(existing),
+        beforeUpdatedAt: existing.updatedAt,
+      };
     });
+    await this.recordBlogRevision(id, before, revisionFields(updated), beforeUpdatedAt, context);
+    return updated;
+  }
+
+  /**
+   * Keeps the article's version history up to date after a save. It runs after the
+   * save has committed and never throws: a problem with history (for example the
+   * table not being created yet) must not stop an article from saving.
+   */
+  private async recordBlogRevision(postId: number, before: RevisionFields | null, after: RevisionFields, beforeUpdatedAt: Date | null, context: BlogSaveContext) {
+    try {
+      const reason = context.reason ?? "update";
+      const savedBy = context.savedBy ?? null;
+      const [latestRow] = await db.select().from(blogPostRevisions).where(eq(blogPostRevisions.postId, postId)).orderBy(desc(blogPostRevisions.createdAt), desc(blogPostRevisions.id)).limit(1);
+      const latest = latestRow ? { fields: revisionFields(latestRow), reason: latestRow.reason as RevisionReason, savedBy: latestRow.savedBy, createdAt: latestRow.createdAt } : undefined;
+      const plan = before
+        ? planRevision({ before, after, latest, savedBy, reason })
+        : ({ action: "insert", addBaseline: false, baselineReason: "baseline" } as const);
+      if (plan.action === "skip") return;
+      await db.transaction(async (tx) => {
+        if (plan.addBaseline && before) {
+          await tx.insert(blogPostRevisions).values({ postId, ...before, wordCount: blogWordCount(before.content), savedBy: null, reason: plan.baselineReason, createdAt: beforeUpdatedAt ?? new Date() });
+        }
+        if (plan.action === "coalesce" && latestRow) {
+          await tx.update(blogPostRevisions).set({ ...after, wordCount: blogWordCount(after.content), createdAt: new Date() }).where(eq(blogPostRevisions.id, latestRow.id));
+        } else {
+          await tx.insert(blogPostRevisions).values({ postId, ...after, wordCount: blogWordCount(after.content), savedBy, reason, restoredFromId: context.restoredFromId ?? null });
+        }
+        await tx.execute(sql`delete from blog_post_revisions where post_id = ${postId} and id not in (select id from blog_post_revisions where post_id = ${postId} order by created_at desc, id desc limit ${MAX_REVISIONS})`);
+      });
+    } catch (error) {
+      console.error("[blog] couldn't record the article's version history:", error);
+    }
+  }
+
+  async listBlogRevisions(postId: number): Promise<BlogRevisionSummary[]> {
+    return db
+      .select({
+        id: blogPostRevisions.id,
+        createdAt: blogPostRevisions.createdAt,
+        savedBy: blogPostRevisions.savedBy,
+        reason: blogPostRevisions.reason,
+        wordCount: blogPostRevisions.wordCount,
+        title: blogPostRevisions.title,
+        restoredFromId: blogPostRevisions.restoredFromId,
+      })
+      .from(blogPostRevisions)
+      .where(eq(blogPostRevisions.postId, postId))
+      .orderBy(desc(blogPostRevisions.createdAt), desc(blogPostRevisions.id))
+      .limit(MAX_REVISIONS);
+  }
+
+  async getBlogRevision(postId: number, revisionId: number): Promise<BlogPostRevision | undefined> {
+    const [revision] = await db.select().from(blogPostRevisions).where(and(eq(blogPostRevisions.id, revisionId), eq(blogPostRevisions.postId, postId)));
+    return revision;
+  }
+
+  /** Puts an earlier version's title, excerpt, text, image and SEO fields back. The address, status, dates and taxonomy are untouched. */
+  async restoreBlogRevision(postId: number, revisionId: number, savedBy: string | null): Promise<BlogPostWithTaxonomy | undefined> {
+    const revision = await this.getBlogRevision(postId, revisionId);
+    if (!revision) return undefined;
+    return this.updateBlogPost(
+      postId,
+      {
+        title: revision.title,
+        excerpt: revision.excerpt,
+        content: revision.content,
+        featuredImageSrc: revision.featuredImageSrc,
+        featuredImageAlt: revision.featuredImageAlt,
+        metaTitle: revision.metaTitle,
+        metaDescription: revision.metaDescription,
+      },
+      { savedBy, reason: "restore", restoredFromId: revision.id },
+    );
   }
 
   async deleteBlogPost(id: number): Promise<void> {

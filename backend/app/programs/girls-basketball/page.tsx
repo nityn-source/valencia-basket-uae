@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowRight, Check, MessageCircle, Plus } from "lucide-react";
+import { ArrowRight, Check, MapPin, MessageCircle, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { buildPageMetadata, getAltResolver } from "@/lib/seo/resolve";
 import { getStructuredData } from "@/lib/seo/structuredDataResolve";
@@ -25,7 +25,7 @@ export async function generateMetadata(): Promise<Metadata> {
 const WHATSAPP_HREF = `https://wa.me/971544386838?text=${encodeURIComponent("Hi! I'd like to book a free trial session for my daughter at Valencia Basket Academy.")}`;
 const SHORTS = ["lHOEgwOfR38", "C3JhNm-HBfM", "J7qc0vEmXTA", "hfCYCJ7kqjU"].map((id) => ({ url: `https://www.youtube.com/shorts/${id}`, name: "", role: "", quote: "" }));
 // Levels 1–3 have their own pages; Elite is by invitation and sends to the trial form.
-const LEVEL_LINKS = ["/programs/future-ballers", "/programs/mini-basket", "/programs/youth-academy", "#girls-trial"];
+const LEVEL_LINKS = ["/programs/future-ballers", "/programs/mini-basket", "/programs/youth-academy", "#book-trial"];
 
 export default async function GirlsBasketball() {
   const alt = await getAltResolver();
@@ -59,7 +59,7 @@ export default async function GirlsBasketball() {
           </h1>
           <p className="mx-auto mb-10 max-w-2xl text-xl text-gray-400">{c("girls.hero.subtext")}</p>
           <div className="flex flex-col justify-center gap-4 sm:flex-row">
-            <a href="#girls-trial">
+            <a href="#book-trial">
               <Button size="lg" className="h-14 w-full rounded-none px-10 text-base font-bold uppercase tracking-wider sm:w-auto">
                 {c("girls.hero.button")} <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
@@ -106,14 +106,19 @@ export default async function GirlsBasketball() {
             <div className="order-2">
               <h2 className="mb-6 text-4xl font-black uppercase tracking-tighter md:text-5xl"><RichTitle text={c("girls.intro.title")} /></h2>
               <p className="mb-8 text-lg leading-relaxed text-gray-600">{c("girls.intro.paragraph")}</p>
-              <div className="grid grid-cols-2 gap-3">
-                {(["coaches", "venue"] as const).map((k) => (
-                  <div key={k} className="border-l-4 border-primary bg-gray-50 px-3 py-2">
-                    <span className="mb-0.5 block text-xs font-bold uppercase text-gray-400">{c(`girls.stat.${k}.label`)}</span>
-                    <span className="text-sm font-bold text-gray-900">{c(`girls.stat.${k}.value`)}</span>
-                  </div>
-                ))}
-              </div>
+              <a
+                href="https://www.google.com/maps/search/?api=1&query=AllSports+Arena+Al+Quoz+Dubai"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={`${c("girls.stat.venue.label")}: ${c("girls.stat.venue.value")}, open in Google Maps`}
+                className="group block border-l-4 border-primary bg-gray-50 px-3 py-2 transition-colors hover:bg-orange-50 sm:inline-block sm:pr-8"
+                data-testid="girls-venue-link"
+              >
+                <span className="mb-0.5 block text-xs font-bold uppercase text-gray-400">{c("girls.stat.venue.label")}</span>
+                <span className="flex items-center gap-2 text-sm font-bold text-gray-900 group-hover:text-primary">
+                  {c("girls.stat.venue.value")} <MapPin className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+                </span>
+              </a>
             </div>
           </div>
         </div>
@@ -133,7 +138,7 @@ export default async function GirlsBasketball() {
         <div className="container mx-auto max-w-3xl px-4 text-center md:px-6">
           <h2 className="mb-4 text-4xl font-black uppercase tracking-tighter md:text-5xl">{c("girls.notsure.title")}</h2>
           <p className="mb-8 text-lg leading-relaxed text-gray-400">{c("girls.notsure.text")}</p>
-          <a href="#girls-trial">
+          <a href="#book-trial">
             <Button size="lg" className="h-14 w-full rounded-none px-10 text-base font-bold uppercase tracking-wider sm:w-auto">
               {c("girls.hero.button")} <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
@@ -192,9 +197,9 @@ export default async function GirlsBasketball() {
       </section>
 
       {/* ── REGISTRATION FORM: the homepage booking form; every lead from this page is saved as a girl, so it never asks ── */}
-      <section id="girls-trial" className="relative scroll-mt-24 bg-primary py-12 md:py-16">
+      <section id="book-trial" className="relative scroll-mt-24 bg-primary py-12 md:py-16">
         <div className="container mx-auto max-w-3xl px-4 md:px-6">
-          <BookTrialForm sourcePage="programs-girls" headingAs="h2" heading={c("girls.form.title")} subheading={c("girls.form.text")} submitLabel={c("girls.form.button")} />
+          <BookTrialForm sourcePage="programs-girls" defaultProgram="Girls Programs" hideLevel headingAs="h2" heading={c("girls.form.title")} subheading={c("girls.form.text")} submitLabel={c("girls.form.button")} />
         </div>
       </section>
 

@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { ProgramBookingSection } from "@/components/programs/ProgramBookingSection";
 import Link from "next/link";
 import Image from "next/image";
 import { Check, Clock, User } from "lucide-react";
@@ -40,6 +41,11 @@ export default async function PrivateTraining() {
           <p className="text-xl text-gray-400 max-w-2xl mx-auto">
             {c("private-training.hero.subtext")}
           </p>
+          <Link href="#book-trial" className="mt-8 inline-block">
+            <Button size="lg" className="uppercase font-bold tracking-wider rounded-none h-14 px-10 text-base">
+              {c("private-training.form.button")}
+            </Button>
+          </Link>
         </div>
       </div>
 
@@ -173,6 +179,14 @@ export default async function PrivateTraining() {
 
       {/* Reels tagged "private-training" in data/reels.ts; renders nothing when there are none */}
       <ReelsCarousel reels={await getReels("private-training")} title="See it in action" text="Real sessions from the academy." />
+
+      <ProgramBookingSection
+        sourcePage="programs-private-training"
+        defaultProgram="Private Training"
+        heading={c("private-training.form.title")}
+        subheading={c("private-training.form.text")}
+        submitLabel={c("private-training.form.button")}
+      />
     </>
   );
 }

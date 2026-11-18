@@ -155,7 +155,7 @@ export default async function Methodology() {
           <p className="text-white/80 max-w-xl mx-auto mb-8 text-lg">
             {c("methodology.cta.subtext")}
           </p>
-          <Link href="/#book-trial">
+          <Link href="/?from=methodology#book-trial">
             <Button size="lg" className="uppercase font-bold tracking-wider rounded-none bg-black text-white hover:bg-white hover:text-primary border-0 h-14 px-10">
               {c("methodology.cta.button")} <ArrowRight className="ml-2 h-5 w-5" />
             </Button>

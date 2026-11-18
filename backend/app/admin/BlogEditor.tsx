@@ -5,7 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlignCenter, AlignLeft, AlignRight, ArrowLeft, Bold, ChevronDown, ChevronUp,
   Code2, Expand, ImagePlus, Instagram, Italic, Link2, List, ListOrdered, Maximize2,
-  Minus, Redo2, RotateCcw, Search, Star, Trash2, Undo2, X,
+  Eye, Minus, Redo2, RotateCcw, Search, Star, Trash2, Undo2, X,
   Monitor, Palette, Pencil, Smartphone, Unlink,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { blogPreviewPath } from "@/lib/blogPreview";
+import { BlogRevisions } from "./BlogRevisions";
 import { BLOG_CONTENT_MAX, DEFAULT_BLOG_AUTHOR, countInlineImages, sanitizeBlogContent, sanitizeBlogHtml } from "@/lib/blog";
 import { IMAGE_LIMITS_TEXT, cleanPastedHtml, dataUrlToFile, findInlineImages, findRemoteImages, imageFileProblem, isImageOnlyHtml } from "@/lib/blogPaste";
 import type { SafeBlogPost } from "@/lib/storage";
@@ -886,6 +888,7 @@ export function BlogEditor({ post, adminName, onClose, onSaved, onDelete }: {
   const [addingCategory, setAddingCategory] = useState(false);
   const [tagDraft, setTagDraft] = useState("");
   const [dirty, setDirty] = useState(false);
+  const [editorKey, setEditorKey] = useState(0);
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(post ? new Date(post.updatedAt) : null);
   const dirtyRef = useRef(false);
 
@@ -972,6 +975,7 @@ export function BlogEditor({ post, adminName, onClose, onSaved, onDelete }: {
       setSlugTouched(true);
       queryClient.invalidateQueries({ queryKey: ["admin-blog"] });
       queryClient.invalidateQueries({ queryKey: ["admin-blog-meta"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-blog-revisions"] });
       onSaved(body);
       if (intent !== "autosave") toast({ title: intent === "draft" ? "Draft saved" : "Article saved" });
     },
@@ -1050,7 +1054,16 @@ export function BlogEditor({ post, adminName, onClose, onSaved, onDelete }: {
     <div className="space-y-5" data-testid="blog-post-editor">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b pb-4">
         <Button variant="ghost" onClick={onClose}><ArrowLeft className="mr-2 h-4 w-4" /> Back to posts</Button>
-        <div className="text-xs text-gray-500">{dirty ? "Unsaved changes" : lastSavedAt ? `Saved ${lastSavedAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}` : "New article"}</div>
+        <div className="flex flex-wrap items-center justify-end gap-3">
+          <div className="text-xs text-gray-500">{dirty ? "Unsaved changes" : lastSavedAt ? `Saved ${lastSavedAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}` : "New article"}</div>
+          {post ? (
+            <Button asChild size="sm" variant="outline" title={dirty ? "Preview shows the last saved version. Save first to include your latest changes." : "Preview in a new tab"}>
+              <a href={blogPreviewPath(post.id)} target="_blank" rel="noopener noreferrer" data-testid="link-preview-blog-editor"><Eye className="mr-2 h-4 w-4" /> Preview{dirty ? " (last saved)" : ""}</a>
+            </Button>
+          ) : (
+            <Button size="sm" variant="outline" disabled title="Save the article as a draft first, then you can preview it" data-testid="link-preview-blog-editor"><Eye className="mr-2 h-4 w-4" /> Preview</Button>
+          )}
+        </div>
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,7fr)_minmax(300px,3fr)]">
@@ -1068,7 +1081,7 @@ export function BlogEditor({ post, adminName, onClose, onSaved, onDelete }: {
               <><strong className="text-gray-800">{form.slug || "post-slug"}</strong><button type="button" className="font-bold text-primary underline" onClick={() => { setSlugDraft(form.slug); setEditingSlug(true); }}>Edit</button></>
             )}
           </div>
-          <RichEditor value={form.content} onChange={(value) => updateField("content", value)} onBlur={autosaveOnBlur} />
+          <RichEditor key={editorKey} value={form.content} onChange={(value) => updateField("content", value)} onBlur={autosaveOnBlur} />
           <div className="flex flex-wrap justify-between gap-2 text-xs text-gray-500">
             <span>Word count: {plainText(form.content).split(/\s+/).filter(Boolean).length}</span>
             <span>Last edited by {adminName}{lastSavedAt ? ` on ${lastSavedAt.toLocaleDateString()} at ${lastSavedAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}` : ""}</span>
@@ -1090,6 +1103,24 @@ export function BlogEditor({ post, adminName, onClose, onSaved, onDelete }: {
               </div>
             </div>
           </Panel>
+
+          {post && (
+            <Panel title="Revisions">
+              <BlogRevisions
+                post={post}
+                dirty={dirty}
+                onRestored={(restored) => {
+                  setForm(fromPost(restored));
+                  setSlugTouched(true);
+                  setDirty(false);
+                  dirtyRef.current = false;
+                  setLastSavedAt(new Date());
+                  setEditorKey((value) => value + 1);
+                  onSaved(restored);
+                }}
+              />
+            </Panel>
+          )}
 
           <Panel title="Featured Image">
             {!form.featuredImageSrc ? (

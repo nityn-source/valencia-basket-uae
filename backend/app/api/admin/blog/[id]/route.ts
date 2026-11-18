@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
-import { requireAdmin } from "@/lib/adminAuth";
+import { getAdminUsername, requireAdmin } from "@/lib/adminAuth";
 import { storage } from "@/lib/storage";
 import { blogPostInputSchema, blogQuickEditSchema, normalizeBlogPostInput, formatBlogValidationError } from "@/lib/blog";
 import bcrypt from "bcryptjs";
@@ -40,7 +40,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     const existing = await storage.getBlogPostById(id);
     if (!existing) return NextResponse.json({ error: "Blog post not found" }, { status: 404 });
     const parsed = blogPostInputSchema.parse(await request.json());
-    const updated = await storage.updateBlogPost(id, await preparePost(parsed, existing));
+    const updated = await storage.updateBlogPost(id, await preparePost(parsed, existing), { savedBy: await getAdminUsername(request) });
     revalidatePath("/blog");
     revalidatePath("/blog/author/[slug]", "page");
     revalidatePath("/sitemap.xml");

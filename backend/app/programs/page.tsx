@@ -21,6 +21,7 @@ export default async function Programs() {
   const miniBasketImage = c("program.mini-basket.image");
   const youthAcademyImage = c("program.youth-academy.image");
   const eliteImage = c("program.elite.image");
+  const girlsImage = c("program.girls.image");
   const programDefs = [
     {
       id: "future-ballers",
@@ -49,6 +50,13 @@ export default async function Programs() {
       image: eliteImage,
       imageKey: "programs.elite",
       detailHref: "",
+    },
+    {
+      id: "girls",
+      slug: "girls",
+      image: girlsImage,
+      imageKey: "programs.girls",
+      detailHref: "/programs/girls-basketball",
     },
   ];
   const programs = programDefs.map(({ slug, ...def }) => ({
@@ -142,11 +150,11 @@ export default async function Programs() {
                    {program.detailHref ? (
                      <Link href={program.detailHref}>
                       <Button className="rounded-none uppercase font-bold tracking-wider h-auto py-3">
-                        {c("programs.learn-more")} <ArrowRight className="ml-2 h-4 w-4" />
+                        {program.id === "girls" ? c("programs.girls.button") : c("programs.learn-more")} <ArrowRight className="ml-2 h-4 w-4" />
                       </Button>
                      </Link>
                    ) : (
-                     <Link href="/#book-trial">
+                     <Link href="/?from=programs#book-trial">
                       <Button className="rounded-none uppercase font-bold tracking-wider h-auto py-3">
                         {c("programs.book-trial")} <ArrowRight className="ml-2 h-4 w-4" />
                       </Button>
@@ -159,24 +167,6 @@ export default async function Programs() {
         </div>
       </div>
       
-      {/* GIRLS BANNER */}
-      <section className="bg-black py-14 text-white">
-        <div className="container mx-auto flex flex-col items-start gap-6 px-4 md:flex-row md:items-center md:justify-between md:px-6">
-          <div className="max-w-2xl">
-            <div className="mb-4 inline-block rounded-full bg-primary px-3 py-1 text-xs font-bold uppercase tracking-widest text-white">
-              {c("programs.girls.badge")}
-            </div>
-            <h2 className="mb-3 text-4xl font-black uppercase tracking-tighter md:text-5xl">{c("programs.girls.title")}</h2>
-            <p className="text-lg text-gray-400">{c("programs.girls.description")}</p>
-          </div>
-          <Link href="/programs/girls-basketball" className="shrink-0">
-            <Button size="lg" className="h-14 rounded-none px-8 font-bold uppercase tracking-wider">
-              {c("programs.girls.button")} <ArrowRight className="ml-2 h-5 w-5" />
-            </Button>
-          </Link>
-        </div>
-      </section>
-
       {/* PRIVATE TRAINING SECTION */}
       <section className="py-20 bg-gray-50 border-t-8 border-primary">
         <div className="container mx-auto px-4 md:px-6">
@@ -232,7 +222,7 @@ export default async function Programs() {
         <div className="container mx-auto px-4">
            <h2 className="text-4xl font-black uppercase mb-6">{c("programs.not-sure.title")}</h2>
            <p className="text-xl mb-8 max-w-2xl mx-auto opacity-90">{c("programs.not-sure.description")}</p>
-           <Link href="/#book-trial">
+           <Link href="/?from=programs#book-trial">
               <Button size="lg" variant="outline" className="border-white text-white hover:bg-white hover:text-primary uppercase font-bold tracking-wider rounded-none px-10 h-14 text-lg">
                 {c("programs.not-sure.button")}
               </Button>

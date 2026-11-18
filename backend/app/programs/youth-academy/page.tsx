@@ -7,6 +7,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
+import { ProgramBookingSection } from "@/components/programs/ProgramBookingSection";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Target, Shield, TrendingUp, Trophy, Check } from "lucide-react";
 import { buildPageMetadata, getAltResolver } from "@/lib/seo/resolve";
@@ -65,7 +66,7 @@ export default async function YouthAcademy() {
             {c("youth-academy.hero.subtext")}
           </p>
           <div className="flex justify-center">
-            <Link href="/#book-trial">
+            <Link href="#book-trial">
               <Button size="lg" className="uppercase font-bold tracking-wider rounded-none h-14 px-10 text-base">
                 {c("youth-academy.hero.button")} <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
@@ -226,7 +227,7 @@ export default async function YouthAcademy() {
             {c("youth-academy.cta.subtext")}
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/#book-trial">
+            <Link href="#book-trial">
               <Button size="lg" className="bg-black text-white hover:bg-white hover:text-primary uppercase font-bold tracking-wider rounded-none h-14 px-10 text-base border-0">
                 {c("youth-academy.cta.button")} <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
@@ -239,6 +240,15 @@ export default async function YouthAcademy() {
           </div>
         </div>
       </section>
+
+      <ProgramBookingSection
+        sourcePage="programs-youth-academy"
+        heading={c("youth-academy.form.title")}
+        subheading={c("youth-academy.form.text")}
+        submitLabel={c("youth-academy.form.button")}
+        defaultAgeGroup="11–18 years"
+        defaultProgram="Youth Academy (ages 11–18)"
+      />
     </>
   );
 }

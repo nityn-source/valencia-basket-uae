@@ -268,6 +268,38 @@
 .blog-content[contenteditable] a { background: #dbeafe; border-radius: 3px; color: #1d4ed8; padding: 0 2px; text-decoration-style: solid; }
 .blog-content[contenteditable] a[data-editor-link] { outline: 2px solid #2563eb; outline-offset: 1px; }
 
+/* Blog contents box (components/blog/BlogToc.tsx). Native <details>, so Hide / Show needs no script. */
+.blog-toc { background: #fafaf9; border: 1px solid #e5e7eb; border-top: 3px solid #ff6c0e; margin: 2rem 0; font-size: 1rem; line-height: 1.4; }
+.blog-toc summary { list-style: none; display: flex; align-items: baseline; gap: 0.6rem; padding: 1rem 1.25rem; min-height: 3rem; cursor: pointer; user-select: none; }
+.blog-toc summary::-webkit-details-marker { display: none; }
+.blog-toc summary:focus-visible { outline: 2px solid #e85d04; outline-offset: -2px; }
+.blog-toc-title { color: #111827; font-size: 0.95rem; font-weight: 900; letter-spacing: 0.1em; text-transform: uppercase; }
+.blog-toc-toggle { color: #e85d04; font-size: 0.85rem; font-weight: 600; }
+.blog-toc-toggle::before { content: "[ "; color: #6b7280; }
+.blog-toc-toggle::after { content: " ]"; color: #6b7280; }
+.blog-toc-show { display: none; }
+.blog-toc:not([open]) .blog-toc-hide { display: none; }
+.blog-toc:not([open]) .blog-toc-show { display: inline; }
+.blog-toc ol { list-style: none; margin: 0; padding: 0 1.25rem 1rem; }
+.blog-toc ol ol { padding: 0 0 0 1.5rem; }
+.blog-toc li { margin: 0; padding: 0; }
+.blog-toc a { display: flex; gap: 0.6em; align-items: baseline; padding: 0.4rem 0; color: #111827; font-size: 0.95rem; font-weight: 500; text-decoration: none; }
+.blog-toc-num { flex: none; min-width: 1.6em; color: #e85d04; font-weight: 800; font-variant-numeric: tabular-nums; }
+.blog-toc ol ol a { color: #374151; font-size: 0.9rem; font-weight: 400; }
+.blog-toc ol ol .blog-toc-num { min-width: 2.2em; font-weight: 700; }
+.blog-toc-text { min-width: 0; overflow-wrap: anywhere; }
+.blog-toc a:hover .blog-toc-text, .blog-toc a:focus-visible .blog-toc-text { color: #e85d04; text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 3px; }
+.blog-toc a:focus-visible { outline: 2px solid #e85d04; outline-offset: 2px; }
+@media (max-width: 640px) {
+  .blog-toc summary { padding: 0.875rem 1rem; }
+  .blog-toc ol { padding: 0 1rem 0.875rem; }
+  .blog-toc ol ol { padding-left: 0.9rem; }
+  .blog-toc a { padding: 0.55rem 0; }
+}
+/* Headings the contents links to stay clear of the fixed navbar; the page glides there when motion is allowed. */
+.blog-content h2[id], .blog-content h3[id] { scroll-margin-top: 6.5rem; }
+@media (prefers-reduced-motion: no-preference) { html:has(.blog-toc) { scroll-behavior: smooth; } }
+
 /* Blog article images: shared by the editor and the public article so the
    editor preview matches the live page. No data-size = legacy "full". */
 .blog-content img {

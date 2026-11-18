@@ -1,6 +1,5 @@
 import { Hero } from "@/components/home/Hero";
 import { TrustBar } from "@/components/shared/TrustBar";
-import { QuickEnquiry } from "@/components/home/QuickEnquiry";
 import { SectionHeader } from "@/components/shared/SectionHeader";
 import { PlayerPathway } from "@/components/home/PlayerPathway";
 import { BookTrialForm } from "@/components/home/BookTrialForm";
@@ -123,10 +122,26 @@ export default async function Home() {
         </section>
       </Reveal>}
 
-      {/* QUICK ENQUIRY: three fields (name, WhatsApp number, child's age) for visitors who are ready now */}
-      <section id="quick-trial" className="relative scroll-mt-24 bg-primary py-10 md:py-12">
+      {/* FREE SESSION BAND: a call to action that scrolls to the full booking form further down */}
+      <section id="quick-trial" className="relative scroll-mt-24 bg-primary py-10 md:py-14">
         <div className="container mx-auto px-4 md:px-6">
-          <QuickEnquiry heading="Try a free session" text="Leave your number and we will message you on WhatsApp to pick a time." button="Get my free session" />
+          <div className="flex flex-col items-start gap-8 text-white lg:flex-row lg:items-center lg:justify-between lg:gap-14" data-testid="free-session-band">
+            <div>
+              <p className="mb-2 text-xs font-extrabold uppercase tracking-[0.2em] text-black/70">First session on us</p>
+              <h2 className="text-4xl font-black uppercase leading-none tracking-tighter md:text-5xl">Try a free session</h2>
+              <p className="mt-3 max-w-md text-lg text-white/95">Fill in a short form and we will message you on WhatsApp to pick a time.</p>
+              <ul className="mt-5 grid gap-2 text-sm font-bold">
+                {["Free, no commitment", "We reply personally on WhatsApp", "Girls' and boys' groups, ages 4–18"].map((t) => (
+                  <li key={t} className="flex items-start gap-2"><CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-black" aria-hidden="true" />{t}</li>
+                ))}
+              </ul>
+            </div>
+            <Link href="#book-trial" className="w-full shrink-0 lg:w-auto" data-testid="free-session-cta">
+              <Button size="lg" className="h-16 w-full rounded-none bg-black px-10 text-base font-extrabold uppercase tracking-widest text-white hover:bg-white hover:text-primary lg:w-auto">
+                Book my free session <ArrowRight className="ml-2 h-5 w-5" />
+              </Button>
+            </Link>
+          </div>
         </div>
       </section>
 

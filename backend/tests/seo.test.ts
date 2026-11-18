@@ -304,6 +304,7 @@ test("public-page image inventory uses managed alt values or decorative images",
       "programs.mini-basket",
       "programs.youth-academy",
       "programs.elite",
+      "programs.girls",
       "programs.private-training",
     ],
   };

@@ -50,7 +50,7 @@ import type {
 } from "@shared/schema";
 import { LEAD_STATUS_VALUES, HOW_HEARD_OPTIONS } from "@shared/schema";
 import { QUICK_FORM_SOURCE } from "@shared/schema";
-import { EVENT_PAGE_SOURCE, eventTitleForLead, isCampLead, leadCamp, leadGender, leadLevel, leadPage, leadSource } from "@/lib/leadSource";
+import { EVENT_PAGE_SOURCE, eventTitleForLead, isCampLead, leadCamp, leadGender, leadInterest, leadLevel, leadPage, leadSource } from "@/lib/leadSource";
 import { useCoverHealth } from "./reelCoverHealth";
 
 const ADMIN_TABS = [
@@ -1167,6 +1167,7 @@ function AdminDashboard({ authUser, onLogout }: { authUser: AdminAuthUser; onLog
                       <TableHead className="font-bold">Email</TableHead>
                       <TableHead className="font-bold">Phone</TableHead>
                       <TableHead className="font-bold">Area</TableHead>
+                      <TableHead className="font-bold">Interested in</TableHead>
                       <TableHead className="font-bold">Level</TableHead>
                       <TableHead className="font-bold">Girl/Boy</TableHead>
                       <TableHead className="font-bold">Source</TableHead>
@@ -1185,6 +1186,7 @@ function AdminDashboard({ authUser, onLogout }: { authUser: AdminAuthUser; onLog
                         <TableCell>{booking.email}</TableCell>
                         <TableCell>{booking.phone}{booking.whatsapp ? " ✓WA" : ""}</TableCell>
                         <TableCell>{booking.area || "—"}</TableCell>
+                        <TableCell>{leadInterest(booking) || "—"}</TableCell>
                         <TableCell className="capitalize">{leadLevel(booking) || "—"}</TableCell>
                         <TableCell>{leadGender(booking) || "—"}</TableCell>
                         <TableCell>{leadSource(booking) || "—"}</TableCell>

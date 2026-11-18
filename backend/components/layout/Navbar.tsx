@@ -1,8 +1,9 @@
 "use client";
 
+import { bookTrialHref } from "@/lib/bookTrial";
 import Link from "next/link";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -17,6 +18,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 export function Navbar({ logoAlt }: { logoAlt: string }) {
+  const pathname = usePathname();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isProgramsOpen, setIsProgramsOpen] = useState(false);
@@ -195,7 +197,7 @@ export function Navbar({ logoAlt }: { logoAlt: string }) {
           </div>
 
           {/* Book a Free Trial button */}
-          <Link href="/#book-trial" className="hidden md:block">
+          <Link href={bookTrialHref(pathname)} className="hidden md:block">
             <Button
               size="sm"
               className={cn(
@@ -365,7 +367,7 @@ export function Navbar({ logoAlt }: { logoAlt: string }) {
             Contact Us
           </Link>
 
-          <Link href="/#book-trial" onClick={closeMobileMenu} className="mt-6">
+          <Link href={bookTrialHref(pathname)} onClick={closeMobileMenu} className="mt-6">
             <Button className="w-full uppercase font-bold rounded-none bg-primary text-white h-14 text-lg">
               Book a Free Trial
             </Button>

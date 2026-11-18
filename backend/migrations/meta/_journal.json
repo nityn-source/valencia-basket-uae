@@ -113,6 +113,13 @@
       "when": 1793816752551,
       "tag": "0016_event_camp_details",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1794992761297,
+      "tag": "0017_blog_post_revisions",
+      "breakpoints": true
     }
   ]
 }

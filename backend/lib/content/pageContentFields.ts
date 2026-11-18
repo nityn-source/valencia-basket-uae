@@ -87,6 +87,11 @@ export const ADMISSIONS_FIELDS: ContentField[] = [
     ["admissions.hero.title", "Page title", "text", "Admissions"],
     ["admissions.hero.subtext", "Hero subtext", "area", "Join the Valencia Basket family. Simple steps to start your journey.", 220],
   ]),
+  ...fieldsFor("Admissions", "Booking form", [
+    ["admissions.form.title", "Form — heading", "text", "Book a Free Trial"],
+    ["admissions.form.text", "Form — text", "area", "Register for an assessment session. We will message you to confirm a time.", 200],
+    ["admissions.form.button", "Form — button", "text", "Book my free trial"],
+  ]),
   ...fieldsFor("Admissions", "How to Join", [
     ["admissions.join.heading", "Heading", "text", "How to Join"],
     ["admissions.step1.title", "Step 1 — title", "text", "1. Book a Free Trial"],
@@ -387,6 +392,11 @@ export const FUTURE_BALLERS_FIELDS: ContentField[] = [
     ["future-ballers.cta.button", "Closing — main button", "text", "Book a Free Trial"],
     ["future-ballers.cta.button2", "Closing — second button", "text", "Ask a Question"],
   ]),
+  ...fieldsFor("Future Ballers", "Booking form", [
+    ["future-ballers.form.title", "Form — heading", "text", "Book a Free Trial"],
+    ["future-ballers.form.text", "Form — text", "area", "Tell us about your child and we will confirm a free trial session at AllSports Arena.", 200],
+    ["future-ballers.form.button", "Form — button", "text", "Book my free trial"],
+  ]),
 ];
 
 export const MINI_BASKET_FIELDS: ContentField[] = [
@@ -467,6 +477,11 @@ export const MINI_BASKET_FIELDS: ContentField[] = [
     ["mini-basket.cta.subtext", "Closing — subtext", "area", "One free trial session. No strings attached. See exactly how we coach and why kids love it.", 200],
     ["mini-basket.cta.button", "Closing — main button", "text", "Book a Free Trial"],
     ["mini-basket.cta.button2", "Closing — second button", "text", "Ask a Question"],
+  ]),
+  ...fieldsFor("Mini Basket", "Booking form", [
+    ["mini-basket.form.title", "Form — heading", "text", "Book a Free Trial"],
+    ["mini-basket.form.text", "Form — text", "area", "Tell us about your child and we will confirm a free trial session at AllSports Arena.", 200],
+    ["mini-basket.form.button", "Form — button", "text", "Book my free trial"],
   ]),
 ];
 
@@ -550,12 +565,22 @@ export const YOUTH_ACADEMY_FIELDS: ContentField[] = [
     ["youth-academy.cta.button", "Closing — main button", "text", "Book a Free Trial"],
     ["youth-academy.cta.button2", "Closing — second button", "text", "Ask a Question"],
   ]),
+  ...fieldsFor("Youth Academy", "Booking form", [
+    ["youth-academy.form.title", "Form — heading", "text", "Book a Free Trial"],
+    ["youth-academy.form.text", "Form — text", "area", "Tell us about your player and we will confirm a free trial session at AllSports Arena.", 200],
+    ["youth-academy.form.button", "Form — button", "text", "Book my free trial"],
+  ]),
 ];
 
 export const PRIVATE_TRAINING_FIELDS: ContentField[] = [
   ...fieldsFor("Private Training", "Hero", [
     ["private-training.hero.title", "Page title", "text", "Private Training"],
     ["private-training.hero.subtext", "Hero subtext", "area", "Accelerate your development with focused, personalized instruction from our expert staff.", 220],
+  ]),
+  ...fieldsFor("Private Training", "Booking form", [
+    ["private-training.form.title", "Form — heading", "text", "Book a Free Trial"],
+    ["private-training.form.text", "Form — text", "area", "Tell us about your player and what they want to work on. We will get back to you to arrange a free first session.", 200],
+    ["private-training.form.button", "Form — button", "text", "Book my free trial"],
   ]),
   ...fieldsFor("Private Training", "Why Private Training?", [
     ["private-training.about.eyebrow", "Small heading", "text", "Why Private Training?"],
@@ -816,8 +841,6 @@ export const GIRLS_FIELDS: ContentField[] = [
   ...fieldsFor("Girls Programs", "Intro", [
     ["girls.intro.title", "Heading (*stars* = orange words)", "text", "Basketball Academy for Girls in Dubai - Train the *Valencia* Way!"],
     ["girls.intro.paragraph", "Paragraph", "area", "Welcome to Court Queens, the girls' program at Valencia Basket UAE. Girls train in dedicated groups using the same player development methodology as Valencia Basket Club in Spain, home to one of Europe's most successful women's teams. From a first dribble to competitive league play, every stage is structured, coached and built to develop complete players.", 600],
-    ["girls.stat.coaches.label", "Coaches — label", "text", "Coaches", 40],
-    ["girls.stat.coaches.value", "Coaches — value", "text", "2 per 13–15 players", 60],
     ["girls.stat.venue.label", "Venue — label", "text", "Venue", 40],
     ["girls.stat.venue.value", "Venue — value", "text", "AllSports Arena, Al Quoz", 60],
   ]),
@@ -921,12 +944,25 @@ export const GIRLS_FIELDS: ContentField[] = [
     ["girls.faq8.q", "Question 8", "text", "Where are the basketball coaching sessions held?", 160],
     ["girls.faq8.a", "Answer 8", "area", "At AllSports Arena, Al Quoz, on indoor air-conditioned courts.", 400],
   ]),
-  ...fieldsFor("Girls Programs", "On the Programs page", [
-    ["programs.girls.badge", "Banner — small heading", "text", "For girls, ages 4–18"],
-    ["programs.girls.title", "Banner — heading", "text", "Girls' Basketball Programs"],
-    ["programs.girls.description", "Banner — text", "area", "Girls-only groups, hijab-friendly kit and two coaches on every session, from a first dribble to competitive league play.", 220],
-    ["programs.girls.button", "Banner — button", "text", "See the girls' programs"],
+  ...fieldsFor("Programs", "Girls' Basketball Programs", [
+    ["programs.girls.title", "Title", "text", "Girls' Basketball Programs"],
+    ["programs.girls.age", "Age label", "text", "For girls, ages 4–18", 40],
+    ["programs.girls.focus", "Focus line", "text", "Train the Valencia Way"],
+    ["programs.girls.description", "Description", "area", "Girls-only groups, hijab-friendly kit and two coaches on every session, from a first dribble to competitive league play.", 400],
+    ["programs.girls.feature1", "Key focus 1", "text", "Girls-only groups"],
+    ["programs.girls.feature2", "Key focus 2", "text", "Hijab-friendly kit"],
+    ["programs.girls.feature3", "Key focus 3", "text", "Two coaches every session"],
+    ["programs.girls.feature4", "Key focus 4", "text", "Competitive league play"],
+    ["programs.girls.button", "Button", "text", "See the girls' programs"],
   ]),
+  {
+    key: "program.girls.image",
+    page: "Programs",
+    section: "Girls' Basketball Programs",
+    label: "Photo",
+    type: "image",
+    default: "/images/girls-game.jpg",
+  },
 ];
 
 export const EXTRA_FIELDS: ContentField[] = [...METHODOLOGY_FIELDS, ...ADMISSIONS_FIELDS, ...LOCATION_FIELDS, ...PROGRAMS_FIELDS, ...FUTURE_BALLERS_FIELDS, ...MINI_BASKET_FIELDS, ...YOUTH_ACADEMY_FIELDS, ...PRIVATE_TRAINING_FIELDS, ...HOME_FIELDS, ...CONTACT_FIELDS, ...EVENTS_FIELDS, ...BLOG_FIELDS, ...STAFF_FIELDS, ...GIRLS_FIELDS];

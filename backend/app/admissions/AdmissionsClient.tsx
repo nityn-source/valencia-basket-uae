@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { ProgramBookingSection } from "@/components/programs/ProgramBookingSection";
 import {
   Accordion,
   AccordionContent,
@@ -34,7 +35,7 @@ export default function AdmissionsClient({ t }: { t: Record<string, string> }) {
                         <div className="absolute -left-[9px] top-0 h-4 w-4 rounded-full bg-primary border-4 border-white shadow-sm" />
                         <h3 className="text-xl font-bold uppercase mb-2">{t["admissions.step1.title"]}</h3>
                         <p className="text-gray-600">{t["admissions.step1.description"]}</p>
-                        <Link href="/#book-trial"><Button className="uppercase font-bold tracking-wider rounded-none h-12 px-8 mt-2">{t["admissions.step1.button"]}</Button></Link>
+                        <Link href="#book-trial"><Button className="uppercase font-bold tracking-wider rounded-none h-12 px-8 mt-2">{t["admissions.step1.button"]}</Button></Link>
                     </div>
                      <div className="relative pl-8 md:pl-12">
                         <div className="absolute -left-[9px] top-0 h-4 w-4 rounded-full bg-primary border-4 border-white shadow-sm" />
@@ -86,7 +87,7 @@ export default function AdmissionsClient({ t }: { t: Record<string, string> }) {
                     </div>
                 </div>
 
-                <Link href="/#book-trial">
+                <Link href="#book-trial">
                     <Button className="w-full uppercase font-bold tracking-wider rounded-none h-12">
                         {t["admissions.terms.button"]}
                     </Button>
@@ -97,6 +98,12 @@ export default function AdmissionsClient({ t }: { t: Record<string, string> }) {
             </div>
         </div>
       </div>
+      <ProgramBookingSection
+        sourcePage="admissions"
+        heading={t["admissions.form.title"]}
+        subheading={t["admissions.form.text"]}
+        submitLabel={t["admissions.form.button"]}
+      />
     </>
   );
 }

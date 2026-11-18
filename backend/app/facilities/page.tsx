@@ -219,7 +219,7 @@ export default async function Facilities() {
             {c("facilities.closing-cta.description")}
           </p>
           <Link
-            href="/#book-trial"
+            href="/?from=facilities#book-trial"
             data-testid="button-facilities-cta"
             className="inline-block bg-primary text-white px-10 py-4 font-bold uppercase tracking-wider hover:bg-white hover:text-black transition-colors"
           >

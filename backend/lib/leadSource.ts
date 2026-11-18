@@ -16,17 +16,17 @@ type LeadPageFields = { sourcePage?: string | null; programInterest?: string | n
 
 export const isCampLead = (booking: LeadPageFields) => Boolean(booking.sourcePage?.startsWith("camp-"));
 
+const titleCase = (slug: string) => slug.split("-").filter(Boolean).map((w) => w[0].toUpperCase() + w.slice(1)).join(" ");
+
 /** The page a lead was filled in on, as a readable label: "Home", "Contact", or "Event: Winter Camp" for a camp page. */
 export function leadPage(booking: { sourcePage?: string | null }): string {
   const page = booking.sourcePage?.trim();
   if (!page) return "";
   if (page === "home-quick") return "Home (quick form)";
   if (page === "programs-girls") return "Girls programs";
-  if (page.startsWith("camp-")) {
-    const words = page.slice("camp-".length).split("-").filter(Boolean).map((w) => w[0].toUpperCase() + w.slice(1));
-    return `Event: ${words.join(" ")}`;
-  }
-  return page[0].toUpperCase() + page.slice(1);
+  if (page.startsWith("programs-")) return `${titleCase(page.slice("programs-".length))} program`;
+  if (page.startsWith("camp-")) return `Event: ${titleCase(page.slice("camp-".length))}`;
+  return titleCase(page);
 }
 
 /** The camp a camp-page lead chose (the camp form stores it in the programme field). Empty for other leads. */
@@ -69,4 +69,15 @@ export function eventTitleForLead(
   const slug = leadEventSlug(booking);
   const current = renamedEventSlug(slug) ?? slug;
   return events.find((e) => e.slug === current)?.title ?? (leadNotedEvent(booking) || leadPage(booking).replace(/^Event: /, ""));
+}
+
+/** The notes a lead is saved with: the chosen program first ("Interested in: Mini Basket (ages 7–10)"), then anything the parent wrote. */
+export function withInterest(interest: string, notes: string): string {
+  const parts = [interest ? `Interested in: ${interest}` : "", notes.trim()].filter(Boolean);
+  return parts.join(" · ");
+}
+
+/** The program a lead said they were interested in. Empty for older leads and for camp leads. */
+export function leadInterest(booking: { additionalInfo?: string | null }): string {
+  return booking.additionalInfo?.match(/^Interested in:\s*([^·]+?)\s*(?:·|$)/)?.[1]?.trim() ?? "";
 }

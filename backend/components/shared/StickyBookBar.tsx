@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
+import { bookTrialHref } from "@/lib/bookTrial";
 
 /** Pages that have their own form or their own bar, or are not for visitors. */
 const HIDDEN_ON = /^\/(admin|thank-you|contact)(\/|$)/;
@@ -50,7 +51,7 @@ export function StickyBookBar() {
 
   if (HIDDEN_ON.test(pathname) || ownBar) return null;
   const show = scrolled && !covered;
-  const href = pathname === "/" ? "#book-trial" : "/#book-trial";
+  const href = bookTrialHref(pathname);
 
   return (
     <div

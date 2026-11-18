@@ -99,6 +99,17 @@ export const AREAS = [
   "Other / Outside Dubai",
 ] as const;
 
+/** What a parent says they are interested in. Saved at the start of the lead's notes ("Interested in: Mini Basket (ages 7–10)"). */
+export const PROGRAM_INTERESTS = [
+  "Future Ballers (ages 4–6)",
+  "Mini Basket (ages 7–10)",
+  "Youth Academy (ages 11–18)",
+  "Girls Programs",
+  "Private Training",
+  "Not sure yet",
+] as const;
+export const DEFAULT_PROGRAM_INTEREST: (typeof PROGRAM_INTERESTS)[number] = "Not sure yet";
+
 export const LEVELS = ["Beginner", "Some experience", "Plays competitively"] as const;
 
 export const HOW_HEARD_OPTIONS = [
@@ -445,6 +456,36 @@ export const blogPasswordAttempts = pgTable("blog_password_attempts", {
   attemptCount: integer("attempt_count").notNull().default(0),
   resetAt: timestamp("reset_at", { withTimezone: true }).notNull(),
 }, (table) => [primaryKey({ columns: [table.postId, table.clientKey] })]);
+
+/**
+ * Earlier saved versions of a blog article, for the editor's Revisions panel.
+ * Holds only the fields a restore brings back (title, excerpt, text, featured
+ * image, SEO title and description), not the address, status, dates or taxonomy.
+ */
+export const blogPostRevisions = pgTable(
+  "blog_post_revisions",
+  {
+    id: serial("id").primaryKey(),
+    postId: integer("post_id").notNull().references(() => blogPosts.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    excerpt: text("excerpt"),
+    content: text("content").notNull(),
+    featuredImageSrc: text("featured_image_src"),
+    featuredImageAlt: text("featured_image_alt"),
+    metaTitle: text("meta_title"),
+    metaDescription: text("meta_description"),
+    wordCount: integer("word_count").notNull().default(0),
+    /** Admin who saved this version; null for the version found before history began. */
+    savedBy: text("saved_by"),
+    /** update, baseline (found when history began), before_restore, or restore. */
+    reason: text("reason").notNull().default("update"),
+    restoredFromId: integer("restored_from_id"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [index("idx_blog_post_revisions_post").on(table.postId, sql`${table.createdAt} DESC`)]
+);
+
+export type BlogPostRevision = typeof blogPostRevisions.$inferSelect;
 
 export const insertBlogPostSchema = createInsertSchema(blogPosts).omit({
   id: true,

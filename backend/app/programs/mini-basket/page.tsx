@@ -6,6 +6,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
+import { ProgramBookingSection } from "@/components/programs/ProgramBookingSection";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Zap, Target, Users, Shield, Check } from "lucide-react";
 import { buildPageMetadata, getAltResolver } from "@/lib/seo/resolve";
@@ -65,7 +66,7 @@ export default async function MiniBasket() {
             {c("mini-basket.hero.subtext")}
           </p>
           <div className="flex justify-center">
-            <Link href="/#book-trial">
+            <Link href="#book-trial">
               <Button size="lg" className="uppercase font-bold tracking-wider rounded-none h-14 px-10 text-base">
                 {c("mini-basket.hero.button")} <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
@@ -223,7 +224,7 @@ export default async function MiniBasket() {
             {c("mini-basket.cta.subtext")}
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/#book-trial">
+            <Link href="#book-trial">
               <Button size="lg" className="bg-black text-white hover:bg-white hover:text-primary uppercase font-bold tracking-wider rounded-none h-14 px-10 text-base border-0">
                 {c("mini-basket.cta.button")} <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
@@ -236,6 +237,15 @@ export default async function MiniBasket() {
           </div>
         </div>
       </section>
+
+      <ProgramBookingSection
+        sourcePage="programs-mini-basket"
+        heading={c("mini-basket.form.title")}
+        subheading={c("mini-basket.form.text")}
+        submitLabel={c("mini-basket.form.button")}
+        defaultAgeGroup="7–10 years"
+        defaultProgram="Mini Basket (ages 7–10)"
+      />
     </>
   );
 }

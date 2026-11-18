@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
-import { requireAdmin } from "@/lib/adminAuth";
+import { getAdminUsername, requireAdmin } from "@/lib/adminAuth";
 import { storage } from "@/lib/storage";
 import { blogPostInputSchema, normalizeBlogPostInput, formatBlogValidationError } from "@/lib/blog";
 import bcrypt from "bcryptjs";
@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
   if (authError) return authError;
   try {
     const parsed = blogPostInputSchema.parse(await request.json());
-    const post = await storage.createBlogPost(await preparePost(parsed));
+    const post = await storage.createBlogPost(await preparePost(parsed), { savedBy: await getAdminUsername(request) });
     revalidatePath("/blog");
     revalidatePath("/blog/author/[slug]", "page");
     revalidatePath("/sitemap.xml");
