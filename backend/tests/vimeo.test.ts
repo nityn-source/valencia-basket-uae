@@ -83,7 +83,8 @@ test("the first tap or key press starts the sound, only while the film is on scr
   assert.match(card, /intersectionRatio >= 0\.5/);
   assert.match(card, /!onScreen\.current/, "no sound when the film is scrolled out of view");
   assert.match(card, /chosenMute\.current/, "a visitor who muted stays muted");
-  assert.match(card, /send\("setMuted", !on\)/);
+  assert.match(card, /useVimeoSound\(frameRef\)/);
+  assert.match(file("components/events/useVimeoSound.ts"), /send\("setMuted", !on\)/);
   assert.match(card, /data-sound-toggle/);
   assert.match(card, /Mute/);
 });
@@ -142,4 +143,31 @@ test("card tags come from the camp page: each camp's name, then the ages", async
   assert.deepEqual(campCardTags(details), ["Skill Lab", "Shooting Lab", "Ages 8–18"]);
   assert.deepEqual(campCardTags(null), []);
   assert.deepEqual(campCardTags(campDetailsSchema.parse({})), []);
+});
+
+test("the sound button only changes the sound in place; tapping the film opens the full player with sound already on", () => {
+  const hero = file("components/events/CampHeroVideo.tsx");
+  const card = file("components/events/EventCardVideo.tsx");
+  const dialog = file("components/events/FilmDialog.tsx");
+  const hook = file("components/events/useVimeoSound.ts");
+  for (const [name, source] of [["hero", hero], ["card", card]] as const) {
+    // the sound button is its own button, outside the button that opens the full player
+    assert.match(source, /data-sound-toggle/, name);
+    assert.doesNotMatch(source.slice(source.indexOf("data-testid=\"button-" + (name === "hero" ? "camp-film" : "event-card-film") + "\""), source.indexOf("data-sound-toggle")), /Sound on/, `${name}: no sound label inside the open-player button`);
+    // pressing it before the film plays starts the film in place and turns the sound on once it is playing
+    assert.match(source, /pendingSound\.current = true/, name);
+    assert.match(source, /if \(playing && pendingSound\.current\) \{ pendingSound\.current = false; setSound\(true\); \}/, name);
+    // it never opens the pop-up
+    const toggle = source.match(/type="button"\s+data-sound-toggle([\s\S]*?)aria-pressed/)?.[1] ?? "";
+    assert.ok(toggle.length > 50, `${name}: found the sound button`);
+    assert.doesNotMatch(toggle, /setOpen\(true\)/, `${name}: the sound button must not open the full player`);
+    // opening the full player cancels a pending unmute
+    assert.match(source, /pendingSound\.current = false; setOpen\(true\)/, name);
+  }
+  // the full player asks for sound and playback as soon as it has loaded
+  assert.match(dialog, /onLoad=\{startWithSound\}/);
+  assert.match(dialog, /\{ method: "setMuted", value: false \}, \{ method: "setVolume", value: 1 \}, \{ method: "play" \}/);
+  // unmuting also asks the player to play
+  assert.match(hook, /send\("setMuted", !on\)/);
+  assert.match(hook, /send\("play"\)/);
 });

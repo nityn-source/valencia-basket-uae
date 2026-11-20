@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Volume2, VolumeX } from "lucide-react";
 import { FilmDialog } from "./FilmDialog";
+import { useVimeoSound } from "./useVimeoSound";
 import { formatDuration, vimeoPlayerSrc, type VimeoVideo } from "@/lib/vimeo";
 
 /** True when the visitor has asked for less motion or less data, so the film shouldn't start by itself. */
@@ -36,23 +37,13 @@ export function CampHeroVideo({
   const [loopOn, setLoopOn] = useState(false);
   const [playing, setPlaying] = useState(false);
   const [open, setOpen] = useState(false);
-  const [soundOn, setSoundOn] = useState(false);
   const tapRef = useRef<HTMLButtonElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
   const frameRef = useRef<HTMLIFrameElement>(null);
   const onScreen = useRef(false);
   const chosenMute = useRef(false);
-
-  // Browsers only allow sound after the visitor has tapped or clicked something, so the silent loop
-  // is switched to sound by the first tap, click or key press, but only while the film is on screen.
-  const setSound = (on: boolean) => {
-    const player = frameRef.current?.contentWindow;
-    if (!player) return;
-    const send = (method: string, value: boolean | number) => player.postMessage(JSON.stringify({ method, value }), "https://player.vimeo.com");
-    send("setMuted", !on);
-    if (on) send("setVolume", 1);
-    setSoundOn(on);
-  };
+  const pendingSound = useRef(false);
+  const { soundOn, setSound, resetSound } = useVimeoSound(frameRef);
 
   // Start the silent loop after the page has finished loading, so it never slows the first paint.
   useEffect(() => {
@@ -66,7 +57,13 @@ export function CampHeroVideo({
 
   // While the sound-on player is open the silent loop stops.
   const loopLive = loopOn && !open;
-  useEffect(() => { if (!loopLive) { setPlaying(false); setSoundOn(false); } }, [loopLive]);
+  useEffect(() => { if (!loopLive) { setPlaying(false); resetSound(); } }, [loopLive]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // The sound button was pressed before the film was playing: start it in place, then turn the sound on.
+  useEffect(() => {
+    if (playing && pendingSound.current) { pendingSound.current = false; setSound(true); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [playing]);
 
   // Is at least half of the film on screen?
   useEffect(() => {
@@ -124,7 +121,7 @@ export function CampHeroVideo({
         <button
           ref={tapRef}
           type="button"
-          onClick={() => setOpen(true)}
+          onClick={() => { pendingSound.current = false; setOpen(true); }}
           aria-label={label}
           className="absolute inset-0 z-10 cursor-pointer focus-visible:outline focus-visible:outline-4 focus-visible:-outline-offset-4 focus-visible:outline-white"
           data-testid="button-camp-film"
@@ -135,18 +132,18 @@ export function CampHeroVideo({
             </span>
           )}
         </button>
-        {/* Sound switch: unmutes or mutes the film in place. With no silent loop running (reduced motion, data saving) it opens the full player instead. */}
+        {/* Sound switch: only changes the sound, in place. If the film isn't playing yet it starts it here and turns the sound on. */}
         <button
           type="button"
           data-sound-toggle
           onClick={() => {
-            if (!playing) { setOpen(true); return; }
+            if (!playing) { pendingSound.current = true; setLoopOn(true); return; }
             chosenMute.current = soundOn;
             setSound(!soundOn);
           }}
-          aria-label={playing ? (soundOn ? "Mute the camp film" : "Turn the camp film sound on") : label}
-          aria-pressed={playing ? soundOn : undefined}
-          className="absolute bottom-3 right-3 z-20 inline-flex items-center gap-1.5 bg-black/75 px-2.5 py-2 text-[11px] font-extrabold uppercase tracking-wider text-white ring-1 ring-white/40 backdrop-blur-sm hover:bg-black focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
+          aria-label={soundOn ? "Mute the camp film" : "Turn the camp film sound on"}
+          aria-pressed={soundOn}
+          className="absolute bottom-3 right-3 z-20 inline-flex min-h-[36px] items-center gap-1.5 bg-black/75 px-3 py-2 text-[11px] font-extrabold uppercase tracking-wider text-white ring-1 ring-white/40 backdrop-blur-sm hover:bg-black focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
           data-testid="button-camp-film-sound"
         >
           {soundOn ? <><VolumeX className="h-3.5 w-3.5" aria-hidden="true" /> Mute</> : <><Volume2 className="h-3.5 w-3.5" aria-hidden="true" /> Sound on{seconds ? ` · ${formatDuration(seconds)}` : ""}</>}

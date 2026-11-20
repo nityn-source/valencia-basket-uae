@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { vimeoPlayerSrc, type VimeoVideo } from "@/lib/vimeo";
 
@@ -19,6 +20,16 @@ export function FilmDialog({
   ratio: string;
   onCloseFocus?: () => void;
 }) {
+  const frameRef = useRef<HTMLIFrameElement>(null);
+  // Opened by a tap on the film: make sure it plays with sound (some browsers start an embedded player muted or paused).
+  const startWithSound = () => {
+    const player = frameRef.current?.contentWindow;
+    if (!player) return;
+    for (const message of [{ method: "setMuted", value: false }, { method: "setVolume", value: 1 }, { method: "play" }]) {
+      player.postMessage(JSON.stringify(message), "https://player.vimeo.com");
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
@@ -32,6 +43,8 @@ export function FilmDialog({
         <DialogTitle className="sr-only">{title}</DialogTitle>
         <DialogDescription className="sr-only">The camp film. Press Escape to close it.</DialogDescription>
         <iframe
+          ref={frameRef}
+          onLoad={startWithSound}
           src={vimeoPlayerSrc(video, "sound")}
           title={title}
           allow="autoplay; fullscreen; picture-in-picture"
