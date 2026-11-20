@@ -1,0 +1,109 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import { Volume2 } from "lucide-react";
+import { FilmDialog } from "./FilmDialog";
+import { formatDuration, vimeoPlayerSrc, type VimeoVideo } from "@/lib/vimeo";
+
+/** True when the visitor wants less motion or less data, so the film shouldn't start by itself. */
+function prefersStill() {
+  const connection = (navigator as Navigator & { connection?: { saveData?: boolean; effectiveType?: string } }).connection;
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches || !!connection?.saveData || /(^|-)2g$/.test(connection?.effectiveType ?? "");
+}
+
+/**
+ * The film on an event card, as a poster: a tall 9:16 frame with a white border and a solid orange
+ * offset block behind it. It shows its cover at once, plays a silent loop once the page has loaded and
+ * the card is on screen, and opens the full player with sound when tapped. On a card it never starts
+ * sound by itself. The frame is exactly 9:16, so nothing is cropped.
+ */
+export function EventCardVideo({
+  video,
+  poster,
+  title,
+  seconds,
+  shape = { width: 9, height: 16 },
+}: {
+  video: VimeoVideo;
+  poster: string | null;
+  title: string;
+  seconds: number;
+  shape?: { width: number; height: number };
+}) {
+  const hostRef = useRef<HTMLDivElement>(null);
+  const tapRef = useRef<HTMLButtonElement>(null);
+  const [visible, setVisible] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+  const [playing, setPlaying] = useState(false);
+  const [open, setOpen] = useState(false);
+
+  // Wait until the page has loaded and the card is on screen before loading Vimeo.
+  useEffect(() => {
+    const host = hostRef.current;
+    if (!host || prefersStill()) return;
+    let seen = false;
+    let ready = document.readyState === "complete";
+    const maybe = () => { if (seen && ready) setVisible(true); };
+    const onLoad = () => { ready = true; maybe(); };
+    if (!ready) window.addEventListener("load", onLoad, { once: true });
+    const observer = new IntersectionObserver(([entry]) => { if (entry.isIntersecting) { seen = true; maybe(); observer.disconnect(); } }, { threshold: 0.4 });
+    observer.observe(host);
+    return () => { observer.disconnect(); window.removeEventListener("load", onLoad); };
+  }, []);
+
+  const loopLive = visible && !open;
+  useEffect(() => { if (!loopLive) { setLoaded(false); setPlaying(false); } }, [loopLive]);
+  useEffect(() => {
+    if (!loaded) return;
+    const timer = window.setTimeout(() => setPlaying(true), 700);
+    return () => window.clearTimeout(timer);
+  }, [loaded]);
+
+  const ratio = `${shape.width} / ${shape.height}`;
+
+  return (
+    <>
+      <div
+        ref={hostRef}
+        className="relative h-[267px] shrink-0 overflow-hidden border-[3px] border-white bg-black shadow-[10px_10px_0_#ff6c0e] md:h-[340px]"
+        style={{ aspectRatio: ratio }}
+        data-testid="event-card-video"
+      >
+          {poster && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={poster} alt="" loading="lazy" decoding="async" className="absolute inset-0 h-full w-full object-cover" />
+          )}
+          {loopLive && (
+            <iframe
+              src={vimeoPlayerSrc(video, "loop")}
+              title={`${title} (silent preview)`}
+              allow="autoplay; picture-in-picture"
+              referrerPolicy="strict-origin-when-cross-origin"
+              tabIndex={-1}
+              aria-hidden="true"
+              onLoad={() => setLoaded(true)}
+              className={`pointer-events-none absolute inset-0 h-full w-full border-0 transition-opacity duration-500 ${playing ? "opacity-100" : "opacity-0"}`}
+            />
+          )}
+          <button
+            ref={tapRef}
+            type="button"
+            onClick={() => setOpen(true)}
+            aria-label={`Watch the camp film with sound${seconds ? ` (${formatDuration(seconds)})` : ""}`}
+            className="absolute inset-0 z-10 cursor-pointer focus-visible:outline focus-visible:outline-4 focus-visible:-outline-offset-4 focus-visible:outline-white"
+            data-testid="button-event-card-film"
+          >
+            {!playing && (
+              <span className="absolute left-1/2 top-1/2 flex h-12 w-12 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-primary text-white shadow-lg" aria-hidden="true">
+                <span className="ml-0.5 h-0 w-0 border-y-[9px] border-l-[14px] border-y-transparent border-l-white" />
+              </span>
+            )}
+            <span className="absolute bottom-2 right-2 inline-flex items-center gap-1 bg-black/75 px-2 py-1.5 text-[10px] font-extrabold uppercase tracking-wider text-white ring-1 ring-white/40" aria-hidden="true">
+              <Volume2 className="h-3 w-3" /> Sound on{seconds ? ` · ${formatDuration(seconds)}` : ""}
+            </span>
+          </button>
+      </div>
+      <FilmDialog open={open} onOpenChange={setOpen} video={video} title={title} ratio={ratio} onCloseFocus={() => tapRef.current?.focus()} />
+    </>
+  );
+}

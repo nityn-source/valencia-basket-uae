@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Volume2, VolumeX } from "lucide-react";
-import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
+import { FilmDialog } from "./FilmDialog";
 import { formatDuration, vimeoPlayerSrc, type VimeoVideo } from "@/lib/vimeo";
 
 /** True when the visitor has asked for less motion or less data, so the film shouldn't start by itself. */
@@ -153,24 +153,7 @@ export function CampHeroVideo({
         </button>
       </div>
 
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent
-          className="w-auto max-w-none gap-0 border-0 bg-black p-0 shadow-none sm:max-w-none [&>button]:right-2 [&>button]:top-2 [&>button]:z-20 [&>button]:bg-black/60 [&>button]:p-2 [&>button]:text-white [&>button]:opacity-100"
-          style={{ height: "min(90vh, 820px)", aspectRatio: ratio, maxWidth: "94vw" }}
-          onCloseAutoFocus={(event) => { event.preventDefault(); tapRef.current?.focus(); }}
-        >
-          <DialogTitle className="sr-only">{title}</DialogTitle>
-          <DialogDescription className="sr-only">The Winter Camp film. Press Escape to close it.</DialogDescription>
-          <iframe
-            src={vimeoPlayerSrc(video, "sound")}
-            title={title}
-            allow="autoplay; fullscreen; picture-in-picture"
-            allowFullScreen
-            referrerPolicy="strict-origin-when-cross-origin"
-            className="h-full w-full border-0"
-          />
-        </DialogContent>
-      </Dialog>
+      <FilmDialog open={open} onOpenChange={setOpen} video={video} title={title} ratio={ratio} onCloseFocus={() => tapRef.current?.focus()} />
     </>
   );
 }

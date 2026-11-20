@@ -10,6 +10,10 @@ import { buildPageMetadata } from "@/lib/seo/resolve";
 import { getStructuredData } from "@/lib/seo/structuredDataResolve";
 import { StructuredData } from "@/components/seo/StructuredData";
 import { getContentGetter } from "@/lib/content/pageContent";
+import { parseVimeo, type VimeoVideo } from "@/lib/vimeo";
+import { getVimeoInfo, type VimeoInfo } from "@/lib/vimeoServer";
+import { EventCardVideo } from "@/components/events/EventCardVideo";
+import { campCardTags } from "@/lib/campTags";
 
 export const revalidate = 60;
 
@@ -17,7 +21,49 @@ export async function generateMetadata(): Promise<Metadata> {
   return buildPageMetadata("/events");
 }
 
-function EventCard({ event, past = false, buttonLabel, completedLabel }: { event: Event; past?: boolean; buttonLabel: string; completedLabel: string }) {
+type Film = { video: VimeoVideo; info: VimeoInfo | null };
+
+function EventCard({ event, past = false, buttonLabel, completedLabel, film }: { event: Event; past?: boolean; buttonLabel: string; completedLabel: string; film?: Film | null }) {
+  if (film) {
+    // A poster card: the film as a bordered poster with an orange offset block, an orange line across the top, and the
+    // details beside it. The card is not one big link here (a playable film can't sit inside a link): an overlay link
+    // covers it and the film sits above.
+    const tags = campCardTags(event.details);
+    return (
+      <div className={`group relative flex flex-col items-center gap-8 overflow-hidden border border-t-4 border-gray-100 border-t-primary bg-[#fffdfa] p-6 pb-8 shadow-sm transition-shadow duration-300 hover:shadow-xl md:flex-row md:gap-10 md:p-8 ${past ? "opacity-80" : ""}`}>
+        <Link href={`/events/${event.slug}`} aria-label={`${event.title}: ${buttonLabel}`} className="absolute inset-0 z-10" data-testid={`link-event-${event.slug}`} />
+        <div className="relative z-20 shrink-0 pb-2.5 pr-2.5">
+          <EventCardVideo
+            video={film.video}
+            poster={film.info?.thumbnail ?? null}
+            title={film.info?.title || `${event.title}: the camp film`}
+            seconds={film.info?.duration ?? 0}
+            shape={film.info ? { width: film.info.width, height: film.info.height } : undefined}
+          />
+        </div>
+        <div className="flex w-full flex-col items-start justify-center">
+          <span className="mb-3 bg-primary px-3 py-1 text-xs font-bold uppercase tracking-widest text-white">{past ? completedLabel : event.status}</span>
+          <h2 className="mb-4 text-3xl font-black uppercase transition-colors group-hover:text-primary" data-testid={`text-event-title-${event.slug}`}>{event.title}</h2>
+          <div className="mb-4 flex flex-wrap gap-4 text-sm font-medium text-gray-500 md:gap-8">
+            <div className="flex items-center gap-2"><CalendarDays className="h-4 w-4 text-primary" /> {event.date}</div>
+            <div className="flex items-center gap-2"><Clock className="h-4 w-4 text-primary" /> {event.time}</div>
+            <div className="flex items-center gap-2"><MapPin className="h-4 w-4 text-primary" /> {event.location}</div>
+          </div>
+          {tags.length > 0 && (
+            <ul className="mb-4 flex flex-wrap gap-1.5" aria-label="Camp details">
+              {tags.map((tag) => (
+                <li key={tag} className="border border-gray-200 px-2 py-1 text-[11px] font-bold uppercase tracking-wide text-gray-600">{tag}</li>
+              ))}
+            </ul>
+          )}
+          <p className="mb-8 max-w-2xl text-lg text-gray-600">{event.description}</p>
+          <Button disabled={event.status === "Sold Out"} variant={past ? "outline" : "default"} className="rounded-none px-8 font-bold uppercase tracking-wider" data-testid={`button-view-event-${event.slug}`} tabIndex={-1}>
+            {buttonLabel}
+          </Button>
+        </div>
+      </div>
+    );
+  }
   return (
     <Link href={`/events/${event.slug}`} data-testid={`link-event-${event.slug}`}>
       <div className={`flex flex-col md:flex-row bg-white border border-gray-100 shadow-sm overflow-hidden group hover:shadow-xl transition-shadow duration-300 cursor-pointer ${past ? "opacity-80" : ""}`}>
@@ -65,6 +111,16 @@ export default async function Events() {
   const schema = await getStructuredData("/events", "Events");
   const c = await getContentGetter();
 
+  // Events whose camp page has a Vimeo film show the film on their card.
+  const films = new Map<string, Film | null>(
+    await Promise.all(
+      events.map(async (event): Promise<[string, Film | null]> => {
+        const video = parseVimeo(event.details?.heroVideo);
+        return [event.id, video ? { video, info: await getVimeoInfo(video) } : null];
+      }),
+    ),
+  );
+
   const upcoming = events.filter((e) => !isPastEvent(e.endDate));
   const past = events
     .filter((e) => isPastEvent(e.endDate))
@@ -86,7 +142,7 @@ export default async function Events() {
         {upcoming.length > 0 ? (
           <div className="space-y-12">
               {upcoming.map((event) => (
-                  <EventCard key={event.id} event={event} buttonLabel={c("events.card.button")} completedLabel={c("events.card.completed")} />
+                  <EventCard key={event.id} event={event} film={films.get(event.id)} buttonLabel={c("events.card.button")} completedLabel={c("events.card.completed")} />
               ))}
           </div>
         ) : (
@@ -103,7 +159,7 @@ export default async function Events() {
             </div>
             <div className="space-y-12">
                 {past.map((event) => (
-                    <EventCard key={event.id} event={event} past buttonLabel={c("events.card.button")} completedLabel={c("events.card.completed")} />
+                    <EventCard key={event.id} event={event} past film={films.get(event.id)} buttonLabel={c("events.card.button")} completedLabel={c("events.card.completed")} />
                 ))}
             </div>
           </div>
