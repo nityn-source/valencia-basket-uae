@@ -147,7 +147,7 @@ export function CampPageEditor({ value, onChange }: { value: CampDetails; onChan
         Everything on the camp page is edited here. Sections left empty are hidden on the website. Click a section to open it.
       </p>
 
-      <Section title="Top of page" hint="headline, intro line, strip, buttons, photo">
+      <Section title="Top of page" hint="headline, intro line, strip, buttons, photo, film">
         <Field label="First day of the event (YYYY-MM-DD, for Google)" value={value.startDate} onChange={(v) => set("startDate", v)} placeholder="2026-12-07" />
         <Field label="Headline (H1)" value={value.headline} onChange={(v) => set("headline", v)} />
         <Field label="Sub text" value={value.subtext} onChange={(v) => set("subtext", v)} textarea />
@@ -158,6 +158,10 @@ export function CampPageEditor({ value, onChange }: { value: CampDetails; onChan
         </div>
         <Field label="'Open for' line" value={value.openFor} onChange={(v) => set("openFor", v)} />
         <Field label="Hero photo (image link or /images/… path)" value={value.heroImage} onChange={(v) => set("heroImage", v)} />
+        <Field label="Camp film (Vimeo link, optional)" value={value.heroVideo} onChange={(v) => set("heroVideo", v)} placeholder="https://vimeo.com/1248302235" />
+        <p className="text-xs text-gray-500">
+          With a Vimeo link, the top of the page shows the film beside the headline over a blurred copy of the hero photo. It plays silently and opens with sound when tapped. A vertical (phone-shaped) film suits it best. Leave empty to keep the plain photo.
+        </p>
       </Section>
 
       <Section title="Programmes (camps)" hint="week cards, details, Classcard links, dropdown options">

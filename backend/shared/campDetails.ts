@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { parseVimeo } from "../lib/vimeo";
 
 /**
  * Optional structured content for a camp-style event page (events.details).
@@ -91,6 +92,13 @@ export const campDetailsSchema = z.object({
   whatsappUrl: text(300),
   email: text(120),
   heroImage: text(500),
+  /** A Vimeo link. When set, the hero shows the film (a vertical video) beside the headline over a blurred copy of the hero photo. */
+  heroVideo: z
+    .string()
+    .trim()
+    .max(300)
+    .refine((value) => value === "" || parseVimeo(value) !== null, "Use a Vimeo video link, like https://vimeo.com/1248302235")
+    .default(""),
 });
 
 export type CampProgramme = z.infer<typeof campProgrammeSchema>;

@@ -57,3 +57,9 @@ test("the live-article link opens only for articles visitors can reach", async (
   assert.equal(isOpenToVisitors({ ...live, trashedAt: "2026-11-02T10:00:00.000Z" }, now), false);
   assert.match(readFileSync(resolve(process.cwd(), "app/admin/BlogManager.tsx"), "utf8"), /href=\{blogLivePath\(post\.slug\)\} target="_blank" rel="noopener noreferrer"/);
 });
+
+test("the editor shows a View live link beside Preview only for articles visitors can reach", () => {
+  const editor = readFileSync(resolve(process.cwd(), "app/admin/BlogEditor.tsx"), "utf8");
+  assert.match(editor, /\{post && isOpenToVisitors\(post\) && \(\s*<Button asChild[^>]*>\s*<a href=\{blogLivePath\(post\.slug\)\} target="_blank" rel="noopener noreferrer"/);
+  assert.ok(editor.indexOf("link-preview-blog-editor") < editor.indexOf("link-live-blog-editor"), "Preview comes before View live");
+});

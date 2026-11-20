@@ -15,6 +15,7 @@ export const WINTER_CAMP_DETAILS: CampDetails = {
   whatsappLabel: "WhatsApp Us",
   openFor: "Open for Ages 8 - 18",
   heroImage: "/images/summer-camp-1.jpg",
+  heroVideo: "",
   programmes: [
     {
       id: "skill-lab",

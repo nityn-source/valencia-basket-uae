@@ -14,6 +14,9 @@ import { CampReserveButton } from "./CampReserveButton";
 import { DrillTimeline } from "./DrillTimeline";
 import { buildDays, campStart, compactDates } from "@/lib/campDays";
 import { mapsSearchUrl } from "@/lib/maps";
+import { parseVimeo } from "@/lib/vimeo";
+import { getVimeoInfo } from "@/lib/vimeoServer";
+import { CampHeroVideo } from "./CampHeroVideo";
 
 const H2 = "text-3xl md:text-5xl font-black uppercase tracking-tight leading-none mb-5";
 const EYEBROW = "mb-3 text-xs font-extrabold uppercase tracking-[0.2em] text-primary";
@@ -33,7 +36,7 @@ function Eyebrow({ children }: { children: React.ReactNode }) {
   return <div className={EYEBROW}>{children}</div>;
 }
 
-export function CampEventPage({ event, details }: { event: Event; details: CampDetails }) {
+export async function CampEventPage({ event, details }: { event: Event; details: CampDetails }) {
   const open = isRegistrationOpen(event);
   const d = details;
   const programmes = d.programmes;
@@ -42,6 +45,10 @@ export function CampEventPage({ event, details }: { event: Event; details: CampD
     .filter((r) => reelId(r.url))
     .map((r, i) => ({ url: r.url, caption: r.caption, target: "homepage", sortOrder: i, visible: true }));
   const heroImage = d.heroImage || event.image || "";
+  // A Vimeo link switches the hero to the film layout: the film beside the headline, over a blurred copy of the hero photo.
+  const video = parseVimeo(d.heroVideo);
+  const videoInfo = video ? await getVimeoInfo(video) : null;
+  const film = !!video;
   const whatsapp = d.whatsappUrl || "https://wa.me/971544386838";
   // "Starts in" clock: only while the camp is still ahead (the client hides it the moment it starts).
   const start = campStart(d.startDate, [...programmes.map((p) => p.dates), event.date]);
@@ -92,68 +99,115 @@ export function CampEventPage({ event, details }: { event: Event; details: CampD
   const ageRange = d.openFor.match(/(\d{1,2})\s*[-–]\s*(\d{1,2})/);
   const ages = Array.from({ length: (ageRange ? Number(ageRange[2]) : 18) - (ageRange ? Number(ageRange[1]) : 5) + 1 }, (_, i) => (ageRange ? Number(ageRange[1]) : 5) + i);
 
+  // Hero text blocks, shared by both hero layouts (light on white, or white on the film hero).
+  const headline = (
+    <h1
+      className={`page-title mb-5 text-4xl font-black uppercase leading-[0.95] tracking-tighter sm:text-5xl ${film ? "lg:text-6xl 2xl:text-7xl [text-shadow:0_2px_24px_rgba(0,0,0,0.45)]" : "lg:text-7xl"}`}
+      data-testid="text-event-detail-title"
+    >
+      {d.headline || event.title}
+    </h1>
+  );
+  const subtext = d.subtext ? <p className={`${film ? "text-base leading-relaxed text-white/90 md:text-lg [text-shadow:0_1px_14px_rgba(0,0,0,0.5)]" : LEAD} max-w-xl`}>{d.subtext}</p> : null;
+  // Dates and venue on one line (the venue opens Google Maps, the Maps app on a phone), then the two camps as small tiles.
+  const facts = (
+    <div className="hero-fade mt-5 max-w-xl" style={{ animationDelay: "0.3s" }} data-testid="hero-facts">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm font-extrabold">
+        <span className="inline-flex items-center gap-1.5"><CalendarDays className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />{event.date}</span>
+        <a
+          href={mapsSearchUrl(event.location)}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label={`${event.location}: open in Google Maps (opens in a new tab)`}
+          className={`inline-flex items-center gap-1.5 underline underline-offset-4 transition-colors ${film ? "text-orange-300 decoration-orange-300/50 hover:decoration-orange-300" : "text-[#c2410c] decoration-[#c2410c]/40 hover:decoration-[#c2410c]"}`}
+          data-testid="link-venue-maps"
+        >
+          <MapPin className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+          {event.location}
+          <ExternalLink className="h-3 w-3 shrink-0" aria-hidden="true" />
+        </a>
+      </div>
+      {cards.length > 1 && (
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          {cards.slice(0, 2).map((p, i) => (
+            <div key={p.id} className={`border px-3 py-2.5 ${film ? "border-white/25 bg-white/10 backdrop-blur-sm" : "border-[#e7dfd2]"}`} data-testid={`hero-camp-${i + 1}`}>
+              <span className={`block text-[11px] font-extrabold uppercase tracking-widest ${film ? "text-white/65" : "text-[#6b6258]"}`}>Camp {i + 1}</span>
+              <span className="block text-sm font-extrabold leading-tight">{p.name}</span>
+              <span className={`block text-[13px] ${film ? "text-white/75" : "text-[#6b6258]"}`}>{compactDates(p.dates)}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+  const countdown = upcoming ? (
+    <div className="hero-fade" style={{ animationDelay: "0.6s" }}>
+      <CampCountdown start={upcoming} dark={film} />
+    </div>
+  ) : null;
+  const ctas = (
+    <div className="hero-fade mt-6 flex flex-wrap gap-3" style={{ animationDelay: "0.75s" }}>
+      {open ? (
+        <a href="#register" className="bg-primary px-7 py-4 text-sm font-extrabold uppercase tracking-widest text-white hover:bg-orange-600" data-testid="link-register-now">
+          {d.ctaLabel || "Register Now"}
+        </a>
+      ) : (
+        <span className="bg-gray-200 px-7 py-4 text-sm font-extrabold uppercase tracking-widest text-gray-600" data-testid="text-registration-closed">
+          Registration closed
+        </span>
+      )}
+      <a href={whatsapp} target="_blank" rel="noopener noreferrer" className={`border-2 px-7 py-[14px] text-sm font-extrabold uppercase tracking-widest ${film ? "border-white text-white hover:bg-white hover:text-black" : "border-black hover:bg-black hover:text-white"}`}>
+        {d.whatsappLabel || "WhatsApp Us"}
+      </a>
+    </div>
+  );
+
 
   return (
     <div className="bg-white text-[#111]">
-      {/* HERO: photo first on phones; on desktop the text sits left and the photo wipes open on the right */}
-      <div className="grid lg:grid-cols-[1.05fr_.95fr]">
-        <div className="flex flex-col justify-center px-4 py-10 md:px-10 lg:px-16 lg:py-20">
-          <h1
-            className="page-title mb-5 text-4xl font-black uppercase leading-[0.95] tracking-tighter sm:text-5xl lg:text-7xl"
-            data-testid="text-event-detail-title"
-          >
-            {d.headline || event.title}
-          </h1>
-          {d.subtext && <p className={`${LEAD} max-w-xl`}>{d.subtext}</p>}
-          {/* Dates and venue on one line (the venue opens Google Maps, the Maps app on a phone), then the two camps as small tiles. */}
-          <div className="hero-fade mt-5 max-w-xl" style={{ animationDelay: "0.3s" }} data-testid="hero-facts">
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm font-extrabold">
-              <span className="inline-flex items-center gap-1.5"><CalendarDays className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />{event.date}</span>
-              <a
-                href={mapsSearchUrl(event.location)}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label={`${event.location}: open in Google Maps (opens in a new tab)`}
-                className="inline-flex items-center gap-1.5 text-[#c2410c] underline decoration-[#c2410c]/40 underline-offset-4 transition-colors hover:decoration-[#c2410c]"
-                data-testid="link-venue-maps"
-              >
-                <MapPin className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
-                {event.location}
-                <ExternalLink className="h-3 w-3 shrink-0" aria-hidden="true" />
-              </a>
-            </div>
-            {cards.length > 1 && (
-              <div className="mt-3 grid grid-cols-2 gap-2">
-                {cards.slice(0, 2).map((p, i) => (
-                  <div key={p.id} className="border border-[#e7dfd2] px-3 py-2.5" data-testid={`hero-camp-${i + 1}`}>
-                    <span className="block text-[11px] font-extrabold uppercase tracking-widest text-[#6b6258]">Camp {i + 1}</span>
-                    <span className="block text-sm font-extrabold leading-tight">{p.name}</span>
-                    <span className="block text-[13px] text-[#6b6258]">{compactDates(p.dates)}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-          {upcoming && (
-            <div className="hero-fade" style={{ animationDelay: "0.6s" }}>
-              <CampCountdown start={upcoming} />
-            </div>
+      {/* HERO. With a film: the film sits beside the headline over a blurred copy of the hero photo (on phones the headline, then the film centred, then the details).
+          Without one: photo first on phones; on desktop the text sits left and the photo wipes open on the right. */}
+      {film ? (
+        <div className="relative isolate overflow-hidden bg-black text-white" data-testid="camp-hero-film">
+          {heroImage && (
+            <Image src={heroImage} alt="" fill priority quality={40} sizes="(min-width:1024px) 60vw, 100vw" className="-z-20 scale-110 object-cover blur-[20px] saturate-[1.25]" />
           )}
-          <div className="hero-fade mt-6 flex flex-wrap gap-3" style={{ animationDelay: "0.75s" }}>
-            {open ? (
-              <a href="#register" className="bg-primary px-7 py-4 text-sm font-extrabold uppercase tracking-widest text-white hover:bg-orange-600" data-testid="link-register-now">
-                {d.ctaLabel || "Register Now"}
-              </a>
-            ) : (
-              <span className="bg-gray-200 px-7 py-4 text-sm font-extrabold uppercase tracking-widest text-gray-600" data-testid="text-registration-closed">
-                Registration closed
-              </span>
-            )}
-            <a href={whatsapp} target="_blank" rel="noopener noreferrer" className="border-2 border-black px-7 py-[14px] text-sm font-extrabold uppercase tracking-widest hover:bg-black hover:text-white">
-              {d.whatsappLabel || "WhatsApp Us"}
-            </a>
+          <div className="absolute inset-0 -z-10 bg-gradient-to-r from-black/72 via-black/48 to-black/28" aria-hidden="true" />
+          <div className="absolute inset-x-0 bottom-0 -z-10 h-1/3 bg-gradient-to-t from-black/60 to-transparent" aria-hidden="true" />
+          <div className="mx-auto flex max-w-[1500px] flex-col gap-8 px-4 py-8 md:px-10 lg:grid lg:grid-cols-[1.1fr_.9fr] lg:items-center lg:gap-x-10 lg:px-16 lg:py-14">
+            <div className="contents lg:flex lg:flex-col lg:justify-center">
+              <div className="order-1 lg:order-none">
+                {headline}
+                {/* On phones the intro line moves below the film so the whole film fits on the first screen. */}
+                <div className="hidden lg:block">{subtext}</div>
+              </div>
+              <div className="order-3 lg:order-none">
+                <div className="lg:hidden">{subtext}</div>
+                {facts}
+                {countdown}
+                {ctas}
+              </div>
+            </div>
+            <div className="order-2 lg:order-none lg:col-start-2 lg:row-start-1 lg:row-span-1">
+              <CampHeroVideo
+                video={video!}
+                poster={videoInfo?.thumbnail ?? null}
+                title={videoInfo?.title || `${d.headline || event.title}: the camp film`}
+                seconds={videoInfo?.duration ?? 0}
+                shape={videoInfo ? { width: videoInfo.width, height: videoInfo.height } : undefined}
+              />
+            </div>
           </div>
         </div>
+      ) : (
+        <div className="grid lg:grid-cols-[1.05fr_.95fr]">
+          <div className="flex flex-col justify-center px-4 py-10 md:px-10 lg:px-16 lg:py-20">
+            {headline}
+            {subtext}
+            {facts}
+            {countdown}
+            {ctas}
+          </div>
         {heroImage && (
           <div className="camp-photo relative min-h-[280px] border-l-0 border-primary max-lg:order-first lg:min-h-[640px] lg:border-l-[10px]">
             <Image src={heroImage} alt={event.imageAlt?.trim() || event.title} fill priority sizes="(min-width:1024px) 48vw, 100vw" className="camp-photo-img object-cover" />
@@ -172,6 +226,7 @@ export function CampEventPage({ event, details }: { event: Event; details: CampD
           </div>
         )}
       </div>
+      )}
 
       {/* HIGHLIGHTS BANNER: sliding strip like the homepage trust bar (pauses on hover; still and scrollable with reduced motion) */}
       {d.strip.length > 0 && (

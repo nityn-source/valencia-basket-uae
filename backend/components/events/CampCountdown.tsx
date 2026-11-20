@@ -17,7 +17,7 @@ function useRemaining(start: string) {
 
 const pad = (n: number) => String(n).padStart(2, "0");
 
-export function CampCountdown({ start, variant = "tiles" }: { start: string; variant?: "tiles" | "bar" }) {
+export function CampCountdown({ start, variant = "tiles", dark = false }: { start: string; variant?: "tiles" | "bar"; dark?: boolean }) {
   const left = useRemaining(start);
   if (left !== null && left <= 0) return null;
   const secs = left === null ? null : Math.floor(left / 1000);
@@ -40,10 +40,10 @@ export function CampCountdown({ start, variant = "tiles" }: { start: string; var
 
   return (
     <div className="mt-6" role="timer" aria-label="Time until the camp starts" data-testid="camp-countdown">
-      <div className="mb-2 text-[11px] font-extrabold uppercase tracking-[0.2em] text-[#6b6258]">Camp starts in</div>
+      <div className={`mb-2 text-[11px] font-extrabold uppercase tracking-[0.2em] ${dark ? "text-white/65" : "text-[#6b6258]"}`}>Camp starts in</div>
       <div className="flex gap-2">
         {parts.map((p) => (
-          <div key={p.label} className="w-[62px] bg-[#111] py-2.5 text-center text-white sm:w-[72px]">
+          <div key={p.label} className={`w-[62px] py-2.5 text-center text-white sm:w-[72px] ${dark ? "bg-white/15 ring-1 ring-white/15 backdrop-blur-sm" : "bg-[#111]"}`}>
             <span key={p.value} className="camp-tick block text-2xl font-black leading-none tabular-nums sm:text-3xl">{p.value}</span>
             <small className="mt-1 block text-[9px] font-extrabold uppercase tracking-[0.16em] text-primary">{p.label}</small>
           </div>

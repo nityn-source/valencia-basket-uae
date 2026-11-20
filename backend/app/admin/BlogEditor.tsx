@@ -5,7 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlignCenter, AlignLeft, AlignRight, ArrowLeft, Bold, ChevronDown, ChevronUp,
   Code2, Expand, ImagePlus, Instagram, Italic, Link2, List, ListOrdered, Maximize2,
-  Eye, Minus, Redo2, RotateCcw, Search, Star, Trash2, Undo2, X,
+  Eye, ExternalLink, Minus, Redo2, RotateCcw, Search, Star, Trash2, Undo2, X,
   Monitor, Palette, Pencil, Smartphone, Unlink,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { blogPreviewPath } from "@/lib/blogPreview";
+import { blogLivePath, blogPreviewPath, isOpenToVisitors } from "@/lib/blogPreview";
 import { BlogRevisions } from "./BlogRevisions";
 import { BLOG_CONTENT_MAX, DEFAULT_BLOG_AUTHOR, countInlineImages, sanitizeBlogContent, sanitizeBlogHtml } from "@/lib/blog";
 import { IMAGE_LIMITS_TEXT, cleanPastedHtml, dataUrlToFile, findInlineImages, findRemoteImages, imageFileProblem, isImageOnlyHtml } from "@/lib/blogPaste";
@@ -1062,6 +1062,11 @@ export function BlogEditor({ post, adminName, onClose, onSaved, onDelete }: {
             </Button>
           ) : (
             <Button size="sm" variant="outline" disabled title="Save the article as a draft first, then you can preview it" data-testid="link-preview-blog-editor"><Eye className="mr-2 h-4 w-4" /> Preview</Button>
+          )}
+          {post && isOpenToVisitors(post) && (
+            <Button asChild size="sm" variant="outline" title="Open the live article in a new tab">
+              <a href={blogLivePath(post.slug)} target="_blank" rel="noopener noreferrer" data-testid="link-live-blog-editor"><ExternalLink className="mr-2 h-4 w-4" /> View live</a>
+            </Button>
           )}
         </div>
       </div>
