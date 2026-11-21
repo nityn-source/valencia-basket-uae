@@ -171,3 +171,30 @@ test("the sound button only changes the sound in place; tapping the film opens t
   assert.match(hook, /send\("setMuted", !on\)/);
   assert.match(hook, /send\("play"\)/);
 });
+
+test("event cards show each camp week with its dates, focus, times and fee, plus the both-weeks price, read from the camp page", async () => {
+  const { campCardSummary, shortDates, shortTimeLine } = await import("@/lib/campCardWeeks");
+  assert.equal(shortDates("7th Dec 2026 - 11th Dec 2026"), "7th – 11th Dec");
+  assert.equal(shortDates("28th Dec 2026 - 2nd Jan 2027"), "28th Dec – 2nd Jan");
+  assert.equal(shortDates("Winter break"), "Winter break");
+  assert.equal(shortTimeLine("Monday to Thursday: 5:00 PM - 8:00 PM"), "Mon–Thu 5–8 PM");
+  assert.equal(shortTimeLine("Friday: 3:00 PM - 6:00 PM"), "Fri 3–6 PM");
+  assert.equal(shortTimeLine("Monday to Friday: 9:00 AM - 12:00 PM"), "Mon–Fri 9 AM–12 PM");
+  assert.equal(shortTimeLine("Evenings after school"), "Evenings after school");
+  const details = campDetailsSchema.parse({
+    openFor: "Open for Ages 8 - 18",
+    programmes: [
+      { id: "a", weekLabel: "Week 1", name: "Skill Lab", tagline: "Ball handling", dates: "7th Dec 2026 - 11th Dec 2026", timeLines: ["Monday to Thursday: 5:00 PM - 8:00 PM", "Friday: 3:00 PM - 6:00 PM"], fee: "AED 1,000", optionLabel: "Skill Lab" },
+      { id: "both", weekLabel: "", name: "Both Weeks", dates: "7th - 18th Dec 2026", fee: "AED 1,600", optionLabel: "Both" },
+    ],
+    fees: { title: "Fees", rows: [{ name: "Both", dates: "", fee: "AED 1,600", best: true }], note: "Book both camps together and save AED 400." },
+  });
+  const summary = campCardSummary(details)!;
+  assert.equal(summary.ages, "Ages 8–18");
+  assert.equal(summary.weeks.length, 1);
+  assert.deepEqual(summary.weeks[0], { label: "Week 1 · 7th – 11th Dec", name: "Skill Lab", focus: "Ball handling", times: "Mon–Thu 5–8 PM · Fri 3–6 PM", fee: "AED 1,000" });
+  assert.deepEqual(summary.bundle, { text: "Both weeks: AED 1,600", save: "save AED 400" });
+  assert.equal(campCardSummary(null), null);
+  assert.equal(campCardSummary(campDetailsSchema.parse({})), null);
+  for (const source of [file("components/home/EventStrip.tsx"), file("app/events/page.tsx")]) assert.match(source, /campCardSummary\(event\.details\)/);
+});

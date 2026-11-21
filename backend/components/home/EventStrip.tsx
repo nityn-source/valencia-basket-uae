@@ -7,6 +7,8 @@ import { parseVimeo } from "@/lib/vimeo";
 import { getVimeoInfo } from "@/lib/vimeoServer";
 import { EventCardVideo } from "@/components/events/EventCardVideo";
 import { campCardTags } from "@/lib/campTags";
+import { campCardSummary } from "@/lib/campCardWeeks";
+import { CampCardWeeks } from "@/components/events/CampCardWeeks";
 
 export async function EventStrip() {
   const allEvents = await storage.getAllEvents();
@@ -48,6 +50,7 @@ export async function EventStrip() {
               // and the details beside it. The card is not one big link here (a playable film can't sit inside a link):
               // an overlay link covers the card and the film sits above it.
               const tags = campCardTags(event.details);
+              const summary = wide ? campCardSummary(event.details) : null;
               return (
                 <div key={event.id} className={cn("group relative z-10 flex h-full flex-col items-center gap-7 overflow-hidden border border-t-4 border-gray-100 border-t-primary bg-[#fffdfa] p-6 pb-7 shadow-sm transition-all duration-300 hover:shadow-xl", wide ? "md:flex-row md:gap-10 md:p-8" : "")}>
                   <Link href={`/events/${event.slug}`} aria-label={`${event.title}: view details and register`} className="absolute inset-0 z-10" data-testid={`link-event-strip-${event.slug}`} />
@@ -65,8 +68,9 @@ export async function EventStrip() {
                       <Calendar className="h-3 w-3" /> {event.category || "Camp"} · {event.date}
                     </div>
                     <h3 className={cn("mb-2 font-black uppercase leading-tight transition-colors group-hover:text-primary", wide ? "text-2xl md:text-4xl" : "text-xl")}>{event.title}</h3>
-                    {event.location && <p className="mb-1 text-sm text-gray-500">{event.location}</p>}
-                    {tags.length > 0 && (
+                    {event.location && <p className="mb-1 text-sm text-gray-500">{event.location}{summary?.ages ? ` · ${summary.ages}` : ""}</p>}
+                    {summary && <div className="mt-3"><CampCardWeeks summary={summary} /></div>}
+                    {!summary && tags.length > 0 && (
                       <ul className="mt-2 flex flex-wrap gap-1.5" aria-label="Camp details">
                         {tags.map((tag) => (
                           <li key={tag} className="border border-gray-200 px-2 py-1 text-[11px] font-bold uppercase tracking-wide text-gray-600">{tag}</li>

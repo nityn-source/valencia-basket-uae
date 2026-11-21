@@ -14,6 +14,8 @@ import { parseVimeo, type VimeoVideo } from "@/lib/vimeo";
 import { getVimeoInfo, type VimeoInfo } from "@/lib/vimeoServer";
 import { EventCardVideo } from "@/components/events/EventCardVideo";
 import { campCardTags } from "@/lib/campTags";
+import { campCardSummary } from "@/lib/campCardWeeks";
+import { CampCardWeeks } from "@/components/events/CampCardWeeks";
 
 export const revalidate = 60;
 
@@ -29,6 +31,7 @@ function EventCard({ event, past = false, buttonLabel, completedLabel, film }: {
     // details beside it. The card is not one big link here (a playable film can't sit inside a link): an overlay link
     // covers it and the film sits above.
     const tags = campCardTags(event.details);
+    const summary = campCardSummary(event.details);
     return (
       <div className={`group relative flex flex-col items-center gap-8 overflow-hidden border border-t-4 border-gray-100 border-t-primary bg-[#fffdfa] p-6 pb-8 shadow-sm transition-shadow duration-300 hover:shadow-xl md:flex-row md:gap-10 md:p-8 ${past ? "opacity-80" : ""}`}>
         <Link href={`/events/${event.slug}`} aria-label={`${event.title}: ${buttonLabel}`} className="absolute inset-0 z-10" data-testid={`link-event-${event.slug}`} />
@@ -46,17 +49,19 @@ function EventCard({ event, past = false, buttonLabel, completedLabel, film }: {
           <h2 className="mb-4 text-3xl font-black uppercase transition-colors group-hover:text-primary" data-testid={`text-event-title-${event.slug}`}>{event.title}</h2>
           <div className="mb-4 flex flex-wrap gap-4 text-sm font-medium text-gray-500 md:gap-8">
             <div className="flex items-center gap-2"><CalendarDays className="h-4 w-4 text-primary" /> {event.date}</div>
-            <div className="flex items-center gap-2"><Clock className="h-4 w-4 text-primary" /> {event.time}</div>
+            {!summary && <div className="flex items-center gap-2"><Clock className="h-4 w-4 text-primary" /> {event.time}</div>}
             <div className="flex items-center gap-2"><MapPin className="h-4 w-4 text-primary" /> {event.location}</div>
           </div>
-          {tags.length > 0 && (
+          {summary && <CampCardWeeks summary={summary} />}
+          {!summary && tags.length > 0 && (
             <ul className="mb-4 flex flex-wrap gap-1.5" aria-label="Camp details">
               {tags.map((tag) => (
                 <li key={tag} className="border border-gray-200 px-2 py-1 text-[11px] font-bold uppercase tracking-wide text-gray-600">{tag}</li>
               ))}
             </ul>
           )}
-          <p className="mb-8 max-w-2xl text-lg text-gray-600">{event.description}</p>
+          {!summary && <p className="mb-8 max-w-2xl text-lg text-gray-600">{event.description}</p>}
+          {summary && <div className="mb-4" />}
           <Button disabled={event.status === "Sold Out"} variant={past ? "outline" : "default"} className="rounded-none px-8 font-bold uppercase tracking-wider" data-testid={`button-view-event-${event.slug}`} tabIndex={-1}>
             {buttonLabel}
           </Button>
