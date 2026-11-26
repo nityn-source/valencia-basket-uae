@@ -305,6 +305,16 @@ export const eventRegistrations = pgTable(
     phone: text("phone").notNull(),
     playerName: text("player_name").notNull(),
     playerAge: integer("player_age").notNull(),
+    /** Set by the camp page's short form: the camp chosen ("Week 1 Skill Lab"), Girl or Boy, and where the visitor came from. */
+    camp: text("camp").notNull().default(""),
+    gender: text("gender").notNull().default(""),
+    whatsapp: boolean("whatsapp").notNull().default(false),
+    utmSource: text("utm_source").notNull().default("direct"),
+    utmMedium: text("utm_medium").notNull().default("direct"),
+    utmCampaign: text("utm_campaign").notNull().default("direct"),
+    landingPage: text("landing_page").notNull().default(""),
+    referrer: text("referrer").notNull().default(""),
+    sourcePage: text("source_page").notNull().default(""),
     status: text("status").notNull().default("New"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
@@ -316,13 +326,30 @@ export const eventRegistrations = pgTable(
   ]
 );
 
+/** What the plain event form may send. The camp and tracking fields are only set by the camp form's own endpoint. */
 export const insertEventRegistrationSchema = createInsertSchema(eventRegistrations).omit({
+  id: true,
+  status: true,
+  createdAt: true,
+  camp: true,
+  gender: true,
+  whatsapp: true,
+  utmSource: true,
+  utmMedium: true,
+  utmCampaign: true,
+  landingPage: true,
+  referrer: true,
+  sourcePage: true,
+});
+
+/** Everything an event or camp sign-up row can carry; the camp form's endpoint fills the extra fields. */
+export const insertCampRegistrationSchema = createInsertSchema(eventRegistrations).omit({
   id: true,
   status: true,
   createdAt: true,
 });
 
-export type InsertEventRegistration = z.infer<typeof insertEventRegistrationSchema>;
+export type InsertEventRegistration = z.infer<typeof insertCampRegistrationSchema>;
 export type EventRegistration = typeof eventRegistrations.$inferSelect;
 
 export const events = pgTable("events", {

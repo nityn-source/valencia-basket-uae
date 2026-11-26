@@ -48,3 +48,13 @@ test("a camp lead finds its event by exact address, following a renamed address,
   assert.equal(eventTitleForLead({ sourcePage: "camp-gone-event" }, events), "Gone Event");
   assert.equal(leadGender(lead), "Girl", "the saved event name does not disturb the Girl/Boy read");
 });
+
+test("the camp form saves into event registrations (the Event & Camp Sign-ups tab), not into trial bookings", async () => {
+  const { readFileSync } = await import("node:fs");
+  const route = readFileSync("app/api/camp-enquiries/route.ts", "utf8");
+  assert.match(route, /storage\.createEventRegistration\(/);
+  assert.doesNotMatch(route, /createTrialBooking/);
+  const schema = readFileSync("shared/schema.ts", "utf8");
+  for (const column of ["camp", "gender", "whatsapp", "source_page", "utm_source", "landing_page"]) assert.match(schema, new RegExp(`event_registrations[\\s\\S]*"${column}"`));
+  assert.match(readFileSync("migrations/0018_event_registration_camp_fields.sql", "utf8"), /ADD COLUMN "source_page"/);
+});

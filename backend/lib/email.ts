@@ -201,6 +201,8 @@ export async function sendEventRegistrationNotification(registration: {
   phone: string;
   playerName: string;
   playerAge: number;
+  camp?: string;
+  gender?: string;
 }) {
   if (!isEmailConfigured()) {
     console.log("Email not configured — skipping event registration notification");
@@ -238,7 +240,15 @@ export async function sendEventRegistrationNotification(registration: {
           <tr>
             <td style="padding: 8px 12px; font-weight: bold; color: #555; border-bottom: 1px solid #eee;">Player Age</td>
             <td style="padding: 8px 12px; border-bottom: 1px solid #eee;">${esc(registration.playerAge)}</td>
-          </tr>
+          </tr>${registration.camp ? `
+          <tr>
+            <td style="padding: 8px 12px; font-weight: bold; color: #555; border-bottom: 1px solid #eee;">Camp</td>
+            <td style="padding: 8px 12px; border-bottom: 1px solid #eee;">${esc(registration.camp)}</td>
+          </tr>` : ""}${registration.gender ? `
+          <tr>
+            <td style="padding: 8px 12px; font-weight: bold; color: #555; border-bottom: 1px solid #eee;">Girl or Boy</td>
+            <td style="padding: 8px 12px; border-bottom: 1px solid #eee;">${esc(registration.gender)}</td>
+          </tr>` : ""}
         </table>
         <p style="color: #888; font-size: 12px; margin-top: 20px;">This is an automated notification from Valencia Basket UAE.</p>
       </div>

@@ -924,8 +924,8 @@ function AdminDashboard({ authUser, onLogout }: { authUser: AdminAuthUser; onLog
     });
   }, [trialBookings, trialSearch, trialStatusFilter, trialSourceFilter, trialDatePreset, trialCustomFrom, trialCustomTo]);
 
-  // Leads from an event's own page (the camp form) go to the Event & Camp Sign-ups tab together with plain event
-  // registrations; every other form's leads stay in Trial Bookings.
+  // Camp-form sign-ups are saved as event registrations. Camp leads saved in Trial Bookings before that change
+  // are still listed here with them, so none go missing; every other form's leads stay in Trial Bookings.
   const generalBookings = useMemo(() => trialBookings.filter((b) => !isCampLead(b)), [trialBookings]);
   const filteredGeneral = useMemo(() => filteredTrialBookings.filter((b) => !isCampLead(b)), [filteredTrialBookings]);
 
@@ -943,8 +943,8 @@ function AdminDashboard({ authUser, onLogout }: { authUser: AdminAuthUser; onLog
       phone: `${b.phone}${b.whatsapp ? " ✓WA" : ""}`, source: leadSource(b) || EVENT_PAGE_SOURCE, createdAt: b.createdAt, status: b.status,
     }));
     const plain: SignupRow[] = eventRegistrations.map((r) => ({
-      key: `event-${r.id}`, kind: "event", id: r.id, event: r.eventTitle, camp: "", player: r.playerName, age: String(r.playerAge),
-      gender: "", parent: r.parentName, email: r.email, phone: r.phone, source: EVENT_PAGE_SOURCE, createdAt: r.createdAt, status: r.status,
+      key: `event-${r.id}`, kind: "event", id: r.id, event: r.eventTitle, camp: r.camp, player: r.playerName, age: String(r.playerAge),
+      gender: r.gender, parent: r.parentName, email: r.email, phone: `${r.phone}${r.whatsapp ? " ✓WA" : ""}`, source: EVENT_PAGE_SOURCE, createdAt: r.createdAt, status: r.status,
     }));
     return [...camps, ...plain].sort((x, y) => new Date(y.createdAt).getTime() - new Date(x.createdAt).getTime());
   }, [trialBookings, eventRegistrations, adminEvents]);
